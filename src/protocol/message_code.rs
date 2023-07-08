@@ -8,7 +8,7 @@ enum MessageCode {
     SSH_MSG_EXT_INFO,
     SSH_MSG_NEWCOMPRESS,
     // Unassigned (Transport layer generic),
-    SSH_MSG_KEXINIT, // KeyExchangeInit,
+    SSH_MSG_KEXINIT,
     SSH_MSG_NEWKEYS,
     // Unassigned (Algorithm negotiation),
     EllipticCurveDiffieHellmanKeyExchangeInit,

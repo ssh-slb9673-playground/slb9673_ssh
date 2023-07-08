@@ -1,18 +1,20 @@
 struct Algorithms {
     cookie: String,
-    kex_algorithms: String,
-    server_host_key_algorithms: String,
-    encryption_algorithms_client_to_server: String,
-    encryption_algorithms_server_to_client: String,
-    mac_algorithms_client_to_server: String,
-    mac_algorithms_server_to_client: String,
-    compression_algorithms_client_to_server: String,
-    compression_algorithms_server_to_client: String,
-    languages_client_to_server: String,
-    languages_server_to_client: String,
+    kex_algorithms: NameList,
+    server_host_key_algorithms: NameList,
+    encryption_algorithms_client_to_server: NameList,
+    encryption_algorithms_server_to_client: NameList,
+    mac_algorithms_client_to_server: NameList,
+    mac_algorithms_server_to_client: NameList,
+    compression_algorithms_client_to_server: NameList,
+    compression_algorithms_server_to_client: NameList,
+    languages_client_to_server: NameList,
+    languages_server_to_client: NameList,
     first_kex_packet_follows: bool,
     reserved: u32,
 }
+
+type NameList = Vec<String>;
 
 #[test]
 fn it_works() {
