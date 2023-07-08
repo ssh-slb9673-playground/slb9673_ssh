@@ -1,6 +1,9 @@
-pub mod encrypted_packet;
+pub mod client;
+mod encrypted_packet;
 pub mod error;
-pub mod key_exchange;
-pub mod message_code;
-pub mod raw_packet;
-pub mod version_exchange;
+mod key_exchange;
+mod message_code;
+mod raw_packet;
+pub mod server;
+mod utils;
+mod version_exchange;
