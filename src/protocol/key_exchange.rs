@@ -1,5 +1,5 @@
 use crate::protocol::utils::parse_string;
-use nom::IResult;
+use nom::{bytes::complete::take, IResult};
 use std::string::FromUtf8Error;
 
 type NameList = Vec<String>;
@@ -27,7 +27,7 @@ fn name_list<'a>(algorithms: Vec<u8>) -> Result<Vec<String>, FromUtf8Error> {
 }
 
 fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
-    let (input, cookie) = parse_string(input)?;
+    let (input, cookie) = take(16u8)(input)?;
     let (input, kex_algorithms) = parse_string(input)?;
     let (input, server_host_key_algorithms) = parse_string(input)?;
     let (input, encryption_algorithms_client_to_server) = parse_string(input)?;
@@ -39,6 +39,7 @@ fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
     let (input, languages_client_to_server) = parse_string(input)?;
     let (input, languages_server_to_client) = parse_string(input)?;
 
+    let cookie = cookie.to_vec();
     let kex_algorithms = name_list(kex_algorithms).unwrap();
     let server_host_key_algorithms = name_list(server_host_key_algorithms).unwrap();
     let encryption_algorithms_client_to_server =
