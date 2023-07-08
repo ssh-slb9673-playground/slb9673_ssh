@@ -1,0 +1,17 @@
+enum DisconnectCode {
+    HostNotAllowedToConnect,
+    ProtocolError,
+    KeyExchangeFailed,
+    Reserved,
+    MacError,
+    CompressionError,
+    ServiceNotAvailable,
+    ProtocolVersionNotSupported,
+    HostKeyNotVerifiable,
+    ConnectionLost,
+    ByApplication,
+    TooManyConnections,
+    AuthCancelledByUser,
+    NoMoreAuthMethodsAvailable,
+    IllegalUserName,
+}
