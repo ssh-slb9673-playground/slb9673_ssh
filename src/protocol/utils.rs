@@ -1,5 +1,5 @@
-use nom::bytes::complete::{take, take_until};
-use nom::number::complete::{be_u32, be_u8};
+use nom::bytes::complete::take;
+use nom::number::complete::be_u32;
 use nom::IResult;
 
 pub fn parse_string(input: &[u8]) -> IResult<&[u8], Vec<u8>> {

@@ -1,3 +1,10 @@
+use nom::bytes::complete::{take, take_until};
+use nom::number::complete::{be_u32, be_u8};
+use nom::IResult;
+
+use super::message_code::{parse_message_code, MessageCode};
+use super::utils::parse_string;
+
 struct BinaryPacket {
     packet_length: u32,
     padding_length: u8,
@@ -28,9 +35,10 @@ fn parse_ssh(input: &[u8]) -> IResult<&[u8], BinaryPacket> {
 fn parse(input: &[u8]) -> IResult<&[u8], ()> {
     let (input, message_code) = parse_message_code(input)?;
     match message_code {
-        MessageCode::KeyExchangeInit => {
-            let (input, wa) = parse_string(input)?;
+        MessageCode::SSH_MSG_KEXINIT => {
+            let (input, str) = parse_string(input)?;
         }
+        _ => {}
     };
 
     Ok((input, ()))

@@ -2,25 +2,28 @@ use crate::protocol::utils::parse_string;
 use nom::IResult;
 use std::string::FromUtf8Error;
 
-type NameList<'a> = Vec<&'a str>;
-struct Algorithms<'a> {
+type NameList = Vec<String>;
+struct Algorithms {
     cookie: Vec<u8>,
-    kex_algorithms: NameList<'a>,
-    server_host_key_algorithms: NameList<'a>,
-    encryption_algorithms_client_to_server: NameList<'a>,
-    encryption_algorithms_server_to_client: NameList<'a>,
-    mac_algorithms_client_to_server: NameList<'a>,
-    mac_algorithms_server_to_client: NameList<'a>,
-    compression_algorithms_client_to_server: NameList<'a>,
-    compression_algorithms_server_to_client: NameList<'a>,
-    languages_client_to_server: NameList<'a>,
-    languages_server_to_client: NameList<'a>,
+    kex_algorithms: NameList,
+    server_host_key_algorithms: NameList,
+    encryption_algorithms_client_to_server: NameList,
+    encryption_algorithms_server_to_client: NameList,
+    mac_algorithms_client_to_server: NameList,
+    mac_algorithms_server_to_client: NameList,
+    compression_algorithms_client_to_server: NameList,
+    compression_algorithms_server_to_client: NameList,
+    languages_client_to_server: NameList,
+    languages_server_to_client: NameList,
     first_kex_packet_follows: bool,
     reserved: u32,
 }
 
-fn name_list<'a>(algorithms: Vec<u8>) -> Result<Vec<&'a str>, FromUtf8Error> {
-    Ok(String::from_utf8(algorithms)?.split(',').collect())
+fn name_list<'a>(algorithms: Vec<u8>) -> Result<Vec<String>, FromUtf8Error> {
+    Ok(String::from_utf8(algorithms)?
+        .split(',')
+        .map(|s| s.into())
+        .collect())
 }
 
 fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {

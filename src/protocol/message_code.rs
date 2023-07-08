@@ -1,4 +1,7 @@
-enum MessageCode {
+use nom::number::complete::be_u8;
+use nom::IResult;
+
+pub enum MessageCode {
     SSH_MSG_DISCONNECT,
     SSH_MSG_IGNORE,
     SSH_MSG_UNIMPLEMENTED,
@@ -42,11 +45,11 @@ enum MessageCode {
     NotFound,
 }
 
-fn parse_message_code(input: &[u8]) -> IResult<&[u8], MessageCode> {
+pub fn parse_message_code(input: &[u8]) -> IResult<&[u8], MessageCode> {
     let (input, message_code) = be_u8(input)?;
     let message_code = match message_code {
-        20 => MessageCode::KeyExchangeInit,
-        21 => MessageCode::NewKeys,
+        20 => MessageCode::SSH_MSG_KEXINIT,
+        21 => MessageCode::SSH_MSG_NEWKEYS,
         30 => MessageCode::EllipticCurveDiffieHellmanKeyExchangeInit,
         31 => MessageCode::EllipticCurveDiffieHellmanKeyExchangeReply,
         _ => MessageCode::NotFound,
