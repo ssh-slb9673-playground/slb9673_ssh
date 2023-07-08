@@ -1,4 +1,5 @@
 mod config;
+mod protocol;
 use std::io::{BufRead, BufReader, Result, Write};
 use std::net::TcpListener;
 

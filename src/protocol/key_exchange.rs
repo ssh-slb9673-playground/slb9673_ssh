@@ -1,23 +1,78 @@
-struct Algorithms {
-    cookie: String,
-    kex_algorithms: NameList,
-    server_host_key_algorithms: NameList,
-    encryption_algorithms_client_to_server: NameList,
-    encryption_algorithms_server_to_client: NameList,
-    mac_algorithms_client_to_server: NameList,
-    mac_algorithms_server_to_client: NameList,
-    compression_algorithms_client_to_server: NameList,
-    compression_algorithms_server_to_client: NameList,
-    languages_client_to_server: NameList,
-    languages_server_to_client: NameList,
+use crate::protocol::utils::parse_string;
+use nom::IResult;
+use std::string::FromUtf8Error;
+
+type NameList<'a> = Vec<&'a str>;
+struct Algorithms<'a> {
+    cookie: Vec<u8>,
+    kex_algorithms: NameList<'a>,
+    server_host_key_algorithms: NameList<'a>,
+    encryption_algorithms_client_to_server: NameList<'a>,
+    encryption_algorithms_server_to_client: NameList<'a>,
+    mac_algorithms_client_to_server: NameList<'a>,
+    mac_algorithms_server_to_client: NameList<'a>,
+    compression_algorithms_client_to_server: NameList<'a>,
+    compression_algorithms_server_to_client: NameList<'a>,
+    languages_client_to_server: NameList<'a>,
+    languages_server_to_client: NameList<'a>,
     first_kex_packet_follows: bool,
     reserved: u32,
 }
 
-type NameList = Vec<String>;
+fn name_list<'a>(algorithms: Vec<u8>) -> Result<Vec<&'a str>, FromUtf8Error> {
+    Ok(String::from_utf8(algorithms)?.split(',').collect())
+}
+
+fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
+    let (input, cookie) = parse_string(input)?;
+    let (input, kex_algorithms) = parse_string(input)?;
+    let (input, server_host_key_algorithms) = parse_string(input)?;
+    let (input, encryption_algorithms_client_to_server) = parse_string(input)?;
+    let (input, encryption_algorithms_server_to_client) = parse_string(input)?;
+    let (input, mac_algorithms_client_to_server) = parse_string(input)?;
+    let (input, mac_algorithms_server_to_client) = parse_string(input)?;
+    let (input, compression_algorithms_client_to_server) = parse_string(input)?;
+    let (input, compression_algorithms_server_to_client) = parse_string(input)?;
+    let (input, languages_client_to_server) = parse_string(input)?;
+    let (input, languages_server_to_client) = parse_string(input)?;
+
+    let kex_algorithms = name_list(kex_algorithms).unwrap();
+    let server_host_key_algorithms = name_list(server_host_key_algorithms).unwrap();
+    let encryption_algorithms_client_to_server =
+        name_list(encryption_algorithms_client_to_server).unwrap();
+    let encryption_algorithms_server_to_client =
+        name_list(encryption_algorithms_server_to_client).unwrap();
+    let mac_algorithms_client_to_server = name_list(mac_algorithms_client_to_server).unwrap();
+    let mac_algorithms_server_to_client = name_list(mac_algorithms_server_to_client).unwrap();
+    let compression_algorithms_client_to_server =
+        name_list(compression_algorithms_client_to_server).unwrap();
+    let compression_algorithms_server_to_client =
+        name_list(compression_algorithms_server_to_client).unwrap();
+    let languages_client_to_server = name_list(languages_client_to_server).unwrap();
+    let languages_server_to_client = name_list(languages_server_to_client).unwrap();
+
+    Ok((
+        input,
+        Algorithms {
+            cookie,
+            kex_algorithms,
+            server_host_key_algorithms,
+            encryption_algorithms_client_to_server,
+            encryption_algorithms_server_to_client,
+            mac_algorithms_client_to_server,
+            mac_algorithms_server_to_client,
+            compression_algorithms_client_to_server,
+            compression_algorithms_server_to_client,
+            languages_client_to_server,
+            languages_server_to_client,
+            first_kex_packet_follows: true,
+            reserved: 0,
+        },
+    ))
+}
 
 #[test]
-fn parse_key_exchange_packet() {
+fn parse_test_key_exchange_packet() {
     let packet = b"\x00\x00\x05\xdc\x04\x14\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75 \
 \x6b\xd9\x62\xe5\xdc\xb2\x00\x00\x01\x14\x63\x75\x72\x76\x65\x32 \
 \x35\x35\x31\x39\x2d\x73\x68\x61\x32\x35\x36\x2c\x63\x75\x72\x76 \
