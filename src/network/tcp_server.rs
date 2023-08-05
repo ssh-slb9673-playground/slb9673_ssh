@@ -1,18 +1,18 @@
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 
-pub struct Server {
+pub struct TcpServer {
     pub address: SocketAddr,
     pub client: TcpStream,
 }
 
-impl Server {
+impl TcpServer {
     pub fn new(address: SocketAddr) -> Result<Self> {
         let listener = TcpListener::bind(address)?;
         // let mut sock = TcpStream::connect(SERVER_ADDRESS).expect("failed to connect server");
         listener.set_nonblocking(false).expect("out of service");
         let (client, address) = listener.accept()?;
-        Ok(Server { address, client })
+        Ok(TcpServer { address, client })
     }
 
     pub fn send(&self, response: &[u8]) -> Result<()> {
@@ -31,11 +31,4 @@ impl Server {
             Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
         }
     }
-}
-
-#[test]
-fn it_works() {
-    let tx_mess = "Hello, TCP\r\n".as_bytes();
-    // let server = Server::new("127.0.0.1:8080".parse().unwrap()).unwrap();
-    // server.send(tx_mess).unwrap();
 }

@@ -1,30 +1,36 @@
-use crate::protocol::version_exchange::Version;
-use crate::server::Server;
+use std::io::Result;
+use std::net::SocketAddr;
 
-pub struct SSHServer {
-    setup: bool,
-    server: Server,
+use crate::network::tcp_server::TcpServer;
+use crate::protocol::version_exchange::Version;
+
+pub struct SshServer {
+    address: SocketAddr,
+    username: String,
+    server: TcpServer,
 }
 
-impl SSHServer {
-    // pub fn new() -> Self {
-    //     let server = Server::new()
-    //     SSHServer { setup: true, server}
-    // }
-
-    pub fn connection_setup() {
-        Self::version_exchange();
+impl SshServer {
+    pub fn new(address: SocketAddr, username: String) -> Result<Self> {
+        let server = TcpServer::new(address)?;
+        Ok(SshServer {
+            address,
+            username,
+            server,
+        })
     }
 
-    fn version_exchange() {
+    pub fn connection_setup(&self) {
         let version = Version::new(
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
             "Ubuntu-3ubuntu0.1".to_string(),
         );
-        version.generate_version();
+        let version_exchange_packet = version.generate_version();
+        self.server.send(&version_exchange_packet);
     }
 
-    pub fn recv() {}
+    pub fn send(&self) {}
+    pub fn recv(&self) {}
 }
 
 /*

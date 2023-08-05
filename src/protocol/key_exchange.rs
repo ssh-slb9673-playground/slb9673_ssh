@@ -1,5 +1,5 @@
 use crate::protocol::utils::parse_string;
-use nom::{bytes::complete::take, number::complete::be_u32, AsBytes, IResult};
+use nom::{bytes::complete::take, number::complete::be_u32, IResult};
 
 use super::utils::generate_string;
 
@@ -34,7 +34,7 @@ impl Algorithms {
         let (input, languages_client_to_server) = parse_string(input)?;
         let (input, languages_server_to_client) = parse_string(input)?;
         let (input, first_kex_packet_follows) = take(1u8)(input)?;
-        let (input, reserved) = be_u32(input)?;
+        let (input, _reserved) = be_u32(input)?;
 
         Ok((
             input,

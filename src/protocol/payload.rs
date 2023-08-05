@@ -4,7 +4,7 @@ use nom::IResult;
 use crate::protocol::key_exchange::Algorithms;
 
 enum Payload {
-    kex_init(Algorithms),
+    KexInit(Algorithms),
     None,
 }
 // pub enum MessageCode {
@@ -70,7 +70,7 @@ impl Payload {
         match message_id {
             20 => {
                 let algorithms = Algorithms::parse_key_exchange(input)?.1;
-                Ok((input, Payload::kex_init(algorithms)))
+                Ok((input, Payload::KexInit(algorithms)))
             }
             _ => Ok((input, Payload::None)),
         }

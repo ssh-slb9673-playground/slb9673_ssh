@@ -4,6 +4,6 @@ mod encrypted_packet;
 pub mod error;
 mod key_exchange;
 mod payload;
-pub mod server;
+pub mod ssh_server;
 mod utils;
 mod version_exchange;
