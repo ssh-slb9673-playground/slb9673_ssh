@@ -1,6 +1,5 @@
 use crate::protocol::utils::parse_string;
-use nom::{bytes::complete::take, IResult};
-use std::string::FromUtf8Error;
+use nom::{bytes::complete::take, number::complete::be_u32, IResult};
 
 type NameList = Vec<String>;
 #[derive(Debug)]
@@ -19,11 +18,12 @@ pub struct Algorithms {
     first_kex_packet_follows: bool,
 }
 
-fn name_list(algorithms: Vec<u8>) -> Result<Vec<String>, FromUtf8Error> {
-    Ok(String::from_utf8(algorithms)?
+fn name_list(algorithms: Vec<u8>) -> Vec<String> {
+    String::from_utf8(algorithms)
+        .unwrap()
         .split(',')
         .map(|s| s.into())
-        .collect())
+        .collect()
 }
 
 pub fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
@@ -39,23 +39,21 @@ pub fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
     let (input, languages_client_to_server) = parse_string(input)?;
     let (input, languages_server_to_client) = parse_string(input)?;
     let (input, first_kex_packet_follows) = take(1u8)(input)?;
-    let (input, _) = take(8u8)(input)?;
+    let (input, reserved) = be_u32(input)?;
 
     let cookie = cookie.to_vec();
-    let kex_algorithms = name_list(kex_algorithms).unwrap();
-    let server_host_key_algorithms = name_list(server_host_key_algorithms).unwrap();
-    let encryption_algorithms_client_to_server =
-        name_list(encryption_algorithms_client_to_server).unwrap();
-    let encryption_algorithms_server_to_client =
-        name_list(encryption_algorithms_server_to_client).unwrap();
-    let mac_algorithms_client_to_server = name_list(mac_algorithms_client_to_server).unwrap();
-    let mac_algorithms_server_to_client = name_list(mac_algorithms_server_to_client).unwrap();
+    let kex_algorithms = name_list(kex_algorithms);
+    let server_host_key_algorithms = name_list(server_host_key_algorithms);
+    let encryption_algorithms_client_to_server = name_list(encryption_algorithms_client_to_server);
+    let encryption_algorithms_server_to_client = name_list(encryption_algorithms_server_to_client);
+    let mac_algorithms_client_to_server = name_list(mac_algorithms_client_to_server);
+    let mac_algorithms_server_to_client = name_list(mac_algorithms_server_to_client);
     let compression_algorithms_client_to_server =
-        name_list(compression_algorithms_client_to_server).unwrap();
+        name_list(compression_algorithms_client_to_server);
     let compression_algorithms_server_to_client =
-        name_list(compression_algorithms_server_to_client).unwrap();
-    let languages_client_to_server = name_list(languages_client_to_server).unwrap();
-    let languages_server_to_client = name_list(languages_server_to_client).unwrap();
+        name_list(compression_algorithms_server_to_client);
+    let languages_client_to_server = name_list(languages_client_to_server);
+    let languages_server_to_client = name_list(languages_server_to_client);
     let first_kex_packet_follows = first_kex_packet_follows[0] != 0;
 
     Ok((
