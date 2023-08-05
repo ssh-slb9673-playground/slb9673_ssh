@@ -26,9 +26,7 @@ fn name_list(algorithms: Vec<u8>) -> Result<Vec<String>, FromUtf8Error> {
         .collect())
 }
 
-fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
-    let (input, _) = take(4u8)(input)?;
-    let (input, _) = take(2u8)(input)?;
+pub fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
     let (input, cookie) = take(16u8)(input)?;
     let (input, kex_algorithms) = parse_string(input)?;
     let (input, server_host_key_algorithms) = parse_string(input)?;
@@ -79,12 +77,12 @@ fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
     ))
 }
 
-pub fn gen_key_exchange_packet(algo: Algorithms) {}
+pub fn gen_key_exchange_packet(algo: Algorithms) -> Vec<u8> {}
 
 #[test]
 fn parse_test_key_exchange_packet() {
-    let packet = b"\x00\x00\x05\xdc\x04\x14\
-\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75\x6b\xd9\x62\xe5\xdc\xb2\
+    //\x00\x00\x05\xdc\x04\x14
+    let packet = b"\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75\x6b\xd9\x62\xe5\xdc\xb2\
 \x00\x00\x01\x14\
 curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,sntrup761x25519-sha512@openssh.com,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,ext-info-c\
 \x00\x00\x01\xcf\
