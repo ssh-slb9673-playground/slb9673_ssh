@@ -18,7 +18,7 @@ pub struct Algorithms {
     first_kex_packet_follows: bool,
 }
 
-fn name_list(algorithms: Vec<u8>) -> Vec<String> {
+fn name_list(algorithms: Vec<u8>) -> NameList {
     String::from_utf8(algorithms)
         .unwrap()
         .split(',')
@@ -75,7 +75,7 @@ pub fn parse_key_exchange_packet(input: &[u8]) -> IResult<&[u8], Algorithms> {
     ))
 }
 
-pub fn gen_key_exchange_packet(algo: Algorithms) -> Vec<u8> {}
+// pub fn gen_key_exchange_packet(algo: Algorithms) -> Vec<u8> {}
 
 #[test]
 fn parse_test_key_exchange_packet() {
