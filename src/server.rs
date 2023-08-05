@@ -1,7 +1,5 @@
-use crate::config::domain::Config;
 use std::io::{BufRead, BufReader, Error, ErrorKind, Result, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::path::PathBuf;
 
 pub struct Server {
     pub address: SocketAddr,
@@ -40,10 +38,4 @@ fn it_works() {
     let tx_mess = "Hello, TCP\r\n".as_bytes();
     // let server = Server::new("127.0.0.1:8080".parse().unwrap()).unwrap();
     // server.send(tx_mess).unwrap();
-}
-
-pub struct SSHServer {
-    server: Server,
-    privatekey: String,
-    username: String,
 }

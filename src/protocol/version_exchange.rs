@@ -1,5 +1,8 @@
-fn version_exchange() -> String {
-    "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1".to_string()
+pub fn version_exchange() -> Vec<u8> {
+    // SSH-protoversion-softwareversion SP comments CR LF
+    "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1\r\n"
+        .as_bytes()
+        .to_vec()
 }
 
 // [hasshServerAlgorithms [truncated]: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256;chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gc]

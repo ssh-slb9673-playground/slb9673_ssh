@@ -1,21 +1,19 @@
 use nom::number::complete::be_u8;
-use nom::IResult;
 
+use crate::protocol::key_exchange::parse_key_exchange_packet;
 use crate::protocol::version_exchange::version_exchange;
 use crate::server::Server;
-
-use super::key_exchange::{parse_key_exchange_packet, Algorithms};
 
 pub struct SSHServer {
     server: Server,
 }
 
 impl SSHServer {
-    pub fn test() {
+    pub fn connection_setup() {
         version_exchange();
     }
 
-    pub fn recv(input: &[u8]) -> IResult<&[u8], Algorithms> {
+    pub fn recv(input: &[u8]) {
         let (input, message_id) = be_u8(input)?;
         match message_id {
             20 => {
