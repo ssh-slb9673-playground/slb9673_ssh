@@ -1,4 +1,4 @@
-use crate::protocol::version_exchange::version_exchange;
+use crate::protocol::version_exchange::Version;
 use crate::server::Server;
 
 pub struct SSHServer {
@@ -13,7 +13,15 @@ impl SSHServer {
     // }
 
     pub fn connection_setup() {
-        version_exchange();
+        Self::version_exchange();
+    }
+
+    fn version_exchange() {
+        let version = Version::new(
+            "SSH-2.0-OpenSSH_8.9p1".to_string(),
+            "Ubuntu-3ubuntu0.1".to_string(),
+        );
+        version.generate_version();
     }
 
     pub fn recv() {}
@@ -388,4 +396,17 @@ impl SSHServer {
 00000ADD  b3 eb b8 01 e1 59 b2 26  2e 03 af 67 7d 4d 3b a7   .....Y.& ...g}M;.
 00000AED  8f 89 ba 49 38 e0 10 55  1a 6a c6 85 9c 1c eb 50   ...I8..U .j.....P
 00000AFD  10 a5 65 03 4f fd 91 06  6e 3e f3 f5               ..e.O... n>..
+ */
+
+// [hasshServerAlgorithms [truncated]: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256;chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gc]
+// [hasshServer: d5037e2b5d0a751478bc339d1cf024a8]
+
+/*
+- hmac-sha1 REQUIRED HMAC-SHA1 (digest length = key length = 20)
+- hmac-sha1-96 RECOMMENDED first 96 bits of HMAC-SHA1 (digest length = 12, key length = 20)
+*/
+
+/*
+ssh-dss REQUIRED sign Raw DSS Key
+ssh-rsa RECOMMENDED sign Raw RSA Key
  */

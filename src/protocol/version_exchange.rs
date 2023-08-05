@@ -1,19 +1,41 @@
-pub fn version_exchange() -> Vec<u8> {
-    // SSH-protoversion-softwareversion SP comments CR LF
-    "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1\r\n"
-        .as_bytes()
-        .to_vec()
+use nom::{bytes::complete::take_until, IResult};
+
+// SSH_protoversion_softwareversion SP comments CR LF
+pub struct Version {
+    ssh_protoversion_softwareversion: String,
+    comments: String,
 }
 
-// [hasshServerAlgorithms [truncated]: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256;chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gc]
-// [hasshServer: d5037e2b5d0a751478bc339d1cf024a8]
+impl Version {
+    pub fn new(ssh_protoversion_softwareversion: String, comments: String) -> Self {
+        Version {
+            ssh_protoversion_softwareversion,
+            comments,
+        }
+    }
 
-/*
-- hmac-sha1 REQUIRED HMAC-SHA1 (digest length = key length = 20)
-- hmac-sha1-96 RECOMMENDED first 96 bits of HMAC-SHA1 (digest length = 12, key length = 20)
-*/
+    pub fn parse_version(input: &[u8]) -> IResult<&[u8], Self> {
+        let (input, ssh_protoversion_softwareversion) = take_until(" ")(input)?;
+        let ssh_protoversion_softwareversion =
+            String::from_utf8(ssh_protoversion_softwareversion.to_vec()).unwrap();
+        let (input, comments) = take_until("\r\n")(input)?;
+        let comments = String::from_utf8(comments.to_vec()).unwrap();
 
-/*
-ssh-dss REQUIRED sign Raw DSS Key
-ssh-rsa RECOMMENDED sign Raw RSA Key
- */
+        Ok((
+            input,
+            Version {
+                ssh_protoversion_softwareversion,
+                comments,
+            },
+        ))
+    }
+
+    pub fn generate_version(&self) -> Vec<u8> {
+        format!(
+            "{} {}\r\n",
+            self.ssh_protoversion_softwareversion, self.comments
+        )
+        .as_bytes()
+        .to_vec()
+    }
+}
