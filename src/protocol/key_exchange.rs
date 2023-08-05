@@ -114,6 +114,7 @@ fn generate_name_list(input: &NameList) -> String {
     let mut namelist = "".to_string();
     for iter in input.iter() {
         namelist += iter;
+        namelist += ",";
     }
     namelist
 }
