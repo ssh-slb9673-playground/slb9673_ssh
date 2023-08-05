@@ -9,6 +9,13 @@ pub fn parse_string(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
     Ok((input, payload.to_vec()))
 }
 
+pub fn generate_string(input: String) -> Vec<u8> {
+    let mut bytes = vec![];
+    bytes.extend((input.len() as u32).to_be_bytes());
+    bytes.extend(input.as_bytes());
+    bytes
+}
+
 fn get_hex_rep(byte_array: &[u8]) -> String {
     let build_string_vec: Vec<String> = byte_array
         .iter()
