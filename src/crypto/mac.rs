@@ -10,13 +10,13 @@ use sha2::{Sha256, Sha512};
 // hmac-sha2-512     OPTIONAL      HMAC-SHA2-512 (digest length = 64 bytes, key length = 64 bytes)
 // none         OPTIONAL        no MAC; NOT RECOMMENDED
 enum MacAlgorithm {
-    hmac_sha1,
-    hmac_sha1_96,
-    hmac_sha2_256,
-    hmac_sha2_512,
-    hmac_md5,
-    hmac_md5_96,
-    none,
+    HmacSha1,
+    HmacSha1_96,
+    HmacSha2_256,
+    HmacSha2_512,
+    HmacMd5,
+    HmacMd5_96,
+    None,
 }
 
 struct MAC {
@@ -31,22 +31,22 @@ impl MAC {
 
     pub fn generate_mac(&self, msg: Vec<u8>) -> Vec<u8> {
         match self.algorithm {
-            MacAlgorithm::hmac_sha1 => {
+            MacAlgorithm::HmacSha1 => {
                 let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
                 mac.update(&msg);
                 mac.finalize().into_bytes().to_vec()
             }
-            MacAlgorithm::hmac_sha1_96 => {
+            MacAlgorithm::HmacSha1_96 => {
                 let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
                 mac.update(&msg);
                 mac.finalize().into_bytes().to_vec()
             }
-            MacAlgorithm::hmac_sha2_256 => {
+            MacAlgorithm::HmacSha2_256 => {
                 let mut mac = Hmac::<Sha256>::new_from_slice(&self.key).unwrap();
                 mac.update(&msg);
                 mac.finalize().into_bytes().to_vec()
             }
-            MacAlgorithm::hmac_sha2_512 => {
+            MacAlgorithm::HmacSha2_512 => {
                 let mut mac = Hmac::<Sha512>::new_from_slice(&self.key).unwrap();
                 mac.update(&msg);
                 mac.finalize().into_bytes().to_vec()
