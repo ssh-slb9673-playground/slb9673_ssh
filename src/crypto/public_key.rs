@@ -1,4 +1,9 @@
 // ssh-dss           REQUIRED     sign   Raw DSS Key
+// string    "ssh-dss"
+// mpint     p
+// mpint     q
+// mpint     g
+// mpint     y
 // ssh-rsa           RECOMMENDED  sign   Raw RSA Key
 // pgp-sign-rsa      OPTIONAL     sign   OpenPGP certificates (RSA key)
 // pgp-sign-dss      OPTIONAL     sign   OpenPGP certificates (DSS key)

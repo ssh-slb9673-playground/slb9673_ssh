@@ -40,24 +40,24 @@ impl Algorithms {
             input,
             Algorithms {
                 cookie: cookie.to_vec(),
-                kex_algorithms: parse_name_list(kex_algorithms),
-                server_host_key_algorithms: parse_name_list(server_host_key_algorithms),
-                encryption_algorithms_client_to_server: parse_name_list(
+                kex_algorithms: parse_namelist(kex_algorithms),
+                server_host_key_algorithms: parse_namelist(server_host_key_algorithms),
+                encryption_algorithms_client_to_server: parse_namelist(
                     encryption_algorithms_client_to_server,
                 ),
-                encryption_algorithms_server_to_client: parse_name_list(
+                encryption_algorithms_server_to_client: parse_namelist(
                     encryption_algorithms_server_to_client,
                 ),
-                mac_algorithms_client_to_server: parse_name_list(mac_algorithms_client_to_server),
-                mac_algorithms_server_to_client: parse_name_list(mac_algorithms_server_to_client),
-                compression_algorithms_client_to_server: parse_name_list(
+                mac_algorithms_client_to_server: parse_namelist(mac_algorithms_client_to_server),
+                mac_algorithms_server_to_client: parse_namelist(mac_algorithms_server_to_client),
+                compression_algorithms_client_to_server: parse_namelist(
                     compression_algorithms_client_to_server,
                 ),
-                compression_algorithms_server_to_client: parse_name_list(
+                compression_algorithms_server_to_client: parse_namelist(
                     compression_algorithms_server_to_client,
                 ),
-                languages_client_to_server: parse_name_list(languages_client_to_server),
-                languages_server_to_client: parse_name_list(languages_server_to_client),
+                languages_client_to_server: parse_namelist(languages_client_to_server),
+                languages_server_to_client: parse_namelist(languages_server_to_client),
                 first_kex_packet_follows: first_kex_packet_follows[0] != 0,
             },
         ))
@@ -66,35 +66,35 @@ impl Algorithms {
     pub fn generate_key_exchange(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![];
         packet.extend(&self.cookie);
-        packet.extend(generate_string(generate_name_list(&self.kex_algorithms)));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(&self.kex_algorithms)));
+        packet.extend(generate_string(generate_namelist(
             &self.server_host_key_algorithms,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.encryption_algorithms_client_to_server,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.encryption_algorithms_server_to_client,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.mac_algorithms_client_to_server,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.mac_algorithms_server_to_client,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.compression_algorithms_client_to_server,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.compression_algorithms_server_to_client,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.languages_client_to_server,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.languages_server_to_client,
         )));
-        packet.extend(generate_string(generate_name_list(
+        packet.extend(generate_string(generate_namelist(
             &self.languages_server_to_client,
         )));
         packet.extend((self.first_kex_packet_follows as u8).to_be_bytes().to_vec());
@@ -102,7 +102,7 @@ impl Algorithms {
     }
 }
 
-fn parse_name_list(algorithms: Vec<u8>) -> NameList {
+fn parse_namelist(algorithms: Vec<u8>) -> NameList {
     String::from_utf8(algorithms)
         .unwrap()
         .split(',')
@@ -110,7 +110,7 @@ fn parse_name_list(algorithms: Vec<u8>) -> NameList {
         .collect()
 }
 
-fn generate_name_list(input: &NameList) -> String {
+fn generate_namelist(input: &NameList) -> String {
     let mut namelist = "".to_string();
     for iter in input.iter() {
         namelist += iter;
@@ -119,6 +119,8 @@ fn generate_name_list(input: &NameList) -> String {
     namelist
 }
 
+// When acting as server: "ext-info-s"
+// When acting as client: "ext-info-c"
 #[test]
 fn parse_test_key_exchange_packet() {
     // \x00\x00\x05\xdc\x04\x14

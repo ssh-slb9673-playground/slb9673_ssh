@@ -43,3 +43,7 @@ struct Authentication {
     algorithm_name: a,
     public_key_blob: a,
 }
+
+// SSH_MSG_USERAUTH_REQUEST            50
+// SSH_MSG_USERAUTH_FAILURE            51
+// SSH_MSG_USERAUTH_SUCCESS            52
