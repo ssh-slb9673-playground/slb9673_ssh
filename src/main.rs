@@ -1,6 +1,8 @@
 mod config;
+mod crypto;
 mod network;
 mod protocol;
+mod utils;
 
 use crate::{
     config::{cli, domain},
