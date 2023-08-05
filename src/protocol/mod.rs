@@ -3,7 +3,6 @@ pub mod client;
 mod encrypted_packet;
 pub mod error;
 mod key_exchange;
-mod message_code;
 mod payload;
 pub mod server;
 mod utils;
