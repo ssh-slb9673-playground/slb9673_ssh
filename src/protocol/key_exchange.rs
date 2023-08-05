@@ -66,36 +66,36 @@ impl Algorithms {
     pub fn generate_key_exchange(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![];
         packet.extend(&self.cookie);
-        packet.extend(generate_string(generate_name_list(self.kex_algorithms)));
+        packet.extend(generate_string(generate_name_list(&self.kex_algorithms)));
         packet.extend(generate_string(generate_name_list(
-            self.server_host_key_algorithms,
+            &self.server_host_key_algorithms,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.encryption_algorithms_client_to_server,
+            &self.encryption_algorithms_client_to_server,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.encryption_algorithms_server_to_client,
+            &self.encryption_algorithms_server_to_client,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.mac_algorithms_client_to_server,
+            &self.mac_algorithms_client_to_server,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.mac_algorithms_server_to_client,
+            &self.mac_algorithms_server_to_client,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.compression_algorithms_client_to_server,
+            &self.compression_algorithms_client_to_server,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.compression_algorithms_server_to_client,
+            &self.compression_algorithms_server_to_client,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.languages_client_to_server,
+            &self.languages_client_to_server,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.languages_server_to_client,
+            &self.languages_server_to_client,
         )));
         packet.extend(generate_string(generate_name_list(
-            self.languages_server_to_client,
+            &self.languages_server_to_client,
         )));
         packet.extend((self.first_kex_packet_follows as u8).to_be_bytes().to_vec());
         packet
@@ -110,7 +110,7 @@ fn parse_name_list(algorithms: Vec<u8>) -> NameList {
         .collect()
 }
 
-fn generate_name_list(input: NameList) -> String {
+fn generate_name_list(input: &NameList) -> String {
     let mut namelist = "".to_string();
     for iter in input.iter() {
         namelist += iter;
