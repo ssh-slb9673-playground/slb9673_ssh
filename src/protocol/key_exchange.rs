@@ -19,7 +19,7 @@ struct Algorithms {
     reserved: u32,
 }
 
-fn name_list<'a>(algorithms: Vec<u8>) -> Result<Vec<String>, FromUtf8Error> {
+fn name_list(algorithms: Vec<u8>) -> Result<Vec<String>, FromUtf8Error> {
     Ok(String::from_utf8(algorithms)?
         .split(',')
         .map(|s| s.into())
