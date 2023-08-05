@@ -20,6 +20,8 @@ enum PublicKeyAlgorithms {
 
 pub struct PublicKey {
     algorithm: PublicKeyAlgorithms,
+    priv_key: Vec<u8>,
+    pub_key: Vec<u8>,
 }
 
 impl PublicKey {

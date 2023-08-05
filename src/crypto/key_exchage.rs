@@ -1,6 +1,7 @@
 use ed25519::signature::{Signer, Verifier};
+// use curve25519_dalek::
 use sha1::{Digest, Sha1};
-use sha2::{Digest, Sha256, Sha512};
+use sha2::{Sha256, Sha512};
 
 // diffie-hellman-group1-sha1 REQUIRED
 // diffie-hellman-group14-sha1 REQUIRED
@@ -99,46 +100,5 @@ impl Kex {
         seed.extend("F".as_bytes());
         seed.extend(&self.session_id);
         self.hash(seed)
-    }
-}
-
-#[test]
-fn test() {
-    pub struct HelloSigner<S>
-    where
-        S: Signer<ed25519::Signature>,
-    {
-        pub signing_key: S,
-    }
-
-    impl<S> HelloSigner<S>
-    where
-        S: Signer<ed25519::Signature>,
-    {
-        pub fn sign(&self, person: &str) -> ed25519::Signature {
-            self.signing_key.sign(format_message(person).as_bytes())
-        }
-    }
-
-    pub struct HelloVerifier<V> {
-        pub verifying_key: V,
-    }
-
-    impl<V> HelloVerifier<V>
-    where
-        V: Verifier<ed25519::Signature>,
-    {
-        pub fn verify(
-            &self,
-            person: &str,
-            signature: &ed25519::Signature,
-        ) -> Result<(), ed25519::Error> {
-            self.verifying_key
-                .verify(format_message(person).as_bytes(), signature)
-        }
-    }
-
-    fn format_message(person: &str) -> String {
-        format!("Hello, {}!", person)
     }
 }
