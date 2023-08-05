@@ -54,13 +54,21 @@ impl MAC {
 }
 
 #[test]
-fn test() {
-    let mut mac = Hmac::<Sha1>::new_from_slice(b"my secret and secure key")
+fn hmac_sha256() {
+    // Create alias for HMAC-SHA256
+    type HmacSha256 = Hmac<Sha256>;
+
+    let mut mac = HmacSha256::new_from_slice(b"my secret and secure key")
         .expect("HMAC can take key of any size");
     mac.update(b"input message");
 
-    let result: Vec<u8> = mac.finalize().into_bytes().to_vec();
-    let expected =
-        b"\x13\x3b\x67\xc6\x1c\x33\x95\xc1\x89\x35\x03\x8c\x86\xa7\x84\x46\xa4\x4d\xb7\x9f";
-    assert_eq!(result[..], expected[..]);
+    // `result` has type `CtOutput` which is a thin wrapper around array of
+    // bytes for providing constant time equality check
+    let result = mac.finalize();
+    // To get underlying array use `into_bytes`, but be careful, since
+    // incorrect use of the code value may permit timing attacks which defeats
+    // the security provided by the `CtOutput`
+    let code_bytes = result.into_bytes();
+    let expected = b"\x97\xd2\xa5\x69\x05\x9b\xbc\xd8\xea\xd4\x44\x4f\xf9\x90\x71\xf4\xc0\x1d\x00\x5b\xce\xfe\x0d\x35\x67\xe1\xbe\x62\x8e\x5f\xdc\xd9";
+    assert_eq!(code_bytes[..], expected[..]);
 }
