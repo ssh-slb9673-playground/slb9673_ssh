@@ -19,60 +19,49 @@ enum MacAlgorithm {
     None,
 }
 
-// trait MAC {
-//     fn new(key: &[u8]) -> Self {}
-//     fn generate_mac(&self, msg: &[u8]) -> Vec<u8> {}
-// }
-
-// struct HmacSha1 {
-//     key: Vec<u8>,
-// }
-// impl MAC for HmacSha1 {
-//     pub fn new(key: Vec<u8>, algorithm: MacAlgorithm) -> Self {
-//         MAC { key, algorithm }
-//     }
-// }
-// struct HmacSha2_256 {
-//     key: Vec<u8>,
-// }
-// struct HmacSha2_512 {
-//     key: Vec<u8>,
-// }
-
-struct MAC {
-    key: Vec<u8>,
-    algorithm: MacAlgorithm,
+trait MAC {
+    fn generate(&self, msg: &[u8]) -> Vec<u8>;
 }
 
-impl MAC {
-    pub fn new(key: Vec<u8>, algorithm: MacAlgorithm) -> Self {
-        MAC { key, algorithm }
+pub struct HmacSha1 {
+    pub key: Vec<u8>,
+}
+impl MAC for HmacSha1 {
+    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+        let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
+        mac.update(&msg);
+        mac.finalize().into_bytes().to_vec()
     }
+}
 
-    pub fn generate_mac(&self, msg: Vec<u8>) -> Vec<u8> {
-        match self.algorithm {
-            MacAlgorithm::HmacSha1 => {
-                let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
-                mac.update(&msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-            MacAlgorithm::HmacSha1_96 => {
-                let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
-                mac.update(&msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-            MacAlgorithm::HmacSha2_256 => {
-                let mut mac = Hmac::<Sha256>::new_from_slice(&self.key).unwrap();
-                mac.update(&msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-            MacAlgorithm::HmacSha2_512 => {
-                let mut mac = Hmac::<Sha512>::new_from_slice(&self.key).unwrap();
-                mac.update(&msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-            _ => vec![],
-        }
+pub struct HmacSha1_96 {
+    pub key: Vec<u8>,
+}
+impl MAC for HmacSha1_96 {
+    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+        let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
+        mac.update(&msg);
+        mac.finalize().into_bytes().to_vec()
+    }
+}
+pub struct HmacSha2_256 {
+    pub key: Vec<u8>,
+}
+impl MAC for HmacSha2_256 {
+    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+        let mut mac = Hmac::<Sha256>::new_from_slice(&self.key).unwrap();
+        mac.update(&msg);
+        mac.finalize().into_bytes().to_vec()
+    }
+}
+struct HmacSha2_512 {
+    key: Vec<u8>,
+}
+impl MAC for HmacSha2_512 {
+    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+        let mut mac = Hmac::<Sha512>::new_from_slice(&self.key).unwrap();
+        mac.update(&msg);
+        mac.finalize().into_bytes().to_vec()
     }
 }
 
