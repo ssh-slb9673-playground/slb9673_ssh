@@ -19,6 +19,26 @@ enum MacAlgorithm {
     None,
 }
 
+// trait MAC {
+//     fn new(key: &[u8]) -> Self {}
+//     fn generate_mac(&self, msg: &[u8]) -> Vec<u8> {}
+// }
+
+// struct HmacSha1 {
+//     key: Vec<u8>,
+// }
+// impl MAC for HmacSha1 {
+//     pub fn new(key: Vec<u8>, algorithm: MacAlgorithm) -> Self {
+//         MAC { key, algorithm }
+//     }
+// }
+// struct HmacSha2_256 {
+//     key: Vec<u8>,
+// }
+// struct HmacSha2_512 {
+//     key: Vec<u8>,
+// }
+
 struct MAC {
     key: Vec<u8>,
     algorithm: MacAlgorithm,

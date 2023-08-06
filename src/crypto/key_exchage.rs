@@ -4,8 +4,6 @@ use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
 use x25519_dalek::{EphemeralSecret, PublicKey};
 
-use super::public_key;
-
 // diffie-hellman-group1-sha1 REQUIRED
 // diffie-hellman-group14-sha1 REQUIRED
 // curve25519-sha256
@@ -73,7 +71,7 @@ impl KexMethod for Curve25519Sha256 {
         vec![]
     }
     fn hash(&self, seed: &[u8]) -> Vec<u8> {
-        let mut hasher = Sha512::new();
+        let mut hasher = Sha256::new();
         hasher.update(seed);
         hasher.finalize().as_slice().to_vec()
     }
