@@ -69,7 +69,7 @@ impl Payload {
         let (input, message_id) = be_u8(input)?;
         match message_id {
             20 => {
-                let algorithms = Algorithms::parse_key_exchange(input)?.1;
+                let (input, algorithms) = Algorithms::parse_key_exchange(input)?;
                 Ok((input, Payload::KexInit(algorithms)))
             }
             _ => Ok((input, Payload::None)),
