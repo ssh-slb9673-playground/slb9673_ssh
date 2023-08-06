@@ -16,3 +16,5 @@ flate2 = "1.0"
 x25519-dalek = "2.0.0-rc.3"
 rand = "0.8.5"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
+aes-gcm = "0.10.2"
+typenum = "1.16.0"
