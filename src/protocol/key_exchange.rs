@@ -1,11 +1,11 @@
-use crate::{protocol::utils::parse_string, utils::hexdump};
+use crate::protocol::utils::parse_string;
 use nom::{bytes::complete::take, number::complete::be_u32, IResult};
 
 use super::utils::generate_string;
 
 type NameList = Vec<String>;
 #[derive(Debug)]
-pub struct Algorithms {
+pub struct KexAlgorithms {
     cookie: Vec<u8>,
     kex_algorithms: NameList,
     server_host_key_algorithms: NameList,
@@ -20,7 +20,7 @@ pub struct Algorithms {
     first_kex_packet_follows: bool,
 }
 
-impl Algorithms {
+impl KexAlgorithms {
     pub fn parse_key_exchange(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, cookie) = take(16u8)(input)?;
         let (input, kex_algorithms) = parse_string(input)?;
@@ -38,7 +38,7 @@ impl Algorithms {
 
         Ok((
             input,
-            Algorithms {
+            KexAlgorithms {
                 cookie: cookie.to_vec(),
                 kex_algorithms: parse_namelist(kex_algorithms),
                 server_host_key_algorithms: parse_namelist(server_host_key_algorithms),
@@ -138,7 +138,7 @@ none,zlib@openssh.com,zlib\
 none,zlib@openssh.com,zlib\
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
     //\x00\x00\x00\x00";
-    let parsed = Algorithms::parse_key_exchange(packet);
+    let parsed = KexAlgorithms::parse_key_exchange(packet);
     assert!(parsed.is_ok());
     let (_, algo) = parsed.unwrap();
     let gen_packet = algo.generate_key_exchange();

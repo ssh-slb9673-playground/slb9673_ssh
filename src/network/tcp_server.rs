@@ -20,15 +20,14 @@ impl TcpServer {
         return socket.write_all(&response);
     }
 
-    pub fn recv(&self) -> Result<String> {
+    pub fn recv(&self) -> Result<Vec<u8>> {
         let socket = self.client.try_clone()?;
-        let mut reader = BufReader::new(socket);
-        let mut recv_data = String::new();
-        let v = reader.read_line(&mut recv_data)?;
-        if v > 0 {
-            Ok(recv_data)
-        } else {
+        let reader = BufReader::new(socket);
+        let recv_data = reader.buffer();
+        if recv_data.is_empty() {
             Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
+        } else {
+            Ok(recv_data.to_vec())
         }
     }
 }

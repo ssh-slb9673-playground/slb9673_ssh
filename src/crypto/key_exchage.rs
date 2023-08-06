@@ -1,5 +1,4 @@
-// use rand::rngs::OsRng;
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::OsRng;
 use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
 use x25519_dalek::{EphemeralSecret, PublicKey};

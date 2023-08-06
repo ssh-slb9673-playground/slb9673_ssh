@@ -4,6 +4,8 @@ use std::net::SocketAddr;
 use crate::network::tcp_server::TcpServer;
 use crate::protocol::version_exchange::Version;
 
+use super::key_exchange::KexAlgorithms;
+
 pub struct SshServer {
     address: SocketAddr,
     username: String,
@@ -20,13 +22,45 @@ impl SshServer {
         })
     }
 
-    pub fn connection_setup(&self) {
+    pub fn connection_setup_server(&self) -> Result<Vec<u8>> {
         let version = Version::new(
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
-            Some("Ubuntu-3ubuntu0.1".to_string()),
+            "Ubuntu-3ubuntu0.1".to_string(),
         );
         let version_exchange_packet = version.generate_version();
         self.server.send(&version_exchange_packet);
+
+        let a = self.server.recv()?;
+        Ok(a)
+    }
+
+    pub fn connection_setup_client(&self) -> Result<Vec<u8>> {
+        let version_exchange_packet = self.server.recv()?;
+        let version = Version::parse_version(&version_exchange_packet);
+
+        let version = Version::new(
+            "SSH-2.0-OpenSSH_8.9p1".to_string(),
+            "Ubuntu-3ubuntu0.1".to_string(),
+        );
+        let version_exchange_packet = version.generate_version();
+        let kex = KexAlgorithms {
+            cookie: vec![],
+            kex_algorithms: vec!["a".to_string()],
+            server_host_key_algorithms: vec!["a".to_string()],
+            encryption_algorithms_client_to_server: vec!["a".to_string()],
+            encryption_algorithms_server_to_client: vec!["a".to_string()],
+            mac_algorithms_client_to_server: vec!["a".to_string()],
+            mac_algorithms_server_to_client: vec!["a".to_string()],
+            compression_algorithms_client_to_server: vec!["a".to_string()],
+            compression_algorithms_server_to_client: vec!["a".to_string()],
+            languages_client_to_server: vec!["a".to_string()],
+            languages_server_to_client: vec!["a".to_string()],
+            first_kex_packet_follows: true,
+        };
+        let key_exchange_packet = kex.generate_key_exchange();
+
+        let a = self.server.recv()?;
+        Ok(a)
     }
 
     pub fn send(&self) {}

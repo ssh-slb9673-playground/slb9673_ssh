@@ -1,10 +1,10 @@
 use nom::number::complete::be_u8;
 use nom::IResult;
 
-use crate::protocol::key_exchange::Algorithms;
+use crate::protocol::key_exchange::KexAlgorithms;
 
 enum Payload {
-    KexInit(Algorithms),
+    KexInit(KexAlgorithms),
     None,
 }
 // pub enum MessageCode {
@@ -69,7 +69,7 @@ impl Payload {
         let (input, message_id) = be_u8(input)?;
         match message_id {
             20 => {
-                let (input, algorithms) = Algorithms::parse_key_exchange(input)?;
+                let (input, algorithms) = KexAlgorithms::parse_key_exchange(input)?;
                 Ok((input, Payload::KexInit(algorithms)))
             }
             _ => Ok((input, Payload::None)),

@@ -11,10 +11,17 @@ pub struct Version {
 }
 
 impl Version {
-    pub fn new(ssh_protoversion_softwareversion: String, comments: Option<String>) -> Self {
+    pub fn from_version(ssh_protoversion_softwareversion: String) -> Self {
         Version {
             ssh_protoversion_softwareversion,
-            comments,
+            comments: None,
+        }
+    }
+
+    pub fn new(ssh_protoversion_softwareversion: String, comments: String) -> Self {
+        Version {
+            ssh_protoversion_softwareversion,
+            comments: Some(comments),
         }
     }
 
