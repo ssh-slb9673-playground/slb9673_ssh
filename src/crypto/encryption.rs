@@ -5,6 +5,7 @@ use aes_gcm::{
     Key, // Or `Aes128Gcm`
     Nonce,
 };
+use chacha20poly1305::ChaCha20Poly1305;
 
 // 3des-cbc         REQUIRED          three-key 3DES in CBC mode
 // aes256-cbc       OPTIONAL          AES in CBC mode, with a 256-bit key
@@ -15,8 +16,8 @@ use aes_gcm::{
 // aes256 (cbc, ctr, gcm)	256 bits
 
 trait Encryption {
-    fn encrypt(&self, msg: &[u8]) -> Option<Vec<u8>>;
-    fn decrypt(&self, cipher: &[u8]) -> Option<Vec<u8>>;
+    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>>;
+    fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>>;
 }
 
 struct aes256_gcm {
@@ -32,8 +33,8 @@ impl aes256_gcm {
     }
 }
 impl Encryption for aes256_gcm {
-    fn encrypt(&self, msg: &[u8]) -> Option<Vec<u8>> {
-        self.cipher.encrypt(&self.nonce, msg).ok()
+    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>> {
+        self.cipher.encrypt(&self.nonce, plaintext).ok()
     }
     fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.decrypt(&self.nonce, ciphertext).ok()
@@ -53,10 +54,31 @@ impl aes128_gcm {
     }
 }
 impl Encryption for aes128_gcm {
-    fn encrypt(&self, msg: &[u8]) -> Option<Vec<u8>> {
-        self.cipher.encrypt(&self.nonce, msg).ok()
+    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>> {
+        self.cipher.encrypt(&self.nonce, plaintext).ok()
     }
     fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.decrypt(&self.nonce, ciphertext).ok()
+    }
+}
+
+struct chacha20_poly1305 {
+    cipher: ChaCha20Poly1305,
+    nonce: Nonce<typenum::U12>,
+}
+impl chacha20_poly1305 {
+    fn new() -> Self {
+        let key = ChaCha20Poly1305::generate_key(&mut OsRng);
+        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
+        let cipher = ChaCha20Poly1305::new(&key);
+        chacha20_poly1305 { cipher, nonce }
+    }
+}
+impl Encryption for chacha20_poly1305 {
+    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>> {
+        self.cipher.encrypt(&self.nonce, plaintext).ok()
+    }
+    fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+        self.cipher.encrypt(&self.nonce, ciphertext).ok()
     }
 }
