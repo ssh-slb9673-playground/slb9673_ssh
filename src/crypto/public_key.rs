@@ -18,15 +18,13 @@ enum PublicKeyAlgorithms {
     pgp_sign_dss,
 }
 
-pub struct PublicKey {
-    algorithm: PublicKeyAlgorithms,
+trait PublicKey {}
+
+pub struct ssh_rsa {
     priv_key: Vec<u8>,
     pub_key: Vec<u8>,
 }
-
-impl PublicKey {
-    // pub fn
-}
+impl PublicKey for ssh_rsa {}
 
 // string    certificate or public key format identifier
 // byte[n]   key/certificate data

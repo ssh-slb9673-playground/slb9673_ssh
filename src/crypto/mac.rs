@@ -44,6 +44,7 @@ impl MAC for HmacSha1_96 {
         mac.finalize().into_bytes().to_vec()
     }
 }
+
 pub struct HmacSha2_256 {
     pub key: Vec<u8>,
 }
@@ -54,6 +55,7 @@ impl MAC for HmacSha2_256 {
         mac.finalize().into_bytes().to_vec()
     }
 }
+
 struct HmacSha2_512 {
     key: Vec<u8>,
 }
