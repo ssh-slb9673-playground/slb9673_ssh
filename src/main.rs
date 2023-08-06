@@ -15,5 +15,5 @@ fn main() {
     println!("{:?}", config);
 
     let server = SshServer::new(config.remote_address, config.username).unwrap();
-    server.connection_setup();
+    server.connection_setup_client();
 }

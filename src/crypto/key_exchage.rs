@@ -7,18 +7,19 @@ use x25519_dalek::{EphemeralSecret, PublicKey};
 // diffie-hellman-group14-sha1 REQUIRED
 // curve25519-sha256
 // curve448-sha512
-trait KexMethod {
-    fn new() -> Self;
+pub trait KexMethod {
     fn public_key(&self) -> Vec<u8>;
     fn shared_secret(&self, public_key: &[u8]) -> Vec<u8>;
     fn hash(&self, seed: &[u8]) -> Vec<u8>;
 }
 
 struct DiffieHellmanGroup1Sha1 {}
-impl KexMethod for DiffieHellmanGroup1Sha1 {
-    fn new() -> Self {
+impl DiffieHellmanGroup1Sha1 {
+    pub fn new() -> Self {
         DiffieHellmanGroup1Sha1 {}
     }
+}
+impl KexMethod for DiffieHellmanGroup1Sha1 {
     fn public_key(&self) -> Vec<u8> {
         vec![]
     }
@@ -32,11 +33,13 @@ impl KexMethod for DiffieHellmanGroup1Sha1 {
     }
 }
 
-struct DiffieHellmanGroup14Sha1 {}
-impl KexMethod for DiffieHellmanGroup14Sha1 {
-    fn new() -> Self {
+pub struct DiffieHellmanGroup14Sha1 {}
+impl DiffieHellmanGroup14Sha1 {
+    pub fn new() -> Self {
         DiffieHellmanGroup14Sha1 {}
     }
+}
+impl KexMethod for DiffieHellmanGroup14Sha1 {
     fn public_key(&self) -> Vec<u8> {
         vec![]
     }
@@ -50,12 +53,12 @@ impl KexMethod for DiffieHellmanGroup14Sha1 {
     }
 }
 
-struct Curve25519Sha256 {
+pub struct Curve25519Sha256 {
     private_key: EphemeralSecret,
     public_key: PublicKey,
 }
-impl KexMethod for Curve25519Sha256 {
-    fn new() -> Self {
+impl Curve25519Sha256 {
+    pub fn new() -> Self {
         let private_key = EphemeralSecret::random_from_rng(OsRng);
         let public_key = PublicKey::from(&private_key);
         Curve25519Sha256 {
@@ -63,6 +66,8 @@ impl KexMethod for Curve25519Sha256 {
             public_key,
         }
     }
+}
+impl KexMethod for Curve25519Sha256 {
     fn public_key(&self) -> Vec<u8> {
         vec![]
     }
@@ -77,10 +82,12 @@ impl KexMethod for Curve25519Sha256 {
 }
 
 struct Curve448Sha512 {}
-impl KexMethod for Curve448Sha512 {
-    fn new() -> Self {
+impl Curve448Sha512 {
+    pub fn new() -> Self {
         Curve448Sha512 {}
     }
+}
+impl KexMethod for Curve448Sha512 {
     fn public_key(&self) -> Vec<u8> {
         vec![]
     }
@@ -94,11 +101,11 @@ impl KexMethod for Curve448Sha512 {
     }
 }
 
-struct Kex<T: KexMethod> {
-    method: T,
-    shared_secret_key: Vec<u8>,
-    exchange_hash: Vec<u8>,
-    session_id: Vec<u8>,
+pub struct Kex<T: KexMethod> {
+    pub method: T,
+    pub shared_secret_key: Vec<u8>,
+    pub exchange_hash: Vec<u8>,
+    pub session_id: Vec<u8>,
 }
 
 // Initial IV client to server: HASH(K || H || "A" || session_id) (Here K is encoded as mpint and "A" as byte and session_id as raw data.  "A" means the single character A, ASCII 65).

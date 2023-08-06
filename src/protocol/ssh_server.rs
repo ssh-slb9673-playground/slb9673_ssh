@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use crate::network::tcp_server::TcpServer;
 use crate::protocol::version_exchange::Version;
 
-use super::key_exchange::KexAlgorithms;
+use super::key_exchange_init::KexAlgorithms;
 
 pub struct SshServer {
     address: SocketAddr,
@@ -57,7 +57,7 @@ impl SshServer {
             languages_server_to_client: vec!["a".to_string()],
             first_kex_packet_follows: true,
         };
-        let key_exchange_packet = kex.generate_key_exchange();
+        let key_exchange_packet = kex.generate_key_exchange_init();
 
         let a = self.server.recv()?;
         Ok(a)
@@ -68,19 +68,6 @@ impl SshServer {
 }
 
 /*
-    000002E9  00 00 00 bc 08 1f 00 00  00 33 00 00 00 0b 73 73   ........ .3....ss
-    000002F9  68 2d 65 64 32 35 35 31  39 00 00 00 20 e3 2a aa   h-ed2551 9... .*.
-    00000309  79 15 ce b9 b4 49 d1 ba  50 ea 2a 28 bb 1a 6e 01   y....I.. P.*(..n.
-    00000319  f9 0b da 24 5a 2d 1d 87  69 7d 18 a2 65 00 00 00   ...$Z-.. i}..e...
-    00000329  20 8c 1b 73 02 25 bf 80  da 84 00 81 39 27 a5 7b    ..s.%.. ....9'.{
-    00000339  52 ea db 1e 80 c2 24 42  fa 2c b0 56 3a c2 8f 3b   R.....$B .,.V:..;
-    00000349  37 00 00 00 53 00 00 00  0b 73 73 68 2d 65 64 32   7...S... .ssh-ed2
-    00000359  35 35 31 39 00 00 00 40  41 66 5f 8c 52 e5 82 88   5519...@ Af_.R...
-    00000369  73 6b 1f b1 29 4b 0b dc  f8 b9 16 c6 cd 04 cd 4b   sk..)K.. .......K
-    00000379  18 45 a0 95 4b b6 70 15  54 65 ef 67 5a 4c b3 99   .E..K.p. Te.gZL..
-    00000389  ae 52 f0 c0 f3 19 96 64  ff a8 12 8a 4e cb 9d 2a   .R.....d ....N..*
-    00000399  80 7a a0 4d 00 c3 93 09  00 00 00 00 00 00 00 00   .z.M.... ........
-    000003A9  00 00 00 0c 0a 15 00 00  00 00 00 00 00 00 00 00   ........ ........
 00000639  00 00 00 0c 0a 15 00 00  00 00 00 00 00 00 00 00   ........ ........
 00000649  bd dc f4 de 92 39 3e 83  d1 1a c5 70 4a c4 0b 7e   .....9>. ...pJ..~
 00000659  a6 88 18 17 09 ad 4e b2  d8 cf f4 96 eb 80 41 c0   ......N. ......A.

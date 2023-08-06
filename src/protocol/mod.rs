@@ -3,6 +3,7 @@ pub mod client;
 mod encrypted_packet;
 pub mod error;
 mod key_exchange;
+mod key_exchange_init;
 mod payload;
 pub mod ssh_server;
 mod utils;
