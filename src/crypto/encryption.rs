@@ -1,9 +1,6 @@
 use aes_gcm::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
-    Aes128Gcm,
-    Aes256Gcm,
-    Key, // Or `Aes128Gcm`
-    Nonce,
+    Aes128Gcm, Aes256Gcm, Key, Nonce,
 };
 use chacha20poly1305::ChaCha20Poly1305;
 
