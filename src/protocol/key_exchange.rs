@@ -1,4 +1,4 @@
-use crate::protocol::utils::parse_string;
+use crate::{protocol::utils::parse_string, utils::hexdump};
 use nom::{bytes::complete::take, number::complete::be_u32, IResult};
 
 use super::utils::generate_string;
@@ -111,12 +111,7 @@ fn parse_namelist(algorithms: Vec<u8>) -> NameList {
 }
 
 fn generate_namelist(input: &NameList) -> String {
-    let mut namelist = "".to_string();
-    for iter in input.iter() {
-        namelist += iter;
-        namelist += ",";
-    }
-    namelist
+    input.join(",")
 }
 
 // When acting as server: "ext-info-s"
@@ -141,8 +136,13 @@ umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,h
 none,zlib@openssh.com,zlib\
 \x00\x00\x00\x1a\
 none,zlib@openssh.com,zlib\
-\x00\x00\x00\x00\x00\x00\x00\x00\x00";
-    // \x00\x00\x00\x00\x00\x00\x00\x00
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+    //\x00\x00\x00\x00";
     let parsed = Algorithms::parse_key_exchange(packet);
-    println!("{:?}", parsed);
+    assert!(parsed.is_ok());
+    let (_, algo) = parsed.unwrap();
+    let gen_packet = algo.generate_key_exchange();
+    hexdump(packet);
+    hexdump(&gen_packet);
+    assert!(packet[..] == gen_packet[..]);
 }
