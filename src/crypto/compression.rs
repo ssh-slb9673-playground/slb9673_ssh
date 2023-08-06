@@ -10,31 +10,24 @@ enum CompressionAlgorithm {
     None,
 }
 
-pub struct Compress {
-    algorithm: CompressionAlgorithm,
+pub trait Compress {
+    fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>>;
+    fn decompress(&self, msg: Vec<u8>) -> Result<Vec<u8>>;
 }
 
-impl Compress {
-    pub fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
-        match self.algorithm {
-            CompressionAlgorithm::Zlib => {
-                let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
-                e.write_all(msg.as_slice())?;
-                e.finish()
-            }
-            CompressionAlgorithm::None => Ok(msg),
-        }
+pub struct Zlib {}
+
+impl Compress for Zlib {
+    fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
+        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+        e.write_all(msg.as_slice())?;
+        e.finish()
     }
 
-    pub fn decompress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
-        match self.algorithm {
-            CompressionAlgorithm::Zlib => {
-                let mut d = ZlibDecoder::new(msg.as_slice());
-                let mut result = vec![];
-                d.read(&mut result)?;
-                Ok(result)
-            }
-            CompressionAlgorithm::None => Ok(msg),
-        }
+    fn decompress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
+        let mut d = ZlibDecoder::new(msg.as_slice());
+        let mut result = vec![];
+        d.read(&mut result)?;
+        Ok(result)
     }
 }
