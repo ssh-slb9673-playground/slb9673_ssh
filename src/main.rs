@@ -6,7 +6,7 @@ mod utils;
 
 use crate::{
     config::{cli, domain},
-    protocol::ssh_server::SshServer,
+    protocol::server::SshServer,
 };
 
 fn main() {
@@ -15,5 +15,5 @@ fn main() {
     println!("{:?}", config);
 
     let server = SshServer::new(config.remote_address, config.username).unwrap();
-    server.connection_setup_client();
+    server.connection_setup();
 }

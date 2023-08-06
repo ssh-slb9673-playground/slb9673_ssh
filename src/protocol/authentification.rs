@@ -39,9 +39,9 @@ struct Authentication {
     user_name: String,
     service_name: String,
     method_name: Method,
-    et: boolean,
-    algorithm_name: a,
-    public_key_blob: a,
+    et: bool,
+    algorithm_name: bool,
+    public_key_blob: bool,
 }
 
 // SSH_MSG_USERAUTH_REQUEST            50

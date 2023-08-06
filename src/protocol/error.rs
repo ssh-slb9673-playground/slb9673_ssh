@@ -1,4 +1,5 @@
-enum DisconnectCode {
+#[derive(Debug)]
+pub enum DisconnectCode {
     HostNotAllowedToConnect,
     ProtocolError,
     KeyExchangeFailed,
@@ -14,4 +15,16 @@ enum DisconnectCode {
     AuthCancelledByUser,
     NoMoreAuthMethodsAvailable,
     IllegalUserName,
+}
+
+impl std::error::Error for DisconnectCode {}
+
+impl std::fmt::Display for DisconnectCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "error: ");
+        match self {
+            DisconnectCode::KeyExchangeFailed => write!(f, "key exchange failed"),
+            _ => write!(f, "other error"),
+        }
+    }
 }

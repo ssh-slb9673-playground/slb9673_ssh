@@ -22,19 +22,7 @@ impl SshServer {
         })
     }
 
-    pub fn connection_setup_server(&self) -> Result<Vec<u8>> {
-        let version = Version::new(
-            "SSH-2.0-OpenSSH_8.9p1".to_string(),
-            "Ubuntu-3ubuntu0.1".to_string(),
-        );
-        let version_exchange_packet = version.generate_version();
-        self.server.send(&version_exchange_packet);
-
-        let a = self.server.recv()?;
-        Ok(a)
-    }
-
-    pub fn connection_setup_client(&self) -> Result<Vec<u8>> {
+    pub fn connection_setup(&self) -> Result<Vec<u8>> {
         let version_exchange_packet = self.server.recv()?;
         let version = Version::parse_version(&version_exchange_packet);
 
