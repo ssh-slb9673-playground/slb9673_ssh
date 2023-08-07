@@ -4,10 +4,8 @@ mod network;
 mod protocol;
 mod utils;
 
-use crate::{
-    config::{cli, domain},
-    protocol::server::SshServer,
-};
+use crate::config::{cli, domain};
+use crate::protocol::server::SshServer;
 
 fn main() {
     let args = cli::cli_options();
