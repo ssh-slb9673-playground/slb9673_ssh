@@ -13,7 +13,7 @@ fn main() {
     let config = domain::get_config(args);
     println!("{:?}", config);
 
-    let client = SshClient::new(config.remote_address, config.username).unwrap();
+    let mut client = SshClient::new(config.remote_address, config.username).unwrap();
     println!("client");
     client.connection_setup();
 }

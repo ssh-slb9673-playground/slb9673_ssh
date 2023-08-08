@@ -22,7 +22,7 @@ impl SshClient {
         })
     }
 
-    pub fn connection_setup(&self) -> Result<Vec<u8>, DisconnectCode> {
+    pub fn connection_setup(&mut self) -> Result<Vec<u8>, DisconnectCode> {
         let version = Version::new(
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
             "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
@@ -38,6 +38,7 @@ impl SshClient {
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
         let (key_exchange_init_packet, version) = Version::parse_version(&key_exchange_init_packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        println!("{:?}", version);
         let algos = KexAlgorithms::parse_key_exchange_init(&key_exchange_init_packet);
         Ok(vec![])
     }
