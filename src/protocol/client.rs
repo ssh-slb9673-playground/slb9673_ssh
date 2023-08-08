@@ -1,7 +1,7 @@
 use std::io;
 use std::net::SocketAddr;
 
-use crate::network::tcp_server::TcpServer;
+use crate::network::tcp_client::TcpClient;
 use crate::protocol::error::DisconnectCode;
 use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::version_exchange::Version;
@@ -9,29 +9,31 @@ use crate::protocol::version_exchange::Version;
 pub struct SshClient {
     address: SocketAddr,
     username: String,
-    server: TcpServer,
+    client: TcpClient,
 }
 
 impl SshClient {
     pub fn new(address: SocketAddr, username: String) -> io::Result<Self> {
-        let server = TcpServer::new(address)?;
+        let client = TcpClient::new(address)?;
         Ok(SshClient {
             address,
             username,
-            server,
+            client,
         })
     }
 
     pub fn connection_setup(&self) -> Result<Vec<u8>, DisconnectCode> {
         let version = Version::new(
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
-            "Ubuntu-3ubuntu0.1".to_string(),
+            "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
         );
         let version_exchange_packet = version.generate_version();
-        self.server.send(&version_exchange_packet);
+        println!("send version exchange");
+        self.client.send(&version_exchange_packet);
+        println!("send version exchange end");
 
         let key_exchange_init_packet = self
-            .server
+            .client
             .recv()
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
         let (key_exchange_init_packet, version) = Version::parse_version(&key_exchange_init_packet)

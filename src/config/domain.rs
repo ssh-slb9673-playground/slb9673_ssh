@@ -23,3 +23,9 @@ impl Config {
 pub fn get_config(args: cli::Args) -> Config {
     Config::new(args)
 }
+
+#[test]
+fn parse_socketaddr() {
+    let address: SocketAddr = "20.27.177.113:22".to_string().parse().unwrap();
+    println!("{:?}", address);
+}

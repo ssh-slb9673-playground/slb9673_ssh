@@ -5,6 +5,7 @@ mod protocol;
 mod utils;
 
 use crate::config::{cli, domain};
+use crate::protocol::client::SshClient;
 use crate::protocol::server::SshServer;
 
 fn main() {
@@ -12,6 +13,7 @@ fn main() {
     let config = domain::get_config(args);
     println!("{:?}", config);
 
-    let server = SshServer::new(config.remote_address, config.username).unwrap();
-    server.connection_setup();
+    let client = SshClient::new(config.remote_address, config.username).unwrap();
+    println!("client");
+    client.connection_setup();
 }

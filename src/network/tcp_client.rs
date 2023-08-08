@@ -1,17 +1,14 @@
-use std::io::{BufReader, Error, ErrorKind, Result, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::{net::{SocketAddr, TcpStream}, io::{Result, BufReader, ErrorKind, Error, Write}};
 
-pub struct TcpServer {
+pub struct TcpClient {
     pub address: SocketAddr,
     pub client: TcpStream,
 }
 
-impl TcpServer {
+impl TcpClient {
     pub fn new(address: SocketAddr) -> Result<Self> {
-        let listener = TcpListener::bind(address)?;
-        listener.set_nonblocking(false).expect("out of service");
-        let (client, address) = listener.accept()?;
-        Ok(TcpServer { address, client })
+        let client = TcpStream::connect(address).expect("failed to connect server");
+        Ok(TcpClient { address, client })
     }
 
     pub fn send(&self, response: &[u8]) -> Result<()> {
@@ -30,11 +27,3 @@ impl TcpServer {
         }
     }
 }
-
-#[test]
-fn connect_localhost() {
-    let address = "127.0.0.1:80";
-    let listener = TcpListener::bind(address).unwrap();
-    println!("{:?}", listener);
-}
-
