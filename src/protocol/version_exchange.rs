@@ -4,7 +4,7 @@ use nom::error::Error;
 use nom::IResult;
 
 // SSH_protoversion_softwareversion SP comments CR LF
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Version {
     ssh_protoversion_softwareversion: String,
     comments: Option<String>,
@@ -70,12 +70,13 @@ impl Version {
 #[test]
 fn parse_ssh_version() {
     let packet = b"SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1\r\n";
-    let version_from_packet = Version::parse_version(packet);
-    // let version = Version {
-    //     ssh_protoversion_softwareversion: "SSH-2.0-OpenSSH_8.9p1".to_string(),
-    //     comments: Some("Ubuntu-3ubuntu0.1".to_string()),
-    // };
-    // assert_eq!(version, version_from_packet);
+    let (input, version_from_packet) = Version::parse_version(packet).unwrap();
+    let version = Version {
+        ssh_protoversion_softwareversion: "SSH-2.0-OpenSSH_8.9p1".to_string(),
+        comments: Some("Ubuntu-3ubuntu0.1".to_string()),
+    };
+    assert_eq!(version, version_from_packet);
+    println!("{:?}", input);
     println!("{:?}", version_from_packet);
     let packet = b"SSH-2.0-babeld-dc5ec9be\r\n";
     let version = Version::parse_version(packet);
