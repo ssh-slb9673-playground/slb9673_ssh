@@ -30,8 +30,8 @@ impl PublicKey for ssh_rsa {
     }
     fn signature(&self) -> Vec<u8> {
         let mut result = vec![];
-        result += self.e.to_be_bytes();
-        result += self.n.to_be_bytes();
+        result.extend(self.e.to_be_bytes());
+        result.extend(self.n.to_be_bytes());
         result
     }
 }
@@ -48,10 +48,10 @@ impl PublicKey for ssh_dss {
     }
     fn signature(&self) -> Vec<u8> {
         let mut result = vec![];
-        result += self.p.to_be_bytes();
-        result += self.q.to_be_bytes();
-        result += self.g.to_be_bytes();
-        result += self.y.to_be_bytes();
+        result.extend(self.p.to_be_bytes());
+        result.extend(self.q.to_be_bytes());
+        result.extend(self.g.to_be_bytes());
+        result.extend(self.y.to_be_bytes());
         result
     }
 }
