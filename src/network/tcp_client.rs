@@ -19,12 +19,12 @@ impl TcpClient {
     }
 
     pub fn recv(&mut self) -> Result<Vec<u8>> {
-        let mut recv_data = [0; 128];
-		self.client.read(&mut recv_data)?;
+        let mut recv_data = [0; 65535];
+		let packet_length = self.client.read(&mut recv_data)?;
         if recv_data.is_empty() {
             Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
         } else {
-            Ok(recv_data.to_vec())
+            Ok(recv_data[..packet_length].to_vec())
         }
     }
 }

@@ -2,6 +2,7 @@ use std::io;
 use std::net::SocketAddr;
 
 use crate::network::tcp_client::TcpClient;
+use crate::protocol::binary_packet::BinaryPacket;
 use crate::protocol::error::DisconnectCode;
 use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::version_exchange::Version;
@@ -23,24 +24,41 @@ impl SshClient {
     }
 
     pub fn connection_setup(&mut self) -> Result<Vec<u8>, DisconnectCode> {
+        let version = self.version_exchange()?;
+        println!("{:?}", version);
+        let kex_algorithms = self.key_exchange_init()?;
+        println!("{:?}", kex_algorithms);
+        Ok(vec![])
+    }
+
+    fn version_exchange(&mut self) -> Result<Version, DisconnectCode> {
+        // send version
         let version = Version::new(
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
             "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
         );
         let version_exchange_packet = version.generate_version();
-        println!("send version exchange");
-        self.client.send(&version_exchange_packet);
-        println!("send version exchange end");
+        self.client.send(&version_exchange_packet).map_err(|x| DisconnectCode::HostNotAllowedToConnect)?;
 
+        // recv version
+        let version_exchange_init_packet = self
+            .client
+            .recv()
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (input, version) = Version::parse_version(&version_exchange_init_packet)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        Ok(version)
+    }
+
+    fn key_exchange_init(&mut self) -> Result<KexAlgorithms, DisconnectCode> {
         let key_exchange_init_packet = self
             .client
             .recv()
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
-        let (key_exchange_init_packet, version) = Version::parse_version(&key_exchange_init_packet)
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
-        println!("{:?}", version);
-        let algos = KexAlgorithms::parse_key_exchange_init(&key_exchange_init_packet);
-        Ok(vec![])
+        let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_init_packet)
+             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (input, kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        Ok(kex_algorithms)
     }
 
     pub fn send(&self) {}

@@ -8,6 +8,7 @@ use nom::IResult;
 //   byte[n2]  random padding; n2 = padding_length
 //   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
 // mac = MAC(key, sequence_number || unencrypted_packet)
+#[derive(Debug)]
 pub struct BinaryPacket {
     packet_length: u32,
     padding_length: u8,
@@ -34,12 +35,13 @@ impl BinaryPacket {
         let mac_length: usize = 0;
         let (input, packet_length) = be_u32(input)?;
         let (input, padding_length) = be_u8(input)?;
-        let (input, payload) = take(packet_length - padding_length as u32 - 1)(input)?;
+        let payload_length = packet_length - padding_length as u32 - 1;
+        let (input, payload) = take(payload_length)(input)?;
         let (input, padding) = take(padding_length)(input)?;
         let (input, mac) = take(mac_length)(input)?;
 
         Ok((
-            input,
+            payload,
             BinaryPacket {
                 packet_length,
                 padding_length,

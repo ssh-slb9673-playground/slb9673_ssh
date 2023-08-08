@@ -1,5 +1,5 @@
 use crate::{protocol::utils::parse_string, utils::hexdump};
-use nom::{bytes::complete::take, number::complete::be_u32, IResult};
+use nom::{bytes::complete::take, number::complete::{be_u32, be_u8}, IResult, error::Error};
 
 use super::utils::generate_string;
 
@@ -22,6 +22,8 @@ pub struct KexAlgorithms {
 
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
+        let (input, message_id) = be_u8(input)?;
+        assert!(message_id == 20);
         let (input, cookie) = take(16u8)(input)?;
         let (input, kex_algorithms) = parse_string(input)?;
         let (input, server_host_key_algorithms) = parse_string(input)?;
