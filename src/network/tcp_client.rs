@@ -1,4 +1,5 @@
-use std::{net::{SocketAddr, TcpStream, TcpListener}, io::{Result, BufReader, ErrorKind, Error, Write}};
+use std::net::{SocketAddr, TcpStream};
+use std::io::{Result, ErrorKind, Error, Write};
 use std::io::Read;
 
 pub struct TcpClient {
@@ -19,7 +20,7 @@ impl TcpClient {
 
     pub fn recv(&mut self) -> Result<Vec<u8>> {
         let mut recv_data = [0; 128];
-		self.client.read(&mut recv_data);
+		self.client.read(&mut recv_data)?;
         if recv_data.is_empty() {
             Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
         } else {
