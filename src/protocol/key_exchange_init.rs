@@ -66,7 +66,7 @@ impl KexAlgorithms {
     }
 
     pub fn generate_key_exchange_init(&self) -> Vec<u8> {
-        let mut packet: Vec<u8> = vec![];
+        let mut packet: Vec<u8> = vec![20];
         packet.extend(&self.cookie);
         packet.extend(generate_string(generate_namelist(&self.kex_algorithms)));
         packet.extend(generate_string(generate_namelist(

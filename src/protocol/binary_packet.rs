@@ -20,7 +20,7 @@ pub struct BinaryPacket {
 impl BinaryPacket {
     pub fn new(payload: Vec<u8>) -> Self {
         let payload_length = payload.len() as u32;
-        let packet_length = (payload_length + 1) / 8 * 8;
+        let packet_length = (payload_length + 11) / 8 * 8;
         let padding_length = (packet_length - packet_length) as u8;
         BinaryPacket {
             packet_length,

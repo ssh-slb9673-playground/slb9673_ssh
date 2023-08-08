@@ -1,4 +1,5 @@
 use std::io;
+use rand::prelude::*;
 use std::net::SocketAddr;
 
 use crate::network::tcp_client::TcpClient;
@@ -51,6 +52,7 @@ impl SshClient {
     }
 
     fn key_exchange_init(&mut self) -> Result<KexAlgorithms, DisconnectCode> {
+        // recv key algorithms
         let key_exchange_init_packet = self
             .client
             .recv()
@@ -58,6 +60,31 @@ impl SshClient {
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_init_packet)
              .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
         let (input, kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+
+        // send key algorithms
+        let kex_algorithms = KexAlgorithms {
+            cookie: rand::thread_rng().gen::<[u8; 16]>().to_vec(),
+                kex_algorithms: kex_algorithms.kex_algorithms,
+                server_host_key_algorithms: vec!["ssh-rsa".to_string()],
+                encryption_algorithms_client_to_server: kex_algorithms.
+                    encryption_algorithms_client_to_server,
+                encryption_algorithms_server_to_client: kex_algorithms.
+                    encryption_algorithms_server_to_client,
+                mac_algorithms_client_to_server: kex_algorithms.mac_algorithms_client_to_server,
+                mac_algorithms_server_to_client: kex_algorithms.mac_algorithms_server_to_client,
+                compression_algorithms_client_to_server: kex_algorithms.
+                    compression_algorithms_client_to_server,
+                compression_algorithms_server_to_client: kex_algorithms.
+                    compression_algorithms_server_to_client,
+                languages_client_to_server: kex_algorithms.languages_client_to_server,
+                languages_server_to_client: kex_algorithms.languages_server_to_client,
+                first_kex_packet_follows: kex_algorithms.first_kex_packet_follows,
+        };
+        println!("{:?}", kex_algorithms);
+        let packet = kex_algorithms.generate_key_exchange_init();
+        let packet = BinaryPacket::new(packet).generate_binary_packet();
+        self.client.send(&packet).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+
         Ok(kex_algorithms)
     }
 
