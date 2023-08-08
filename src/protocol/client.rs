@@ -88,6 +88,10 @@ impl SshClient {
         Ok(kex_algorithms)
     }
 
+    fn key_exchange(&mut self) {
+
+    }
+
     pub fn send(&self) {}
     pub fn recv(&self) {}
 }
