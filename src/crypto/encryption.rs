@@ -1,8 +1,12 @@
+use aes::cipher::KeyIvInit;
 use aes_gcm::{
-    aead::{Aead, AeadCore, KeyInit, OsRng},
+    aead::{generic_array::GenericArray, Aead, AeadCore, KeyInit, OsRng},
     Aes128Gcm, Aes256Gcm, Key, Nonce,
 };
 use chacha20poly1305::ChaCha20Poly1305;
+use ctr::cipher::StreamCipher;
+
+use crate::utils::hex;
 
 // 3des-cbc         REQUIRED          three-key 3DES in CBC mode
 // aes256-cbc       OPTIONAL          AES in CBC mode, with a 256-bit key
@@ -13,8 +17,8 @@ use chacha20poly1305::ChaCha20Poly1305;
 // aes256 (cbc, ctr, gcm)	256 bits
 
 pub trait Encryption {
-    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>>;
-    fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>>;
+    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>>;
+    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>>;
 }
 
 pub struct aes256_gcm {
@@ -22,18 +26,20 @@ pub struct aes256_gcm {
     nonce: Nonce<typenum::U12>,
 }
 impl aes256_gcm {
-    fn new(key: &[u8]) -> Self {
+    pub fn new(key: &[u8], nonce: &[u8]) -> Self {
         let key = Key::<Aes256Gcm>::from_slice(key);
         let cipher = Aes256Gcm::new(key);
-        let nonce: Nonce<typenum::U12> = Aes256Gcm::generate_nonce(&mut OsRng);
-        aes256_gcm { cipher, nonce }
+        aes256_gcm {
+            cipher,
+            nonce: *GenericArray::from_slice(nonce),
+        }
     }
 }
 impl Encryption for aes256_gcm {
-    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>> {
+    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.encrypt(&self.nonce, plaintext).ok()
     }
-    fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.decrypt(&self.nonce, ciphertext).ok()
     }
 }
@@ -51,11 +57,34 @@ impl aes128_gcm {
     }
 }
 impl Encryption for aes128_gcm {
-    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>> {
+    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.encrypt(&self.nonce, plaintext).ok()
     }
-    fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.decrypt(&self.nonce, ciphertext).ok()
+    }
+}
+
+pub struct aes128_ctr {
+    cipher: ctr::Ctr128LE<aes::Aes128>,
+}
+impl aes128_ctr {
+    pub fn new(key: &[u8], nonce: &[u8]) -> Self {
+        let cipher = ctr::Ctr128LE::<aes::Aes128>::new(key[..16].into(), nonce[..12].into());
+        // cipher.seek(0u32);
+        aes128_ctr { cipher }
+    }
+}
+impl Encryption for aes128_ctr {
+    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>> {
+        let mut plaintext = plaintext.to_vec();
+        self.cipher.apply_keystream(&mut plaintext);
+        Some(plaintext.to_vec())
+    }
+    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+        let mut ciphertext = ciphertext.to_vec();
+        self.cipher.apply_keystream(&mut ciphertext);
+        Some(ciphertext.to_vec())
     }
 }
 
@@ -65,17 +94,20 @@ pub struct chacha20_poly1305 {
 }
 impl chacha20_poly1305 {
     pub fn new(key: &[u8], nonce: &[u8]) -> Self {
-        let key = ChaCha20Poly1305::generate_key(&mut OsRng);
-        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
-        let cipher = ChaCha20Poly1305::new(&key);
-        chacha20_poly1305 { cipher, nonce }
+        let cipher = ChaCha20Poly1305::new(key.into());
+        println!("nonce: {}", hex(nonce));
+        println!("key: {}", hex(key));
+        chacha20_poly1305 {
+            cipher,
+            nonce: *GenericArray::from_slice(&[1, 0, 0, 0, 0, 0, 0, 0]),
+        }
     }
 }
 impl Encryption for chacha20_poly1305 {
-    fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>> {
+    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.encrypt(&self.nonce, plaintext).ok()
     }
-    fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
         self.cipher.encrypt(&self.nonce, ciphertext).ok()
     }
 }

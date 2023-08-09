@@ -1,12 +1,3 @@
-use nom::number::complete::be_u8;
-use nom::IResult;
-
-use crate::protocol::key_exchange_init::KexAlgorithms;
-
-enum Payload {
-    KexInit(KexAlgorithms),
-    None,
-}
 // pub enum MessageCode {
 //     SSH_MSG_DISCONNECT,
 //     SSH_MSG_IGNORE,
@@ -63,16 +54,3 @@ enum Payload {
 
 //     Ok((input, message_code))
 // }
-
-impl Payload {
-    pub fn parse_payload(input: &[u8]) -> IResult<&[u8], Payload> {
-        let (input, message_id) = be_u8(input)?;
-        match message_id {
-            20 => {
-                let (input, algorithms) = KexAlgorithms::parse_key_exchange_init(input)?;
-                Ok((input, Payload::KexInit(algorithms)))
-            }
-            _ => Ok((input, Payload::None)),
-        }
-    }
-}

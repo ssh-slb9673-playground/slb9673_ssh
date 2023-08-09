@@ -16,7 +16,6 @@ pub trait Compress {
 }
 
 pub struct Zlib {}
-
 impl Compress for Zlib {
     fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
         let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
@@ -29,5 +28,11 @@ impl Compress for Zlib {
         let mut result = vec![];
         d.read(&mut result)?;
         Ok(result)
+    }
+}
+
+pub struct NoneCompress {};
+impl Compress for NoneCompress {
+    fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
     }
 }

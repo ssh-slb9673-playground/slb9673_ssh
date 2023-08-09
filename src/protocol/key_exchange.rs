@@ -32,7 +32,7 @@ impl<T: KexMethod> Kex<T> {
         }
     }
 
-    pub fn initiali_iv_client_to_server(&self) -> Vec<u8> {
+    pub fn initial_iv_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
         seed.extend(&self.shared_secret_key);
         seed.extend(&self.exchange_hash);
@@ -41,7 +41,7 @@ impl<T: KexMethod> Kex<T> {
         self.method.hash(&seed)
     }
 
-    pub fn initiali_iv_server_to_client(&self) -> Vec<u8> {
+    pub fn initial_iv_server_to_client(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
         seed.extend(&self.shared_secret_key);
         seed.extend(&self.exchange_hash);

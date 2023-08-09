@@ -1,6 +1,7 @@
-use nom::ExtendInto;
-
-use crate::crypto::{encryption::Encryption, mac::MAC};
+use crate::{
+    crypto::{encryption::Encryption, mac::MAC},
+    utils::hexdump,
+};
 
 use super::binary_packet::BinaryPacket;
 
@@ -19,13 +20,15 @@ impl<E: Encryption, M: MAC> EncryptedPacket<E, M> {
         }
     }
 
-    pub fn generate_encrypted_packet(&self, payload: &[u8]) -> Vec<u8> {
+    pub fn generate_encrypted_packet(&mut self, payload: &[u8]) -> Vec<u8> {
         let packet = BinaryPacket::new(payload).generate_binary_packet();
+        hexdump(&packet);
         let mut encrypted_packet = self.enc_method.encrypt(&packet).unwrap();
         let mut data = self.sequence_number.to_be_bytes().to_vec();
         data.extend(&encrypted_packet);
         let mac = self.mac_method.generate(&data);
         encrypted_packet.extend(&mac);
+        self.sequence_number += 1;
         encrypted_packet
     }
 }
