@@ -6,6 +6,7 @@ use crate::crypto::key_exchage::{Curve25519Sha256, KexMethod};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
 use crate::protocol::error::DisconnectCode;
+use crate::protocol::key_exchange::{generate_key_exchange, parse_key_exchange};
 use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::version_exchange::Version;
 use crate::utils::hex;
@@ -34,7 +35,7 @@ impl SshClient {
         let kex_algorithms = self.key_exchange_init()?;
         println!("{:?}", kex_algorithms);
         let kex = self.key_exchange::<Curve25519Sha256>(&kex_algorithms.cookie)?;
-        println!("{:?}", kex);
+        println!("{:?}", hex(&kex.exchange_hash));
         Ok(vec![])
     }
 
@@ -101,10 +102,9 @@ impl SshClient {
     fn key_exchange<Method: KexMethod>(
         &mut self,
         sesion_id: &[u8],
-    ) -> Result<Vec<u8>, DisconnectCode> {
-        // let kex = Method::new();
-        let mut kex = Kex::<Method>::new(sesion_id);
-        let payload = kex.generate_key_exchange();
+    ) -> Result<Kex<Method>, DisconnectCode> {
+        let mut method = Method::new();
+        let payload = generate_key_exchange::<Method>(&method);
         let packet = BinaryPacket::new(payload).generate_binary_packet();
         self.client
             .send(&packet)
@@ -116,15 +116,22 @@ impl SshClient {
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
-        let (input, server_public_key) = Kex::<Method>::parse_key_exchange(payload, sesion_id)
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (input, server_public_key) =
+            parse_key_exchange(payload).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
 
-        let shared_secret = kex.method.shared_secret(&server_public_key);
+        let shared_secret = method.shared_secret(&server_public_key);
 
-        println!("client pubkey: {}", hex(&kex.method.public_key()));
+        println!("client pubkey: {}", hex(&method.public_key()));
         println!("server pubkey: {}", hex(&server_public_key));
         println!("shared_secret: {}", hex(&shared_secret));
-        Ok(shared_secret)
+
+        // New Keys
+        let payload: Vec<u8> = vec![0x15];
+        let packet = BinaryPacket::new(payload).generate_binary_packet();
+        self.client
+            .send(&packet)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        Ok(Kex::<Method>::new(method, &shared_secret, sesion_id))
     }
 
     pub fn send(&self) {}

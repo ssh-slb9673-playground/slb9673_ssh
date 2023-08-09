@@ -26,11 +26,12 @@ pub struct Kex<T: KexMethod> {
 // Integrity key client to server: HASH(K || H || "E" || session_id)
 // Integrity key server to client: HASH(K || H || "F" || session_id)
 impl<T: KexMethod> Kex<T> {
-    pub fn new(session_id: &[u8]) -> Self {
+    pub fn new(method: T, shared_secret: &[u8], session_id: &[u8]) -> Self {
+        let exchange_hash = method.hash(shared_secret);
         Kex::<T> {
-            method: T::new(),
-            shared_secret_key: vec![],
-            exchange_hash: vec![],
+            method: method,
+            shared_secret_key: shared_secret.to_vec(),
+            exchange_hash: exchange_hash,
             session_id: session_id.to_vec(),
         }
     }
@@ -88,29 +89,26 @@ impl<T: KexMethod> Kex<T> {
         seed.extend(&self.session_id);
         self.method.hash(&seed)
     }
+}
 
-    pub fn parse_key_exchange<'a>(
-        input: &'a [u8],
-        session_id: &[u8],
-    ) -> IResult<&'a [u8], Vec<u8>> {
-        let (input, message_code) = be_u8(input)?;
-        assert!(message_code == 0x1f);
-        // KEX host key
-        let (input, host_key_length) = be_u32(input)?;
-        let (input, host_key_type) = parse_string(input)?;
-        let (input, rsa_public_exponent) = parse_string(input)?;
-        let (input, rsa_modulus) = parse_string(input)?;
+pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], Vec<u8>> {
+    let (input, message_code) = be_u8(input)?;
+    assert!(message_code == 0x1f);
+    // KEX host key
+    let (input, host_key_length) = be_u32(input)?;
+    let (input, host_key_type) = parse_string(input)?;
+    let (input, rsa_public_exponent) = parse_string(input)?;
+    let (input, rsa_modulus) = parse_string(input)?;
 
-        let (input, public_key) = parse_string(input)?;
+    let (input, public_key) = parse_string(input)?;
 
-        Ok((input, public_key))
-    }
+    Ok((input, public_key))
+}
 
-    pub fn generate_key_exchange(&self) -> Vec<u8> {
-        let mut packet = vec![0x1e];
-        packet.extend(&generate_string(&self.method.public_key()));
-        packet
-    }
+pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
+    let mut packet = vec![0x1e];
+    packet.extend(&generate_string(&method.public_key()));
+    packet
 }
 
 /*
