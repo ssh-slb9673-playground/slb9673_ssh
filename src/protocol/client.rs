@@ -161,6 +161,7 @@ impl SshClient {
     ) -> Result<&[u8], DisconnectCode> {
         let auth = Authentication::new("anko", "test", "publickey");
         let packet = auth.generate_authentication();
+        let packet = enc_to_server.generate_encrypted_packet(&packet);
         self.client
             .send(&packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;

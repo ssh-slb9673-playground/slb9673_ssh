@@ -127,7 +127,7 @@ fn generate_namelist(input: &NameList) -> Vec<u8> {
 #[test]
 fn parse_test_key_exchange_init_packet() {
     // \x00\x00\x05\xdc\x04\x14
-    let packet = b"\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75\x6b\xd9\x62\xe5\xdc\xb2\
+    let packet = b"\x14\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75\x6b\xd9\x62\xe5\xdc\xb2\
 \x00\x00\x01\x14\
 curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,sntrup761x25519-sha512@openssh.com,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,ext-info-c\
 \x00\x00\x01\xcf\
