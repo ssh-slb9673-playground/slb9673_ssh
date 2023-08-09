@@ -1,6 +1,6 @@
-use std::net::{SocketAddr, TcpStream};
-use std::io::{Result, ErrorKind, Error, Write};
 use std::io::Read;
+use std::io::{Error, ErrorKind, Result, Write};
+use std::net::{SocketAddr, TcpStream};
 
 pub struct TcpClient {
     pub address: SocketAddr,
@@ -20,7 +20,7 @@ impl TcpClient {
 
     pub fn recv(&mut self) -> Result<Vec<u8>> {
         let mut recv_data = [0; 65535];
-		let packet_length = self.client.read(&mut recv_data)?;
+        let packet_length = self.client.read(&mut recv_data)?;
         if recv_data.is_empty() {
             Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
         } else {

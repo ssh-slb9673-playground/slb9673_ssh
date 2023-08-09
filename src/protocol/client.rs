@@ -33,7 +33,7 @@ impl SshClient {
         })
     }
 
-    pub fn connection_setup(&mut self) -> Result<Vec<u8>, DisconnectCode> {
+    pub fn connection_setup(&mut self) -> Result<&[u8], DisconnectCode> {
         let version = self.version_exchange()?;
         println!("{:?}", version);
         let kex_algorithms = self.key_exchange_init()?;
@@ -56,8 +56,7 @@ impl SshClient {
             NoneMac::new(kex.integrity_key_server_to_client()),
         );
         let user_auth = self.user_auth(&mut enc_from_server, &mut enc_to_server)?;
-        user_auth;
-        Ok(vec![])
+        Ok(user_auth)
     }
 
     fn version_exchange(&mut self) -> Result<Version, DisconnectCode> {
