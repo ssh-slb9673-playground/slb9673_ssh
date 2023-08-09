@@ -35,13 +35,29 @@ enum Method {
     none,
 }
 
-struct Authentication {
+pub struct Authentication {
     user_name: String,
     service_name: String,
-    method_name: Method,
-    et: bool,
-    algorithm_name: bool,
-    public_key_blob: bool,
+    method_name: String,
+}
+
+impl Authentication {
+    pub fn new(user_name: &str, service_name: &str, method_name: &str) -> Self {
+        Authentication {
+            user_name: user_name.to_string(),
+            service_name: service_name.to_string(),
+            method_name: method_name.to_string(),
+        }
+    }
+    pub fn generate_authentication(&self) -> Vec<u8> {
+        let mut packet = Vec::new();
+        // SSH_MSG_USERAUTH_REQUEST
+        packet.extend(vec![50]);
+        packet.extend(self.user_name.clone().into_bytes());
+        packet.extend(self.service_name.clone().into_bytes());
+        packet.extend(self.method_name.clone().into_bytes());
+        packet
+    }
 }
 
 // SSH_MSG_USERAUTH_REQUEST            50

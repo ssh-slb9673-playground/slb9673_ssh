@@ -24,6 +24,15 @@ pub trait MAC {
     fn generate(&self, msg: &[u8]) -> Vec<u8>;
 }
 
+pub struct NoneMac {}
+impl MAC for NoneMac {
+    fn new(key: Vec<u8>) -> Self {
+        NoneMac {}
+    }
+    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+        vec![]
+    }
+}
 pub struct HmacSha1 {
     pub key: Vec<u8>,
 }
@@ -66,7 +75,7 @@ impl MAC for HmacSha2_256 {
     }
 }
 
-struct HmacSha2_512 {
+pub struct HmacSha2_512 {
     key: Vec<u8>,
 }
 impl MAC for HmacSha2_512 {

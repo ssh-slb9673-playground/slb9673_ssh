@@ -2,7 +2,9 @@ use rand::prelude::*;
 use std::io;
 use std::net::SocketAddr;
 
+use crate::crypto::encryption::{chacha20_poly1305, Encryption};
 use crate::crypto::key_exchage::{Curve25519Sha256, KexMethod};
+use crate::crypto::mac::{HmacSha2_256, NoneMac, MAC};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
 use crate::protocol::error::DisconnectCode;
@@ -11,6 +13,8 @@ use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::version_exchange::Version;
 use crate::utils::hex;
 
+use super::authentification::Authentication;
+use super::encrypted_packet::EncryptedPacket;
 use super::key_exchange::Kex;
 
 pub struct SshClient {
@@ -36,6 +40,22 @@ impl SshClient {
         println!("{:?}", kex_algorithms);
         let kex = self.key_exchange::<Curve25519Sha256>(&kex_algorithms.cookie)?;
         println!("{:?}", hex(&kex.exchange_hash));
+        let enc_from_server = EncryptedPacket::new(
+            chacha20_poly1305::new(
+                &kex.encryption_key_server_to_client(),
+                &kex.initiali_iv_server_to_client(),
+            ),
+            NoneMac::new(kex.integrity_key_client_to_server()),
+        );
+        let enc_to_server = EncryptedPacket::new(
+            chacha20_poly1305::new(
+                &kex.encryption_key_client_to_server(),
+                &kex.initiali_iv_client_to_server(),
+            ),
+            NoneMac::new(kex.integrity_key_server_to_client()),
+        );
+        let user_auth = self.user_auth(enc_from_server, enc_to_server);
+        user_auth;
         Ok(vec![])
     }
 
@@ -91,7 +111,7 @@ impl SshClient {
             first_kex_packet_follows: kex_algorithms.first_kex_packet_follows,
         };
         let packet = kex_algorithms.generate_key_exchange_init();
-        let packet = BinaryPacket::new(packet).generate_binary_packet();
+        let packet = BinaryPacket::new(&packet).generate_binary_packet();
         self.client
             .send(&packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
@@ -105,7 +125,7 @@ impl SshClient {
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
         let payload = generate_key_exchange::<Method>(&method);
-        let packet = BinaryPacket::new(payload).generate_binary_packet();
+        let packet = BinaryPacket::new(&payload).generate_binary_packet();
         self.client
             .send(&packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
@@ -127,11 +147,24 @@ impl SshClient {
 
         // New Keys
         let payload: Vec<u8> = vec![0x15];
-        let packet = BinaryPacket::new(payload).generate_binary_packet();
+        let packet = BinaryPacket::new(&payload).generate_binary_packet();
         self.client
             .send(&packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
         Ok(Kex::<Method>::new(method, &shared_secret, sesion_id))
+    }
+
+    fn user_auth<E: Encryption, M: MAC>(
+        &mut self,
+        enc_from_server: EncryptedPacket<E, M>,
+        enc_to_server: EncryptedPacket<E, M>,
+    ) -> Result<&[u8], DisconnectCode> {
+        let auth = Authentication::new("anko", "test", "publickey");
+        let packet = auth.generate_authentication();
+        self.client
+            .send(&packet)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        Ok(&[])
     }
 
     pub fn send(&self) {}

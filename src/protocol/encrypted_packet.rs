@@ -1,22 +1,30 @@
-use crate::crypto::mac::MAC;
+use nom::ExtendInto;
 
-use super::key_exchange::Kex;
+use crate::crypto::{encryption::Encryption, mac::MAC};
 
-pub struct EncryptedPacket {
-    packet_length: u32,
-    encrypted_packet: Vec<u8>,
-    mac: Vec<u8>,
+use super::binary_packet::BinaryPacket;
+
+pub struct EncryptedPacket<E: Encryption, M: MAC> {
+    sequence_number: u32,
+    enc_method: E,
+    mac_method: M,
 }
 
-impl EncryptedPacket {
-    fn new<T: MAC>(encrypted_payload: &[u8], mac_method: T) -> Self {
-        let packet_length = encrypted_payload.len() as u32;
-        let mac = mac_method.generate(encrypted_payload);
+impl<E: Encryption, M: MAC> EncryptedPacket<E, M> {
+    pub fn new(enc_method: E, mac_method: M) -> Self {
         EncryptedPacket {
-            packet_length,
-            encrypted_packet: encrypted_payload.to_vec(),
-            mac,
+            sequence_number: 0,
+            enc_method,
+            mac_method,
         }
     }
-    fn generate_encrypted_packet(&self) {}
+    pub fn generate_encrypted_packet(&self, payload: &[u8]) -> Vec<u8> {
+        let packet = BinaryPacket::new(payload).generate_binary_packet();
+        let mut encrypted_packet = self.enc_method.encrypt(&packet).unwrap();
+        let mut data = self.sequence_number.to_be_bytes().to_vec();
+        data.extend(encrypted_packet);
+        let mac = self.mac_method.generate(&data);
+        encrypted_packet.extend(&mac);
+        encrypted_packet
+    }
 }

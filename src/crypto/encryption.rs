@@ -12,12 +12,12 @@ use chacha20poly1305::ChaCha20Poly1305;
 // aes192 (cbc, ctr, gcm)	192 bits
 // aes256 (cbc, ctr, gcm)	256 bits
 
-trait Encryption {
+pub trait Encryption {
     fn encrypt(&self, plaintext: &[u8]) -> Option<Vec<u8>>;
     fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>>;
 }
 
-struct aes256_gcm {
+pub struct aes256_gcm {
     cipher: Aes256Gcm,
     nonce: Nonce<typenum::U12>,
 }
@@ -38,7 +38,7 @@ impl Encryption for aes256_gcm {
     }
 }
 
-struct aes128_gcm {
+pub struct aes128_gcm {
     cipher: Aes128Gcm,
     nonce: Nonce<typenum::U12>,
 }
@@ -59,12 +59,12 @@ impl Encryption for aes128_gcm {
     }
 }
 
-struct chacha20_poly1305 {
+pub struct chacha20_poly1305 {
     cipher: ChaCha20Poly1305,
     nonce: Nonce<typenum::U12>,
 }
 impl chacha20_poly1305 {
-    fn new() -> Self {
+    pub fn new(key: &[u8], nonce: &[u8]) -> Self {
         let key = ChaCha20Poly1305::generate_key(&mut OsRng);
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
         let cipher = ChaCha20Poly1305::new(&key);
