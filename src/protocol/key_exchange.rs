@@ -1,13 +1,9 @@
 use nom::{
-    error::{Error, ErrorKind},
     number::complete::{be_u32, be_u8},
-    Err, IResult,
+    IResult,
 };
 
-use crate::{
-    crypto::key_exchage::{Curve25519Sha256, KexMethod},
-    protocol::utils::parse_string,
-};
+use crate::{crypto::key_exchage::KexMethod, protocol::utils::parse_string};
 
 use super::utils::generate_string;
 

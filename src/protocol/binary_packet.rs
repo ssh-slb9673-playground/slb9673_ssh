@@ -22,7 +22,6 @@ impl BinaryPacket {
         let payload_length = (payload.len() + 1) as u32;
         let packet_length = (payload_length + 7) / 4 * 4;
         let padding_length = (packet_length - payload_length) as u8;
-        println!("{} {} {}", payload_length, packet_length, padding_length);
         BinaryPacket {
             packet_length,
             padding_length,
