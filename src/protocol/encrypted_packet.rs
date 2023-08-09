@@ -22,7 +22,7 @@ impl<E: Encryption, M: MAC> EncryptedPacket<E, M> {
         let packet = BinaryPacket::new(payload).generate_binary_packet();
         let mut encrypted_packet = self.enc_method.encrypt(&packet).unwrap();
         let mut data = self.sequence_number.to_be_bytes().to_vec();
-        data.extend(encrypted_packet);
+        data.extend(&encrypted_packet);
         let mac = self.mac_method.generate(&data);
         encrypted_packet.extend(&mac);
         encrypted_packet
