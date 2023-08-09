@@ -1,12 +1,16 @@
-use std::io;
 use rand::prelude::*;
+use std::io;
 use std::net::SocketAddr;
 
+use crate::crypto::key_exchage::{Curve25519Sha256, KexMethod};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
 use crate::protocol::error::DisconnectCode;
 use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::version_exchange::Version;
+use crate::utils::hex;
+
+use super::key_exchange::Kex;
 
 pub struct SshClient {
     address: SocketAddr,
@@ -29,6 +33,8 @@ impl SshClient {
         println!("{:?}", version);
         let kex_algorithms = self.key_exchange_init()?;
         println!("{:?}", kex_algorithms);
+        let kex = self.key_exchange::<Curve25519Sha256>(&kex_algorithms.cookie)?;
+        println!("{:?}", kex);
         Ok(vec![])
     }
 
@@ -39,7 +45,9 @@ impl SshClient {
             "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
         );
         let version_exchange_packet = version.generate_version();
-        self.client.send(&version_exchange_packet).map_err(|x| DisconnectCode::HostNotAllowedToConnect)?;
+        self.client
+            .send(&version_exchange_packet)
+            .map_err(|x| DisconnectCode::HostNotAllowedToConnect)?;
 
         // recv version
         let version_exchange_init_packet = self
@@ -58,38 +66,65 @@ impl SshClient {
             .recv()
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_init_packet)
-             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
-        let (input, kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (input, kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
 
         // send key algorithms
         let kex_algorithms = KexAlgorithms {
             cookie: rand::thread_rng().gen::<[u8; 16]>().to_vec(),
-                kex_algorithms: kex_algorithms.kex_algorithms,
-                server_host_key_algorithms: vec!["ssh-rsa".to_string()],
-                encryption_algorithms_client_to_server: kex_algorithms.
-                    encryption_algorithms_client_to_server,
-                encryption_algorithms_server_to_client: kex_algorithms.
-                    encryption_algorithms_server_to_client,
-                mac_algorithms_client_to_server: kex_algorithms.mac_algorithms_client_to_server,
-                mac_algorithms_server_to_client: kex_algorithms.mac_algorithms_server_to_client,
-                compression_algorithms_client_to_server: kex_algorithms.
-                    compression_algorithms_client_to_server,
-                compression_algorithms_server_to_client: kex_algorithms.
-                    compression_algorithms_server_to_client,
-                languages_client_to_server: kex_algorithms.languages_client_to_server,
-                languages_server_to_client: kex_algorithms.languages_server_to_client,
-                first_kex_packet_follows: kex_algorithms.first_kex_packet_follows,
+            kex_algorithms: kex_algorithms.kex_algorithms,
+            server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
+            encryption_algorithms_client_to_server: kex_algorithms
+                .encryption_algorithms_client_to_server,
+            encryption_algorithms_server_to_client: kex_algorithms
+                .encryption_algorithms_server_to_client,
+            mac_algorithms_client_to_server: kex_algorithms.mac_algorithms_client_to_server,
+            mac_algorithms_server_to_client: kex_algorithms.mac_algorithms_server_to_client,
+            compression_algorithms_client_to_server: kex_algorithms
+                .compression_algorithms_client_to_server,
+            compression_algorithms_server_to_client: kex_algorithms
+                .compression_algorithms_server_to_client,
+            languages_client_to_server: kex_algorithms.languages_client_to_server,
+            languages_server_to_client: kex_algorithms.languages_server_to_client,
+            first_kex_packet_follows: kex_algorithms.first_kex_packet_follows,
         };
-        println!("{:?}", kex_algorithms);
         let packet = kex_algorithms.generate_key_exchange_init();
         let packet = BinaryPacket::new(packet).generate_binary_packet();
-        self.client.send(&packet).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        self.client
+            .send(&packet)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
 
         Ok(kex_algorithms)
     }
 
-    fn key_exchange(&mut self) {
+    fn key_exchange<Method: KexMethod>(
+        &mut self,
+        sesion_id: &[u8],
+    ) -> Result<Vec<u8>, DisconnectCode> {
+        // let kex = Method::new();
+        let mut kex = Kex::<Method>::new(sesion_id);
+        let payload = kex.generate_key_exchange();
+        let packet = BinaryPacket::new(payload).generate_binary_packet();
+        self.client
+            .send(&packet)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
 
+        let key_exchange_packet = self
+            .client
+            .recv()
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_packet)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (input, server_public_key) = Kex::<Method>::parse_key_exchange(payload, sesion_id)
+            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+
+        let shared_secret = kex.method.shared_secret(&server_public_key);
+
+        println!("client pubkey: {}", hex(&kex.method.public_key()));
+        println!("server pubkey: {}", hex(&server_public_key));
+        println!("shared_secret: {}", hex(&shared_secret));
+        Ok(shared_secret)
     }
 
     pub fn send(&self) {}

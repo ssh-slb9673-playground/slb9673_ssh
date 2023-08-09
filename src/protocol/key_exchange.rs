@@ -1,26 +1,117 @@
-use nom::{number::complete::be_u8, IResult};
+use nom::{
+    error::{Error, ErrorKind},
+    number::complete::{be_u32, be_u8},
+    Err, IResult,
+};
 
-use crate::crypto::key_exchage::{Curve25519Sha256, Kex};
+use crate::{
+    crypto::key_exchage::{Curve25519Sha256, KexMethod},
+    protocol::utils::parse_string,
+};
 
-struct KeyExchange {}
+use super::utils::generate_string;
 
-fn parse_key_exchange(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
-    let (input, message_code) = be_u8(input)?;
-    match message_code {
-        0x1e => {
-            Kex::<Curve25519Sha256> {
-                method: Curve25519Sha256::new(),
-                shared_secret_key: vec![],
-                exchange_hash: vec![],
-                session_id: vec![],
-            };
-        }
-        _ => {}
-    };
-    Ok((input, vec![]))
+#[derive(Debug)]
+pub struct Kex<T: KexMethod> {
+    pub method: T,
+    pub shared_secret_key: Vec<u8>,
+    pub exchange_hash: Vec<u8>,
+    pub session_id: Vec<u8>,
 }
 
-fn generate_key_exchange() {}
+// Initial IV client to server: HASH(K || H || "A" || session_id) (Here K is encoded as mpint and "A" as byte and session_id as raw data.  "A" means the single character A, ASCII 65).
+// Initial IV server to client: HASH(K || H || "B" || session_id)
+// Encryption key client to server: HASH(K || H || "C" || session_id)
+// Encryption key server to client: HASH(K || H || "D" || session_id)
+// Integrity key client to server: HASH(K || H || "E" || session_id)
+// Integrity key server to client: HASH(K || H || "F" || session_id)
+impl<T: KexMethod> Kex<T> {
+    pub fn new(session_id: &[u8]) -> Self {
+        Kex::<T> {
+            method: T::new(),
+            shared_secret_key: vec![],
+            exchange_hash: vec![],
+            session_id: session_id.to_vec(),
+        }
+    }
+
+    pub fn initiali_iv_client_to_server(&self) -> Vec<u8> {
+        let mut seed: Vec<u8> = vec![];
+        seed.extend(&self.shared_secret_key);
+        seed.extend(&self.exchange_hash);
+        seed.extend("A".as_bytes());
+        seed.extend(&self.session_id);
+        self.method.hash(&seed)
+    }
+
+    pub fn initiali_iv_server_to_client(&self) -> Vec<u8> {
+        let mut seed: Vec<u8> = vec![];
+        seed.extend(&self.shared_secret_key);
+        seed.extend(&self.exchange_hash);
+        seed.extend("B".as_bytes());
+        seed.extend(&self.session_id);
+        self.method.hash(&seed)
+    }
+
+    pub fn encryption_key_client_to_server(&self) -> Vec<u8> {
+        let mut seed: Vec<u8> = vec![];
+        seed.extend(&self.shared_secret_key);
+        seed.extend(&self.exchange_hash);
+        seed.extend("C".as_bytes());
+        seed.extend(&self.session_id);
+        self.method.hash(&seed)
+    }
+
+    pub fn encryption_key_server_to_client(&self) -> Vec<u8> {
+        let mut seed: Vec<u8> = vec![];
+        seed.extend(&self.shared_secret_key);
+        seed.extend(&self.exchange_hash);
+        seed.extend("D".as_bytes());
+        seed.extend(&self.session_id);
+        self.method.hash(&seed)
+    }
+
+    pub fn integrity_key_client_to_server(&self) -> Vec<u8> {
+        let mut seed: Vec<u8> = vec![];
+        seed.extend(&self.shared_secret_key);
+        seed.extend(&self.exchange_hash);
+        seed.extend("E".as_bytes());
+        seed.extend(&self.session_id);
+        self.method.hash(&seed)
+    }
+
+    pub fn integrity_key_server_to_client(&self) -> Vec<u8> {
+        let mut seed: Vec<u8> = vec![];
+        seed.extend(&self.shared_secret_key);
+        seed.extend(&self.exchange_hash);
+        seed.extend("F".as_bytes());
+        seed.extend(&self.session_id);
+        self.method.hash(&seed)
+    }
+
+    pub fn parse_key_exchange<'a>(
+        input: &'a [u8],
+        session_id: &[u8],
+    ) -> IResult<&'a [u8], Vec<u8>> {
+        let (input, message_code) = be_u8(input)?;
+        assert!(message_code == 0x1f);
+        // KEX host key
+        let (input, host_key_length) = be_u32(input)?;
+        let (input, host_key_type) = parse_string(input)?;
+        let (input, rsa_public_exponent) = parse_string(input)?;
+        let (input, rsa_modulus) = parse_string(input)?;
+
+        let (input, public_key) = parse_string(input)?;
+
+        Ok((input, public_key))
+    }
+
+    pub fn generate_key_exchange(&self) -> Vec<u8> {
+        let mut packet = vec![0x1e];
+        packet.extend(&generate_string(&self.method.public_key()));
+        packet
+    }
+}
 
 /*
 00000609  00 00 00 2c 06 1e 00 00  00 20 11 2e 9a 73 e2 53   ...,.... . ...s.S

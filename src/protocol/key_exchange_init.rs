@@ -1,5 +1,10 @@
 use crate::{protocol::utils::parse_string, utils::hexdump};
-use nom::{bytes::complete::take, number::complete::{be_u32, be_u8}, IResult, error::Error};
+use nom::{
+    bytes::complete::take,
+    error::Error,
+    number::complete::{be_u32, be_u8},
+    IResult,
+};
 
 use super::utils::generate_string;
 
@@ -23,6 +28,7 @@ pub struct KexAlgorithms {
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, message_id) = be_u8(input)?;
+        println!("{}", message_id);
         assert!(message_id == 20);
         let (input, cookie) = take(16u8)(input)?;
         let (input, kex_algorithms) = parse_string(input)?;
@@ -68,35 +74,35 @@ impl KexAlgorithms {
     pub fn generate_key_exchange_init(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![20];
         packet.extend(&self.cookie);
-        packet.extend(generate_string(generate_namelist(&self.kex_algorithms)));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(&self.kex_algorithms)));
+        packet.extend(generate_string(&generate_namelist(
             &self.server_host_key_algorithms,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.encryption_algorithms_client_to_server,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.encryption_algorithms_server_to_client,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.mac_algorithms_client_to_server,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.mac_algorithms_server_to_client,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.compression_algorithms_client_to_server,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.compression_algorithms_server_to_client,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.languages_client_to_server,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.languages_server_to_client,
         )));
-        packet.extend(generate_string(generate_namelist(
+        packet.extend(generate_string(&generate_namelist(
             &self.languages_server_to_client,
         )));
         packet.extend((self.first_kex_packet_follows as u8).to_be_bytes().to_vec());
@@ -112,8 +118,8 @@ fn parse_namelist(algorithms: Vec<u8>) -> NameList {
         .collect()
 }
 
-fn generate_namelist(input: &NameList) -> String {
-    input.join(",")
+fn generate_namelist(input: &NameList) -> Vec<u8> {
+    input.join(",").into_bytes()
 }
 
 // When acting as server: "ext-info-s"
