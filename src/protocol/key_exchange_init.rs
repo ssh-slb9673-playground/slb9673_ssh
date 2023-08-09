@@ -1,7 +1,6 @@
-use crate::{protocol::utils::parse_string, utils::hexdump};
+use crate::protocol::utils::parse_string;
 use nom::{
     bytes::complete::take,
-    error::Error,
     number::complete::{be_u32, be_u8},
     IResult,
 };
@@ -150,8 +149,8 @@ none,zlib@openssh.com,zlib\
     assert!(parsed.is_ok());
     let (_, algo) = parsed.unwrap();
     let gen_packet = algo.generate_key_exchange_init();
-    hexdump(packet);
-    hexdump(&gen_packet);
+    // hexdump(packet);
+    // hexdump(&gen_packet);
     assert!(packet[..] == gen_packet[..]);
 }
 
