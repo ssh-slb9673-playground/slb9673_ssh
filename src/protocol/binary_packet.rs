@@ -7,7 +7,7 @@ use crate::crypto::encryption::Encryption;
 use crate::crypto::mac::MAC;
 use crate::utils::hex;
 
-use super::session::SessionState;
+use super::session::Session;
 use super::utils::parse_string;
 
 //   uint32    packet_length
@@ -38,10 +38,7 @@ impl BinaryPacket {
         }
     }
 
-    pub fn from_bytes<'a>(
-        input: &'a [u8],
-        session: &SessionState,
-    ) -> IResult<&'a [u8], BinaryPacket> {
+    pub fn from_bytes<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], BinaryPacket> {
         let mac_length: usize = 0;
         let (input, packet) = parse_string(input)?;
         let (input, packet_length) = be_u32(input)?;
@@ -62,7 +59,7 @@ impl BinaryPacket {
         ))
     }
 
-    pub fn to_bytes(&self, session: &SessionState) -> Vec<u8> {
+    pub fn to_bytes(&self, session: &Session) -> Vec<u8> {
         let mut packet = vec![];
         packet.extend(self.packet_length.to_be_bytes());
         packet.extend(self.padding_length.to_be_bytes());

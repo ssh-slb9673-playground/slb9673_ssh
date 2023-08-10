@@ -41,7 +41,7 @@ impl NewKeys {
     }
 }
 
-pub struct SessionState<'a> {
+pub struct Session<'a> {
     pub client_method: NewKeys,
     pub server_method: NewKeys,
 
@@ -55,9 +55,9 @@ pub struct SessionState<'a> {
     pub server_kex: Option<&'a KexAlgorithms>,
 }
 
-impl<'a> SessionState<'a> {
+impl<'a> Session<'a> {
     pub fn init_state() -> Self {
-        SessionState {
+        Session {
             client_method: NewKeys::init_state(),
             server_method: NewKeys::init_state(),
             client_sequence_number: 0,
@@ -77,7 +77,7 @@ impl<'a> SessionState<'a> {
         client_kex: &'a KexAlgorithms,
         server_kex: &'a KexAlgorithms,
     ) -> Self {
-        SessionState {
+        Session {
             client_method,
             server_method,
             client_sequence_number: 0,

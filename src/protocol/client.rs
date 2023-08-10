@@ -18,7 +18,7 @@ use crate::utils::{hex, hexdump};
 
 use super::authentification::Authentication;
 use super::key_exchange::Kex;
-use super::session::{NewKeys, SessionState};
+use super::session::{NewKeys, Session};
 use super::ssh2::MessageCode;
 
 pub struct SshClient {
@@ -38,7 +38,7 @@ impl SshClient {
     }
 
     pub fn connection_setup(&mut self) -> Result<&[u8], DisconnectCode> {
-        let session = SessionState::init_state();
+        let session = Session::init_state();
         let (client_version, server_version) = self.version_exchange()?;
         let (client_kex_algorithms, server_kex_algorithms) = self.key_exchange_init(&session)?;
         let kex = self.key_exchange::<Curve25519Sha256>(
@@ -49,7 +49,7 @@ impl SshClient {
             &server_kex_algorithms,
             &session,
         )?;
-        let mut session = SessionState::new(
+        let mut session = Session::new(
             NewKeys::new(
                 Box::new(aes128_ctr::new(
                     &kex.encryption_key_server_to_client(),
@@ -93,7 +93,7 @@ impl SshClient {
 
     fn key_exchange_init(
         &mut self,
-        session: &SessionState,
+        session: &Session,
     ) -> Result<(KexAlgorithms, KexAlgorithms), DisconnectCode> {
         // recv key algorithms
         let packet = self.recv()?;
@@ -139,7 +139,7 @@ impl SshClient {
         server_version: &Version,
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
-        session: &SessionState,
+        session: &Session,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
         let payload = generate_key_exchange::<Method>(&method);
@@ -175,7 +175,7 @@ impl SshClient {
         ))
     }
 
-    fn user_auth(&mut self, session: SessionState) -> Result<&[u8], DisconnectCode> {
+    fn user_auth(&mut self, session: Session) -> Result<&[u8], DisconnectCode> {
         let auth = Authentication::new("anko", "test", "publickey");
         let packet = auth.to_bytes();
         // let packet = enc_server_to_client.generate_encrypted_packet(&packet);
