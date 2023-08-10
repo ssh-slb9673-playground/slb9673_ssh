@@ -3,17 +3,7 @@ use flate2::write::ZlibEncoder;
 use flate2::Compression;
 use std::io::{prelude::*, Result};
 
-// none     REQUIRED        no compression
-// zlib     OPTIONAL        ZLIB (LZ77) compression
-enum CompressionAlgorithm {
-    Zlib,
-    None,
-}
-
-pub trait Compress {
-    fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>>;
-    fn decompress(&self, msg: Vec<u8>) -> Result<Vec<u8>>;
-}
+use super::Compress;
 
 pub struct Zlib {}
 impl Compress for Zlib {
@@ -28,15 +18,5 @@ impl Compress for Zlib {
         let mut result = vec![];
         d.read(&mut result)?;
         Ok(result)
-    }
-}
-
-pub struct NoneCompress {}
-impl Compress for NoneCompress {
-    fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
-        Ok(msg)
-    }
-    fn decompress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
-        Ok(msg)
     }
 }
