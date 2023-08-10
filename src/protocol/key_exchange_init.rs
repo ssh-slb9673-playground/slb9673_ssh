@@ -1,11 +1,14 @@
-use crate::protocol::utils::{parse_namelist, parse_string};
+use crate::protocol::utils::parse_namelist;
 use nom::{
     bytes::complete::take,
     number::complete::{be_u32, be_u8},
     IResult,
 };
 
-use super::utils::{generate_namelist, generate_string, NameList};
+use super::{
+    ssh2::MessageCode,
+    utils::{generate_namelist, NameList},
+};
 
 #[derive(Debug)]
 pub struct KexAlgorithms {
@@ -26,7 +29,7 @@ pub struct KexAlgorithms {
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, message_id) = be_u8(input)?;
-        assert!(message_id == 20);
+        assert!(message_id == MessageCode::SSH_MSG_KEXINIT.to_u8());
         let (input, cookie) = take(16u8)(input)?;
         let (input, kex_algorithms) = parse_namelist(input)?;
         let (input, server_host_key_algorithms) = parse_namelist(input)?;
@@ -61,7 +64,7 @@ impl KexAlgorithms {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut packet: Vec<u8> = vec![20];
+        let mut packet: Vec<u8> = vec![MessageCode::SSH_MSG_KEXINIT.to_u8()];
         packet.extend(&self.cookie);
         packet.extend(generate_namelist(&self.kex_algorithms));
         packet.extend(generate_namelist(&self.server_host_key_algorithms));

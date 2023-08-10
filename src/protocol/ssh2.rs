@@ -70,7 +70,7 @@ pub enum MessageCode {
 }
 
 impl MessageCode {
-    fn to_u8(&self) -> u8 {
+    pub fn to_u8(&self) -> u8 {
         match *self {
             MessageCode::SSH_MSG_DISCONNECT => 1,
             MessageCode::SSH_MSG_IGNORE => 2,
