@@ -7,9 +7,9 @@ use crate::crypto::key_exchage::{Curve25519Sha256, KexMethod};
 use crate::crypto::mac::{HmacSha2_256, NoneMac, MAC};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
-use crate::protocol::error::DisconnectCode;
 use crate::protocol::key_exchange::{generate_key_exchange, parse_key_exchange};
 use crate::protocol::key_exchange_init::KexAlgorithms;
+use crate::protocol::ssh2::DisconnectCode;
 use crate::protocol::version_exchange::Version;
 use crate::utils::{hex, hexdump};
 
@@ -40,6 +40,7 @@ impl SshClient {
         let (client_kex_algorithms, server_kex_algorithms) = self.key_exchange_init()?;
         println!("{:?}", client_kex_algorithms);
         println!("cookie: {:?}", hex(&client_kex_algorithms.cookie));
+        println!("cookie: {:?}", hex(&server_kex_algorithms.cookie));
         let kex = self.key_exchange::<Curve25519Sha256>(
             &client_kex_algorithms.cookie,
             client_version,
