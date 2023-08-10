@@ -50,14 +50,6 @@ impl KexMethod for DiffieHellmanGroup14Sha1 {
     }
 }
 
-// string   V_C, client's identification string (CR and LF excluded)
-// string   V_S, server's identification string (CR and LF excluded)
-// string   I_C, payload of the client's SSH_MSG_KEXINIT
-// string   I_S, payload of the server's SSH_MSG_KEXINIT
-// string   K_S, server's public host key
-// string   Q_C, client's ephemeral public key octet string
-// string   Q_S, server's ephemeral public key octet string
-// mpint    K,   shared secret
 pub struct Curve25519Sha256 {
     private_key: Option<EphemeralSecret>,
     public_key: PublicKey,

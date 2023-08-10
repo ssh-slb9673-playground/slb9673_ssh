@@ -30,7 +30,7 @@ impl SshServer {
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
             "Ubuntu-3ubuntu0.1".to_string(),
         );
-        let version_exchange_packet = version.generate_version();
+        let version_exchange_packet = version.generate_version(true);
         let kex = KexAlgorithms {
             cookie: vec![],
             kex_algorithms: vec!["a".to_string()],

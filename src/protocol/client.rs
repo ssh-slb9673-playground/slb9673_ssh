@@ -82,7 +82,7 @@ impl SshClient {
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
             "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
         );
-        let version_exchange_packet = client_version.generate_version();
+        let version_exchange_packet = client_version.generate_version(true);
         self.client
             .send(&version_exchange_packet)
             .map_err(|_| DisconnectCode::HostNotAllowedToConnect)?;

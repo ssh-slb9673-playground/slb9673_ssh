@@ -22,6 +22,15 @@ pub struct Kex<T: KexMethod> {
 // Encryption key server to client: HASH(K || H || "D" || session_id)
 // Integrity key client to server: HASH(K || H || "E" || session_id)
 // Integrity key server to client: HASH(K || H || "F" || session_id)
+
+// string   V_C, client's identification string (CR and LF excluded)
+// string   V_S, server's identification string (CR and LF excluded)
+// string   I_C, payload of the client's SSH_MSG_KEXINIT
+// string   I_S, payload of the server's SSH_MSG_KEXINIT
+// string   K_S, server's public host key
+// string   Q_C, client's ephemeral public key octet string
+// string   Q_S, server's ephemeral public key octet string
+// mpint    K,   shared secret
 impl<T: KexMethod> Kex<T> {
     pub fn new(
         method: T,
@@ -36,8 +45,8 @@ impl<T: KexMethod> Kex<T> {
         shared_secret: &[u8],
     ) -> Self {
         let mut data = vec![];
-        data.extend(generate_string(&client_version.generate_version_for_kex()));
-        data.extend(generate_string(&server_version.generate_version_for_kex()));
+        data.extend(generate_string(&client_version.generate_version(false)));
+        data.extend(generate_string(&server_version.generate_version(false)));
         data.extend(generate_string(&client_kex.generate_key_exchange_init()));
         data.extend(generate_string(&server_kex.generate_key_exchange_init()));
         data.extend(generate_string(server_public_host_key));

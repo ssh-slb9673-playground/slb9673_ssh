@@ -15,7 +15,6 @@ use crate::utils::hex;
 // aes128 (cbc, ctr, gcm)	128 bits
 // aes192 (cbc, ctr, gcm)	192 bits
 // aes256 (cbc, ctr, gcm)	256 bits
-
 pub trait Encryption {
     fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>>;
     fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>>;
