@@ -28,7 +28,7 @@
 // string    user name on the client host in ISO-10646 UTF-8 encoding [RFC3629]
 // string    signature
 
-use super::utils::generate_string;
+use super::{ssh2::MessageCode, utils::generate_string};
 
 enum Method {
     publickey,
@@ -51,13 +51,10 @@ impl Authentication {
             method_name: method_name.to_string(),
         }
     }
-    // SSH_MSG_USERAUTH_REQUEST 50
-    // SSH_MSG_USERAUTH_FAILURE 51
-    // SSH_MSG_USERAUTH_SUCCESS 52
+
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet = Vec::new();
-        // SSH_MSG_USERAUTH_REQUEST
-        packet.extend(vec![50]);
+        packet.extend(vec![MessageCode::SSH_MSG_USERAUTH_REQUEST.to_u8()]);
         packet.extend(generate_string(self.user_name.as_bytes()));
         packet.extend(generate_string(self.service_name.as_bytes()));
         packet.extend(generate_string(self.method_name.as_bytes()));

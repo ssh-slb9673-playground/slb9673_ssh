@@ -19,6 +19,7 @@ use super::authentification::Authentication;
 use super::encrypted_packet::EncryptedPacket;
 use super::key_exchange::Kex;
 use super::server;
+use super::ssh2::MessageCode;
 
 pub struct SshClient {
     address: SocketAddr,
@@ -172,7 +173,7 @@ impl SshClient {
         let shared_secret = method.shared_secret(&server_public_key);
 
         // New Keys
-        let payload: Vec<u8> = vec![0x15];
+        let payload: Vec<u8> = vec![MessageCode::SSH_MSG_NEWKEYS.to_u8()];
         let packet = BinaryPacket::new(&payload).to_bytes(0, &NoneMac {});
         self.client
             .send(&packet)
