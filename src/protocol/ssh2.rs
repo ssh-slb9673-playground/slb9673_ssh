@@ -135,12 +135,6 @@ impl MessageCode {
     }
 }
 
-// pub fn parse_message_code(input: &[u8]) -> IResult<&[u8], MessageCode> {
-//     let (input, message_code) = be_u8(input)?;
-
-//     Ok((input, message_code))
-// }
-
 /* disconnect reason code */
 #[derive(Debug)]
 pub enum DisconnectCode {
@@ -173,7 +167,8 @@ impl std::fmt::Display for DisconnectCode {
     }
 }
 
-enum ErrorCode {
+#[derive(Debug)]
+pub enum ErrorCode {
     SSH_ERR_SUCCESS,
     SSH_ERR_INTERNAL_ERROR,
     SSH_ERR_ALLOC_FAIL,
@@ -329,7 +324,7 @@ impl ErrorCode {
             ErrorCode::SSH_ERR_SIGNATURE_INVALID => "incorrect signature",
             ErrorCode::SSH_ERR_LIBCRYPTO_ERROR => "error in libcrypto", /* XXX fetch and return */
             ErrorCode::SSH_ERR_UNEXPECTED_TRAILING_DATA => "unexpected bytes remain after decoding",
-            ErrorCode::SSH_ERR_SYSTEM_ERROR => strerror(errno),
+            ErrorCode::SSH_ERR_SYSTEM_ERROR => "system error",
             ErrorCode::SSH_ERR_KEY_CERT_INVALID => "invalid certificate",
             ErrorCode::SSH_ERR_AGENT_COMMUNICATION => "communication with agent failed",
             ErrorCode::SSH_ERR_AGENT_FAILURE => "agent refused operation",
