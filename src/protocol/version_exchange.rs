@@ -6,36 +6,29 @@ use nom::IResult;
 // SSH_protoversion_softwareversion SP comments CR LF
 #[derive(Debug, PartialEq)]
 pub struct Version {
-    ssh_protoversion_softwareversion: String,
-    comments: Option<String>,
+    ssh_protoversion_softwareversion: Vec<u8>,
+    comments: Option<Vec<u8>>,
 }
 
 impl Version {
-    pub fn from_version(ssh_protoversion_softwareversion: String) -> Self {
+    pub fn new(ssh_protoversion_softwareversion: &str, comments: Option<&str>) -> Self {
         Version {
-            ssh_protoversion_softwareversion,
-            comments: None,
+            ssh_protoversion_softwareversion: ssh_protoversion_softwareversion.as_bytes().to_vec(),
+            comments: comments.map(|s| s.as_bytes().to_vec()),
         }
     }
 
-    pub fn new(ssh_protoversion_softwareversion: String, comments: String) -> Self {
-        Version {
-            ssh_protoversion_softwareversion,
-            comments: Some(comments),
-        }
-    }
-
-    pub fn parse_version(input: &[u8]) -> IResult<&[u8], Self> {
+    pub fn from_bytes(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, version) = alt((take_until(" "), take_until("\r\n")))(input)?;
         let result = tag::<&str, &[u8], Error<&[u8]>>(" ")(input);
 
-        let version = String::from_utf8(version.to_vec()).unwrap();
+        let version = version;
         if result.is_err() {
             let (input, _) = tag("\r\n")(input)?;
             return Ok((
                 input,
                 Version {
-                    ssh_protoversion_softwareversion: version,
+                    ssh_protoversion_softwareversion: version.to_vec(),
                     comments: None,
                 },
             ));
@@ -44,43 +37,38 @@ impl Version {
         let (input, _) = tag(" ")(input)?;
         let (input, comments) = take_until("\r\n")(input)?;
         let (input, _) = tag("\r\n")(input)?;
-
-        let comments = String::from_utf8(comments.to_vec()).unwrap();
         Ok((
             input,
             Version {
-                ssh_protoversion_softwareversion: version,
-                comments: Some(comments),
+                ssh_protoversion_softwareversion: version.to_vec(),
+                comments: Some(comments.to_vec()),
             },
         ))
     }
 
-    pub fn generate_version(&self, crnl: bool) -> Vec<u8> {
-        let mut payload = self.ssh_protoversion_softwareversion.to_string();
+    pub fn to_bytes(&self, crnl: bool) -> Vec<u8> {
+        let mut payload = self.ssh_protoversion_softwareversion.to_vec();
         if let Some(comments) = &self.comments {
-            payload += " ";
-            payload += comments;
+            payload.extend(" ".as_bytes());
+            payload.extend(comments);
         }
         if crnl {
-            payload += "\r\n";
+            payload.extend("\r\n".as_bytes());
         }
-        payload.into_bytes()
+        payload
     }
 }
 
 #[test]
 fn parse_ssh_version() {
     let packet = b"SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1\r\n";
-    let (input, version_from_packet) = Version::parse_version(packet).unwrap();
-    let version = Version {
-        ssh_protoversion_softwareversion: "SSH-2.0-OpenSSH_8.9p1".to_string(),
-        comments: Some("Ubuntu-3ubuntu0.1".to_string()),
-    };
+    let (input, version_from_packet) = Version::from_bytes(packet).unwrap();
+    let version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
     assert_eq!(version, version_from_packet);
     println!("{:?}", input);
     println!("{:?}", version_from_packet);
     let packet = b"SSH-2.0-babeld-dc5ec9be\r\n";
-    let version = Version::parse_version(packet);
+    let version = Version::from_bytes(packet);
     println!("{:?}", version);
 }
 // 00000000  53 53 48 2d 32 2e 30 2d  4f 70 65 6e 53 53 48 5f   SSH-2.0- OpenSSH_

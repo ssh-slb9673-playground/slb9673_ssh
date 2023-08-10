@@ -24,13 +24,10 @@ impl SshServer {
 
     pub fn connection_setup(&self) -> Result<Vec<u8>> {
         let version_exchange_packet = self.server.recv()?;
-        let version = Version::parse_version(&version_exchange_packet);
+        let version = Version::from_bytes(&version_exchange_packet);
 
-        let version = Version::new(
-            "SSH-2.0-OpenSSH_8.9p1".to_string(),
-            "Ubuntu-3ubuntu0.1".to_string(),
-        );
-        let version_exchange_packet = version.generate_version(true);
+        let version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
+        let version_exchange_packet = version.to_bytes(true);
         let kex = KexAlgorithms {
             cookie: vec![],
             kex_algorithms: vec!["a".to_string()],

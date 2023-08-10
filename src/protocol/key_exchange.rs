@@ -45,8 +45,8 @@ impl<T: KexMethod> Kex<T> {
         shared_secret: &[u8],
     ) -> Self {
         let mut data = vec![];
-        data.extend(generate_string(&client_version.generate_version(false)));
-        data.extend(generate_string(&server_version.generate_version(false)));
+        data.extend(generate_string(&client_version.to_bytes(false)));
+        data.extend(generate_string(&server_version.to_bytes(false)));
         data.extend(generate_string(&client_kex.generate_key_exchange_init()));
         data.extend(generate_string(&server_kex.generate_key_exchange_init()));
         data.extend(generate_string(server_public_host_key));

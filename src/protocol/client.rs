@@ -79,10 +79,10 @@ impl SshClient {
     fn version_exchange(&mut self) -> Result<(Version, Version), DisconnectCode> {
         // send version
         let client_version = Version::new(
-            "SSH-2.0-OpenSSH_8.9p1".to_string(),
-            "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
+            "SSH-2.0-OpenSSH_8.9p1",
+            Some("Ubuntu-3ubuntu0.1wooooooooooo"),
         );
-        let version_exchange_packet = client_version.generate_version(true);
+        let version_exchange_packet = client_version.to_bytes(true);
         self.client
             .send(&version_exchange_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT)?;
@@ -92,7 +92,7 @@ impl SshClient {
             .client
             .recv()
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (input, server_version) = Version::parse_version(&version_exchange_init_packet)
+        let (input, server_version) = Version::from_bytes(&version_exchange_init_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         Ok((client_version, server_version))
     }
