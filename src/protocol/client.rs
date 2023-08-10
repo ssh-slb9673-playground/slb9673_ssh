@@ -85,15 +85,15 @@ impl SshClient {
         let version_exchange_packet = client_version.generate_version(true);
         self.client
             .send(&version_exchange_packet)
-            .map_err(|_| DisconnectCode::HostNotAllowedToConnect)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT)?;
 
         // recv version
         let version_exchange_init_packet = self
             .client
             .recv()
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (input, server_version) = Version::parse_version(&version_exchange_init_packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         Ok((client_version, server_version))
     }
 
@@ -102,11 +102,11 @@ impl SshClient {
         let key_exchange_init_packet = self
             .client
             .recv()
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_init_packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         // send key algorithms
         let client_kex_algorithms = KexAlgorithms {
@@ -137,7 +137,7 @@ impl SshClient {
         let packet = BinaryPacket::new(&packet).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         Ok((client_kex_algorithms, server_kex_algorithms))
     }
@@ -156,16 +156,16 @@ impl SshClient {
         let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         let key_exchange_packet = self
             .client
             .recv()
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
-        let (input, (server_public_host_key, server_public_key)) =
-            parse_key_exchange(payload).map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
+        let (input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         let shared_secret = method.shared_secret(&server_public_key);
 
@@ -174,7 +174,7 @@ impl SshClient {
         let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         Ok(Kex::<Method>::new(
             method,
             session_id,
@@ -200,7 +200,7 @@ impl SshClient {
         let packet = enc_client_to_server.generate_encrypted_packet(&packet);
         self.client
             .send(&packet)
-            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         Ok(&[])
     }

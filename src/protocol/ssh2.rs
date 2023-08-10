@@ -121,14 +121,14 @@ impl MessageCode {
         }
     }
 
-    pub fn from_u8(message_code: u8) -> Self {
-        match message_code {
-            20 => MessageCode::SSH_MSG_KEXINIT,
-            21 => MessageCode::SSH_MSG_NEWKEYS,
-            30 => MessageCode::SSH2_MSG_KEX_ECDH_INIT,
-            31 => MessageCode::SSH2_MSG_KEX_ECDH_REPLY,
-        }
-    }
+    // pub fn from_u8(message_code: u8) -> Self {
+    //     match message_code {
+    //         20 => MessageCode::SSH_MSG_KEXINIT,
+    //         21 => MessageCode::SSH_MSG_NEWKEYS,
+    //         30 => MessageCode::SSH2_MSG_KEX_ECDH_INIT,
+    //         31 => MessageCode::SSH2_MSG_KEX_ECDH_REPLY,
+    //     }
+    // }
 }
 
 /* disconnect reason code */
