@@ -1,17 +1,12 @@
+use nom::{number::complete::be_u8, IResult};
 use std::vec;
 
-use nom::{
-    number::complete::{be_u32, be_u8},
-    IResult,
-};
-
+use super::{key_exchange_init::KexAlgorithms, utils::generate_string, version_exchange::Version};
 use crate::{
     crypto::{key_exchage::KexMethod, mpint::to_mpint},
     protocol::utils::parse_string,
     utils::hex,
 };
-
-use super::{key_exchange_init::KexAlgorithms, utils::generate_string, version_exchange::Version};
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
