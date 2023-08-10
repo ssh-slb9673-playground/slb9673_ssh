@@ -4,7 +4,7 @@ use std::vec;
 use super::{key_exchange_init::KexAlgorithms, utils::generate_string, version_exchange::Version};
 use crate::{
     crypto::key_exchange::KexMethod,
-    protocol::utils::parse_string,
+    protocol::{ssh2::MessageCode, utils::parse_string},
     utils::{hex, hexdump},
 };
 
@@ -124,8 +124,7 @@ impl<T: KexMethod> Kex<T> {
 
 pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (&'a [u8], &'a [u8])> {
     let (input, message_code) = be_u8(input)?;
-    assert!(message_code == 31);
-    // KEX host key
+    assert!(message_code == MessageCode::SSH2_MSG_KEX_ECDH_REPLY.to_u8());
     let (input, host_public_key) = parse_string(input)?;
     let (input, public_key) = parse_string(input)?;
 
@@ -133,7 +132,7 @@ pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (&'a [u8], &
 }
 
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
-    let mut packet = vec![30];
+    let mut packet = vec![MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8()];
     packet.extend(&generate_string(&method.public_key()));
     packet
 }
