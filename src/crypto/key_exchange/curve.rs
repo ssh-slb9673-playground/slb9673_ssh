@@ -1,59 +1,14 @@
 use rand_core::OsRng;
-use sha1::{Digest, Sha1};
-use sha2::{Sha256, Sha512};
+use sha2::{Digest, Sha256, Sha512};
 use x25519_dalek::{EphemeralSecret, PublicKey};
 
-// diffie-hellman-group1-sha1 REQUIRED
-// diffie-hellman-group14-sha1 REQUIRED
-// curve25519-sha256
-// curve448-sha512
-pub trait KexMethod {
-    fn new() -> Self;
-    fn public_key(&self) -> Vec<u8>;
-    fn shared_secret(&mut self, public_key: &[u8]) -> Vec<u8>;
-    fn hash(&self, seed: &[u8]) -> Vec<u8>;
-}
-
-struct DiffieHellmanGroup1Sha1 {}
-impl KexMethod for DiffieHellmanGroup1Sha1 {
-    fn new() -> Self {
-        DiffieHellmanGroup1Sha1 {}
-    }
-    fn public_key(&self) -> Vec<u8> {
-        vec![]
-    }
-    fn shared_secret(&mut self, public_key: &[u8]) -> Vec<u8> {
-        vec![]
-    }
-    fn hash(&self, seed: &[u8]) -> Vec<u8> {
-        let mut hasher = Sha1::new();
-        hasher.update(seed);
-        hasher.finalize().as_slice().to_vec()
-    }
-}
-
-pub struct DiffieHellmanGroup14Sha1 {}
-impl KexMethod for DiffieHellmanGroup14Sha1 {
-    fn new() -> Self {
-        DiffieHellmanGroup14Sha1 {}
-    }
-    fn public_key(&self) -> Vec<u8> {
-        vec![]
-    }
-    fn shared_secret(&mut self, public_key: &[u8]) -> Vec<u8> {
-        vec![]
-    }
-    fn hash(&self, seed: &[u8]) -> Vec<u8> {
-        let mut hasher = Sha1::new();
-        hasher.update(seed);
-        hasher.finalize().as_slice().to_vec()
-    }
-}
+use super::KexMethod;
 
 pub struct Curve25519Sha256 {
     private_key: Option<EphemeralSecret>,
     public_key: PublicKey,
 }
+
 impl KexMethod for Curve25519Sha256 {
     fn new() -> Self {
         let private_key = EphemeralSecret::random_from_rng(OsRng);

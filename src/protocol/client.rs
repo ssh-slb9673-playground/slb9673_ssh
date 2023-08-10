@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use crate::crypto::encryption::{
     aes_ctr::aes128_ctr, aes_gcm::aes256_gcm, chachapoly::chacha20_poly1305, Encryption,
 };
-use crate::crypto::key_exchage::{Curve25519Sha256, KexMethod};
+use crate::crypto::key_exchange::{curve::Curve25519Sha256, KexMethod};
 use crate::crypto::mac::{HmacSha2_256, NoneMac, MAC};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
