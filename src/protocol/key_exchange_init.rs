@@ -1,13 +1,12 @@
-use crate::protocol::utils::parse_string;
+use crate::protocol::utils::{parse_namelist, parse_string};
 use nom::{
     bytes::complete::take,
     number::complete::{be_u32, be_u8},
     IResult,
 };
 
-use super::utils::generate_string;
+use super::utils::{generate_namelist, generate_string, NameList};
 
-type NameList = Vec<String>;
 #[derive(Debug)]
 pub struct KexAlgorithms {
     pub cookie: Vec<u8>,
@@ -106,18 +105,6 @@ impl KexAlgorithms {
         packet.extend((self.first_kex_packet_follows as u8).to_be_bytes().to_vec());
         packet
     }
-}
-
-fn parse_namelist(algorithms: Vec<u8>) -> NameList {
-    String::from_utf8(algorithms)
-        .unwrap()
-        .split(',')
-        .map(|s| s.into())
-        .collect()
-}
-
-fn generate_namelist(input: &NameList) -> Vec<u8> {
-    input.join(",").into_bytes()
 }
 
 // When acting as server: "ext-info-s"

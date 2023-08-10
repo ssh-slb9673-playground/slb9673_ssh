@@ -15,3 +15,19 @@ pub fn generate_string(input: &[u8]) -> Vec<u8> {
     bytes.extend(input);
     bytes
 }
+
+pub fn parse_mpint(input: &[u8]) {}
+
+pub type NameList = Vec<String>;
+
+pub fn parse_namelist(algorithms: Vec<u8>) -> NameList {
+    String::from_utf8(algorithms)
+        .unwrap()
+        .split(',')
+        .map(|s| s.into())
+        .collect()
+}
+
+pub fn generate_namelist(input: &NameList) -> Vec<u8> {
+    input.join(",").into_bytes()
+}
