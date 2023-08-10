@@ -2,12 +2,14 @@ use rand::prelude::*;
 use std::io;
 use std::net::SocketAddr;
 
-use crate::crypto::compression::{Compress, NoneCompress};
-use crate::crypto::encryption::{
-    aes_ctr::aes128_ctr, aes_gcm::aes256_gcm, chachapoly::chacha20_poly1305, Encryption,
-};
+use super::authentification::Authentication;
+use super::key_exchange::Kex;
+use super::session::{NewKeys, Session};
+use super::ssh2::MessageCode;
+use crate::crypto::compression::NoneCompress;
+use crate::crypto::encryption::aes_ctr::aes128_ctr;
 use crate::crypto::key_exchange::{curve::Curve25519Sha256, KexMethod};
-use crate::crypto::mac::{HmacSha2_256, NoneMac, MAC};
+use crate::crypto::mac::{HmacSha2_256, MAC};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
 use crate::protocol::key_exchange::{generate_key_exchange, parse_key_exchange};
@@ -15,11 +17,6 @@ use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::ssh2::DisconnectCode;
 use crate::protocol::version_exchange::Version;
 use crate::utils::{hex, hexdump};
-
-use super::authentification::Authentication;
-use super::key_exchange::Kex;
-use super::session::{NewKeys, Session};
-use super::ssh2::MessageCode;
 
 pub struct SshClient {
     address: SocketAddr,
@@ -49,6 +46,7 @@ impl SshClient {
             &server_kex_algorithms,
             &session,
         )?;
+
         let mut session = Session::new(
             NewKeys::new(
                 Box::new(aes128_ctr::new(
@@ -71,6 +69,7 @@ impl SshClient {
             &client_kex_algorithms,
             &server_kex_algorithms,
         );
+
         // let user_auth = self.user_auth(&mut session)?;
         // Ok(user_auth)
         Ok(&[])
@@ -78,10 +77,7 @@ impl SshClient {
 
     fn version_exchange(&mut self) -> Result<(Version, Version), DisconnectCode> {
         // send version
-        let client_version = Version::new(
-            "SSH-2.0-OpenSSH_8.9p1",
-            Some("Ubuntu-3ubuntu0.1wooooooooooo"),
-        );
+        let client_version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
         self.send(&client_version.to_bytes(true))?;
 
         // recv version
@@ -158,14 +154,12 @@ impl SshClient {
         // New Keys
         let payload: Vec<u8> = vec![MessageCode::SSH_MSG_NEWKEYS.to_u8()];
         let packet = BinaryPacket::new(&payload).to_bytes(session);
-        self.client
-            .send(&packet)
-            .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
+        self.send(&packet)?;
         Ok(Kex::<Method>::new(
             method,
             session_id,
-            &client_version,
-            &server_version,
+            client_version,
+            server_version,
             client_kex,
             server_kex,
             &server_public_host_key,

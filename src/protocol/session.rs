@@ -1,3 +1,4 @@
+use super::binary_packet::BinaryPacket;
 use super::client;
 use super::key_exchange_init::KexAlgorithms;
 use super::version_exchange::Version;
@@ -89,10 +90,10 @@ impl<'a> Session<'a> {
         }
     }
 
-    pub fn encrypt_packet(&mut self, packet: &[u8]) -> Vec<u8> {
-        // let packet = BinaryPacket::new(payload, self.mac_method).to_bytes();
-        let encrypted_packet = self.client_method.enc_method.encrypt(&packet).unwrap();
+    pub fn encrypt_packet(&mut self, payload: &[u8], session: &Session) -> Vec<u8> {
+        let packet = BinaryPacket::new(payload).to_bytes(session);
         hexdump(&packet);
+        let encrypted_packet = self.client_method.enc_method.encrypt(&packet).unwrap();
         hexdump(&encrypted_packet);
         self.client_sequence_number += 1;
         encrypted_packet
