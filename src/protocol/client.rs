@@ -84,15 +84,15 @@ impl SshClient {
         let version_exchange_packet = client_version.generate_version();
         self.client
             .send(&version_exchange_packet)
-            .map_err(|x| DisconnectCode::HostNotAllowedToConnect)?;
+            .map_err(|_| DisconnectCode::HostNotAllowedToConnect)?;
 
         // recv version
         let version_exchange_init_packet = self
             .client
             .recv()
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
         let (input, server_version) = Version::parse_version(&version_exchange_init_packet)
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
         Ok((client_version, server_version))
     }
 
@@ -101,11 +101,11 @@ impl SshClient {
         let key_exchange_init_packet = self
             .client
             .recv()
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_init_packet)
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
         let (input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
 
         // send key algorithms
         let client_kex_algorithms = KexAlgorithms {
@@ -136,14 +136,14 @@ impl SshClient {
         let packet = BinaryPacket::new(&packet).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
-            .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+            .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
 
         Ok((client_kex_algorithms, server_kex_algorithms))
     }
 
     fn key_exchange<Method: KexMethod>(
         &mut self,
-        sesion_id: &[u8],
+        session_id: &[u8],
         client_version: Version,
         server_version: Version,
         client_kex: &KexAlgorithms,
@@ -180,7 +180,7 @@ impl SshClient {
             .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
         Ok(Kex::<Method>::new(
             method,
-            sesion_id,
+            session_id,
             client_version,
             server_version,
             client_kex,
