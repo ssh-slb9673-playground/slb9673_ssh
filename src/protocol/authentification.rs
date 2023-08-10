@@ -54,7 +54,7 @@ impl Authentication {
     // SSH_MSG_USERAUTH_REQUEST 50
     // SSH_MSG_USERAUTH_FAILURE 51
     // SSH_MSG_USERAUTH_SUCCESS 52
-    pub fn generate_authentication(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet = Vec::new();
         // SSH_MSG_USERAUTH_REQUEST
         packet.extend(vec![50]);

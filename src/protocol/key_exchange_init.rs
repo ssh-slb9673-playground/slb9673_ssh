@@ -69,7 +69,7 @@ impl KexAlgorithms {
         ))
     }
 
-    pub fn generate_key_exchange_init(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![20];
         packet.extend(&self.cookie);
         packet.extend(generate_string(&generate_namelist(&self.kex_algorithms)));
@@ -147,7 +147,7 @@ none,zlib@openssh.com,zlib\
     let parsed = KexAlgorithms::parse_key_exchange_init(packet);
     assert!(parsed.is_ok());
     let (_, algo) = parsed.unwrap();
-    let gen_packet = algo.generate_key_exchange_init();
+    let gen_packet = algo.to_bytes();
     // hexdump(packet);
     // hexdump(&gen_packet);
     assert!(packet[..] == gen_packet[..]);

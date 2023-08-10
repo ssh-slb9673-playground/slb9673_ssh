@@ -42,7 +42,7 @@ impl SshServer {
             languages_server_to_client: vec!["a".to_string()],
             first_kex_packet_follows: true,
         };
-        let key_exchange_packet = kex.generate_key_exchange_init();
+        let key_exchange_packet = kex.to_bytes();
 
         let a = self.server.recv()?;
         Ok(a)

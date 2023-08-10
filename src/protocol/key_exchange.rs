@@ -47,8 +47,8 @@ impl<T: KexMethod> Kex<T> {
         let mut data = vec![];
         data.extend(generate_string(&client_version.to_bytes(false)));
         data.extend(generate_string(&server_version.to_bytes(false)));
-        data.extend(generate_string(&client_kex.generate_key_exchange_init()));
-        data.extend(generate_string(&server_kex.generate_key_exchange_init()));
+        data.extend(generate_string(&client_kex.to_bytes()));
+        data.extend(generate_string(&server_kex.to_bytes()));
         data.extend(generate_string(server_public_host_key));
         data.extend(generate_string(client_public_key));
         data.extend(generate_string(server_public_key));

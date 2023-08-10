@@ -103,7 +103,7 @@ impl SshClient {
             .client
             .recv()
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_init_packet)
+        let (payload, binary_packet) = BinaryPacket::from_bytes(&key_exchange_init_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -133,8 +133,8 @@ impl SshClient {
             languages_server_to_client: server_kex_algorithms.languages_server_to_client.clone(),
             first_kex_packet_follows: server_kex_algorithms.first_kex_packet_follows.clone(),
         };
-        let packet = client_kex_algorithms.generate_key_exchange_init();
-        let packet = BinaryPacket::new(&packet).generate_binary_packet(0, &NoneMac {});
+        let packet = client_kex_algorithms.to_bytes();
+        let packet = BinaryPacket::new(&packet).to_bytes(0, &NoneMac {});
         self.client
             .send(&packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -153,7 +153,7 @@ impl SshClient {
         let mut method = Method::new();
         let payload = generate_key_exchange::<Method>(&method);
         let client_public_key = method.public_key();
-        let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});
+        let packet = BinaryPacket::new(&payload).to_bytes(0, &NoneMac {});
         self.client
             .send(&packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -162,7 +162,7 @@ impl SshClient {
             .client
             .recv()
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_packet)
+        let (payload, binary_packet) = BinaryPacket::from_bytes(&key_exchange_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -171,7 +171,7 @@ impl SshClient {
 
         // New Keys
         let payload: Vec<u8> = vec![0x15];
-        let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});
+        let packet = BinaryPacket::new(&payload).to_bytes(0, &NoneMac {});
         self.client
             .send(&packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -195,9 +195,9 @@ impl SshClient {
         enc_client_to_server: &mut EncryptedPacket<E, M>,
     ) -> Result<&[u8], DisconnectCode> {
         let auth = Authentication::new("anko", "test", "publickey");
-        let packet = auth.generate_authentication();
+        let packet = auth.to_bytes();
         // let packet = enc_server_to_client.generate_encrypted_packet(&packet);
-        let packet = enc_client_to_server.generate_encrypted_packet(&packet);
+        let packet = enc_client_to_server.to_bytes(&packet);
         self.client
             .send(&packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;

@@ -32,7 +32,7 @@ impl BinaryPacket {
         }
     }
 
-    pub fn parse_binary_packet(input: &[u8]) -> IResult<&[u8], BinaryPacket> {
+    pub fn from_bytes(input: &[u8]) -> IResult<&[u8], BinaryPacket> {
         let mac_length: usize = 0;
         let (input, packet_length) = be_u32(input)?;
         let (input, padding_length) = be_u8(input)?;
@@ -52,7 +52,7 @@ impl BinaryPacket {
         ))
     }
 
-    pub fn generate_binary_packet<M: MAC>(&self, sequece_number: u32, mac_method: &M) -> Vec<u8> {
+    pub fn to_bytes<M: MAC>(&self, sequece_number: u32, mac_method: &M) -> Vec<u8> {
         let mut packet = vec![];
         packet.extend(self.packet_length.to_be_bytes());
         packet.extend(self.padding_length.to_be_bytes());

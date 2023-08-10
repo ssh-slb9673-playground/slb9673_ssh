@@ -20,9 +20,8 @@ impl<E: Encryption, M: MAC> EncryptedPacket<E, M> {
         }
     }
 
-    pub fn generate_encrypted_packet(&mut self, payload: &[u8]) -> Vec<u8> {
-        let packet = BinaryPacket::new(payload)
-            .generate_binary_packet(self.sequence_number, &self.mac_method);
+    pub fn to_bytes(&mut self, payload: &[u8]) -> Vec<u8> {
+        let packet = BinaryPacket::new(payload).to_bytes(self.sequence_number, &self.mac_method);
         hexdump(&packet);
         let encrypted_packet = self.enc_method.encrypt(&packet).unwrap();
         hexdump(&encrypted_packet);
