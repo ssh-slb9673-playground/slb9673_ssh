@@ -65,12 +65,13 @@ impl Encryption for aes128_gcm {
     }
 }
 
+type Aes128Ctr64LE = ctr::Ctr64LE<aes::Aes128>;
 pub struct aes128_ctr {
-    cipher: ctr::Ctr128LE<aes::Aes128>,
+    cipher: Aes128Ctr64LE,
 }
 impl aes128_ctr {
     pub fn new(key: &[u8], nonce: &[u8]) -> Self {
-        let cipher = ctr::Ctr128LE::<aes::Aes128>::new(key[..16].into(), nonce[..16].into());
+        let cipher = Aes128Ctr64LE::new(key[..16].into(), nonce[..16].into());
         // cipher.seek(0u32);
         aes128_ctr { cipher }
     }

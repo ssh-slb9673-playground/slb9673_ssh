@@ -62,14 +62,14 @@ impl SshClient {
                 &kex.encryption_key_server_to_client(),
                 &kex.initial_iv_server_to_client(),
             ),
-            HmacSha2_256::new(kex.integrity_key_client_to_server()),
+            HmacSha2_256::new(kex.integrity_key_server_to_client()),
         );
         let mut enc_client_to_server = EncryptedPacket::new(
             aes128_ctr::new(
                 &kex.encryption_key_client_to_server(),
                 &kex.initial_iv_client_to_server(),
             ),
-            HmacSha2_256::new(kex.integrity_key_server_to_client()),
+            HmacSha2_256::new(kex.integrity_key_client_to_server()),
         );
         let user_auth = self.user_auth(&mut enc_server_to_client, &mut enc_client_to_server)?;
         Ok(user_auth)

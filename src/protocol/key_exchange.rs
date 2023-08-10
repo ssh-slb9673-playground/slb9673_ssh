@@ -52,7 +52,7 @@ impl<T: KexMethod> Kex<T> {
         let exchange_hash = method.hash(&data);
 
         Kex::<T> {
-            method: method,
+            method,
             shared_secret_key: to_mpint(shared_secret),
             exchange_hash: exchange_hash,
             session_id: session_id.to_vec(),
