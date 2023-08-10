@@ -8,4 +8,4 @@ mod key_exchange_init;
 mod payload;
 pub mod server;
 mod utils;
-mod version_exchange;
+pub mod version_exchange;

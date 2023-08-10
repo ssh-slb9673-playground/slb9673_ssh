@@ -2,6 +2,8 @@ use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u8};
 use nom::IResult;
 
+use crate::crypto::mac::MAC;
+
 //   uint32    packet_length
 //   byte      padding_length
 //   byte[n1]  payload; n1 = packet_length - padding_length - 1 Initially, compression MUST be "none".
@@ -14,7 +16,6 @@ pub struct BinaryPacket {
     padding_length: u8,
     payload: Vec<u8>,
     padding: Vec<u8>,
-    mac: Vec<u8>,
 }
 
 impl BinaryPacket {
@@ -27,7 +28,6 @@ impl BinaryPacket {
             padding_length,
             payload: payload.to_vec(),
             padding: vec![0; padding_length as usize],
-            mac: vec![],
         }
     }
 
@@ -47,18 +47,21 @@ impl BinaryPacket {
                 padding_length,
                 payload: payload.to_vec(),
                 padding: padding.to_vec(),
-                mac: mac.to_vec(),
             },
         ))
     }
 
-    pub fn generate_binary_packet(&self) -> Vec<u8> {
+    pub fn generate_binary_packet<M: MAC>(&self, sequece_number: u32, mac_method: &M) -> Vec<u8> {
         let mut packet = vec![];
         packet.extend(self.packet_length.to_be_bytes());
         packet.extend(self.padding_length.to_be_bytes());
         packet.extend(&self.payload);
         packet.extend(&self.padding);
-        packet.extend(&self.mac);
+        let mut mac_data = vec![];
+        mac_data.extend(sequece_number.to_be_bytes());
+        mac_data.extend(&packet);
+        let mac = mac_method.generate(&mac_data);
+        packet.extend(&mac);
         packet
     }
 }

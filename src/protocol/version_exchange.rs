@@ -65,6 +65,17 @@ impl Version {
                 .to_vec(),
         }
     }
+
+    pub fn generate_version_for_kex(&self) -> Vec<u8> {
+        match &self.comments {
+            Some(comments) => format!("{} {}", self.ssh_protoversion_softwareversion, comments)
+                .as_bytes()
+                .to_vec(),
+            None => format!("{}", self.ssh_protoversion_softwareversion)
+                .as_bytes()
+                .to_vec(),
+        }
+    }
 }
 
 #[test]

@@ -1,3 +1,5 @@
+use std::vec;
+
 use nom::{
     number::complete::{be_u32, be_u8},
     IResult,
@@ -9,7 +11,7 @@ use crate::{
     utils::hex,
 };
 
-use super::utils::generate_string;
+use super::{key_exchange_init::KexAlgorithms, utils::generate_string, version_exchange::Version};
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -26,8 +28,29 @@ pub struct Kex<T: KexMethod> {
 // Integrity key client to server: HASH(K || H || "E" || session_id)
 // Integrity key server to client: HASH(K || H || "F" || session_id)
 impl<T: KexMethod> Kex<T> {
-    pub fn new(method: T, shared_secret: &[u8], session_id: &[u8]) -> Self {
-        let exchange_hash = method.hash(shared_secret);
+    pub fn new(
+        method: T,
+        session_id: &[u8],
+        client_version: Version,
+        server_version: Version,
+        client_kex: &KexAlgorithms,
+        server_kex: &KexAlgorithms,
+        server_public_host_key: &[u8],
+        client_public_key: &[u8],
+        server_public_key: &[u8],
+        shared_secret: &[u8],
+    ) -> Self {
+        let mut data = vec![];
+        data.extend(client_version.generate_version_for_kex());
+        data.extend(server_version.generate_version_for_kex());
+        data.extend(client_kex.generate_key_exchange_init());
+        data.extend(server_kex.generate_key_exchange_init());
+        data.extend(server_public_host_key);
+        data.extend(client_public_key);
+        data.extend(server_public_key);
+        data.extend(shared_secret);
+        let exchange_hash = method.hash(&data);
+
         Kex::<T> {
             method: method,
             shared_secret_key: to_mpint(shared_secret),
@@ -91,18 +114,14 @@ impl<T: KexMethod> Kex<T> {
     }
 }
 
-pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], Vec<u8>> {
+pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (Vec<u8>, Vec<u8>)> {
     let (input, message_code) = be_u8(input)?;
     assert!(message_code == 0x1f);
     // KEX host key
-    let (input, host_key_length) = be_u32(input)?;
-    let (input, host_key_type) = parse_string(input)?;
-    let (input, rsa_public_exponent) = parse_string(input)?;
-    let (input, rsa_modulus) = parse_string(input)?;
-
+    let (input, host_public_key) = parse_string(input)?;
     let (input, public_key) = parse_string(input)?;
 
-    Ok((input, public_key))
+    Ok((input, (host_public_key, public_key)))
 }
 
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {

@@ -35,12 +35,18 @@ impl SshClient {
     }
 
     pub fn connection_setup(&mut self) -> Result<&[u8], DisconnectCode> {
-        let version = self.version_exchange()?;
-        println!("{:?}", version);
+        let (client_version, server_version) = self.version_exchange()?;
+        println!("{:?}", server_version);
         let (client_kex_algorithms, server_kex_algorithms) = self.key_exchange_init()?;
         println!("{:?}", client_kex_algorithms);
         println!("cookie: {:?}", hex(&client_kex_algorithms.cookie));
-        let kex = self.key_exchange::<Curve25519Sha256>(&client_kex_algorithms.cookie)?;
+        let kex = self.key_exchange::<Curve25519Sha256>(
+            &client_kex_algorithms.cookie,
+            client_version,
+            server_version,
+            &client_kex_algorithms,
+            &server_kex_algorithms,
+        )?;
         println!(
             "client to server key: {:?}",
             hex(&kex.encryption_key_client_to_server())
@@ -69,13 +75,13 @@ impl SshClient {
         Ok(user_auth)
     }
 
-    fn version_exchange(&mut self) -> Result<Version, DisconnectCode> {
+    fn version_exchange(&mut self) -> Result<(Version, Version), DisconnectCode> {
         // send version
-        let version = Version::new(
+        let client_version = Version::new(
             "SSH-2.0-OpenSSH_8.9p1".to_string(),
             "Ubuntu-3ubuntu0.1wooooooooooo".to_string(),
         );
-        let version_exchange_packet = version.generate_version();
+        let version_exchange_packet = client_version.generate_version();
         self.client
             .send(&version_exchange_packet)
             .map_err(|x| DisconnectCode::HostNotAllowedToConnect)?;
@@ -85,9 +91,9 @@ impl SshClient {
             .client
             .recv()
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
-        let (input, version) = Version::parse_version(&version_exchange_init_packet)
+        let (input, server_version) = Version::parse_version(&version_exchange_init_packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
-        Ok(version)
+        Ok((client_version, server_version))
     }
 
     fn key_exchange_init(&mut self) -> Result<(KexAlgorithms, KexAlgorithms), DisconnectCode> {
@@ -127,7 +133,7 @@ impl SshClient {
             first_kex_packet_follows: server_kex_algorithms.first_kex_packet_follows.clone(),
         };
         let packet = client_kex_algorithms.generate_key_exchange_init();
-        let packet = BinaryPacket::new(&packet).generate_binary_packet();
+        let packet = BinaryPacket::new(&packet).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
             .map_err(|x| DisconnectCode::KeyExchangeFailed)?;
@@ -138,10 +144,15 @@ impl SshClient {
     fn key_exchange<Method: KexMethod>(
         &mut self,
         sesion_id: &[u8],
+        client_version: Version,
+        server_version: Version,
+        client_kex: &KexAlgorithms,
+        server_kex: &KexAlgorithms,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
         let payload = generate_key_exchange::<Method>(&method);
-        let packet = BinaryPacket::new(&payload).generate_binary_packet();
+        let client_public_key = method.public_key();
+        let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
             .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
@@ -152,8 +163,8 @@ impl SshClient {
             .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
         let (payload, binary_packet) = BinaryPacket::parse_binary_packet(&key_exchange_packet)
             .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
-        let (input, server_public_key) =
-            parse_key_exchange(payload).map_err(|x| DisconnectCode::KeyExchangeFailed)?;
+        let (input, (server_public_host_key, server_public_key)) =
+            parse_key_exchange(payload).map_err(|_| DisconnectCode::KeyExchangeFailed)?;
 
         let shared_secret = method.shared_secret(&server_public_key);
 
@@ -163,11 +174,22 @@ impl SshClient {
 
         // New Keys
         let payload: Vec<u8> = vec![0x15];
-        let packet = BinaryPacket::new(&payload).generate_binary_packet();
+        let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});
         self.client
             .send(&packet)
             .map_err(|_| DisconnectCode::KeyExchangeFailed)?;
-        Ok(Kex::<Method>::new(method, &shared_secret, sesion_id))
+        Ok(Kex::<Method>::new(
+            method,
+            sesion_id,
+            client_version,
+            server_version,
+            client_kex,
+            server_kex,
+            &server_public_host_key,
+            &client_public_key,
+            &server_public_key,
+            &shared_secret,
+        ))
     }
 
     fn user_auth<E: Encryption, M: MAC>(
