@@ -28,16 +28,16 @@ impl KexAlgorithms {
         let (input, message_id) = be_u8(input)?;
         assert!(message_id == 20);
         let (input, cookie) = take(16u8)(input)?;
-        let (input, kex_algorithms) = parse_string(input)?;
-        let (input, server_host_key_algorithms) = parse_string(input)?;
-        let (input, encryption_algorithms_client_to_server) = parse_string(input)?;
-        let (input, encryption_algorithms_server_to_client) = parse_string(input)?;
-        let (input, mac_algorithms_client_to_server) = parse_string(input)?;
-        let (input, mac_algorithms_server_to_client) = parse_string(input)?;
-        let (input, compression_algorithms_client_to_server) = parse_string(input)?;
-        let (input, compression_algorithms_server_to_client) = parse_string(input)?;
-        let (input, languages_client_to_server) = parse_string(input)?;
-        let (input, languages_server_to_client) = parse_string(input)?;
+        let (input, kex_algorithms) = parse_namelist(input)?;
+        let (input, server_host_key_algorithms) = parse_namelist(input)?;
+        let (input, encryption_algorithms_client_to_server) = parse_namelist(input)?;
+        let (input, encryption_algorithms_server_to_client) = parse_namelist(input)?;
+        let (input, mac_algorithms_client_to_server) = parse_namelist(input)?;
+        let (input, mac_algorithms_server_to_client) = parse_namelist(input)?;
+        let (input, compression_algorithms_client_to_server) = parse_namelist(input)?;
+        let (input, compression_algorithms_server_to_client) = parse_namelist(input)?;
+        let (input, languages_client_to_server) = parse_namelist(input)?;
+        let (input, languages_server_to_client) = parse_namelist(input)?;
         let (input, first_kex_packet_follows) = take(1u8)(input)?;
         let (input, _reserved) = be_u32(input)?;
 
@@ -45,24 +45,16 @@ impl KexAlgorithms {
             input,
             KexAlgorithms {
                 cookie: cookie.to_vec(),
-                kex_algorithms: parse_namelist(kex_algorithms),
-                server_host_key_algorithms: parse_namelist(server_host_key_algorithms),
-                encryption_algorithms_client_to_server: parse_namelist(
-                    encryption_algorithms_client_to_server,
-                ),
-                encryption_algorithms_server_to_client: parse_namelist(
-                    encryption_algorithms_server_to_client,
-                ),
-                mac_algorithms_client_to_server: parse_namelist(mac_algorithms_client_to_server),
-                mac_algorithms_server_to_client: parse_namelist(mac_algorithms_server_to_client),
-                compression_algorithms_client_to_server: parse_namelist(
-                    compression_algorithms_client_to_server,
-                ),
-                compression_algorithms_server_to_client: parse_namelist(
-                    compression_algorithms_server_to_client,
-                ),
-                languages_client_to_server: parse_namelist(languages_client_to_server),
-                languages_server_to_client: parse_namelist(languages_server_to_client),
+                kex_algorithms,
+                server_host_key_algorithms,
+                encryption_algorithms_client_to_server,
+                encryption_algorithms_server_to_client,
+                mac_algorithms_client_to_server,
+                mac_algorithms_server_to_client,
+                compression_algorithms_client_to_server,
+                compression_algorithms_server_to_client,
+                languages_client_to_server,
+                languages_server_to_client,
                 first_kex_packet_follows: first_kex_packet_follows[0] != 0,
             },
         ))
@@ -71,37 +63,25 @@ impl KexAlgorithms {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![20];
         packet.extend(&self.cookie);
-        packet.extend(generate_string(&generate_namelist(&self.kex_algorithms)));
-        packet.extend(generate_string(&generate_namelist(
-            &self.server_host_key_algorithms,
-        )));
-        packet.extend(generate_string(&generate_namelist(
+        packet.extend(generate_namelist(&self.kex_algorithms));
+        packet.extend(generate_namelist(&self.server_host_key_algorithms));
+        packet.extend(generate_namelist(
             &self.encryption_algorithms_client_to_server,
-        )));
-        packet.extend(generate_string(&generate_namelist(
+        ));
+        packet.extend(generate_namelist(
             &self.encryption_algorithms_server_to_client,
-        )));
-        packet.extend(generate_string(&generate_namelist(
-            &self.mac_algorithms_client_to_server,
-        )));
-        packet.extend(generate_string(&generate_namelist(
-            &self.mac_algorithms_server_to_client,
-        )));
-        packet.extend(generate_string(&generate_namelist(
+        ));
+        packet.extend(generate_namelist(&self.mac_algorithms_client_to_server));
+        packet.extend(generate_namelist(&self.mac_algorithms_server_to_client));
+        packet.extend(generate_namelist(
             &self.compression_algorithms_client_to_server,
-        )));
-        packet.extend(generate_string(&generate_namelist(
+        ));
+        packet.extend(generate_namelist(
             &self.compression_algorithms_server_to_client,
-        )));
-        packet.extend(generate_string(&generate_namelist(
-            &self.languages_client_to_server,
-        )));
-        packet.extend(generate_string(&generate_namelist(
-            &self.languages_server_to_client,
-        )));
-        packet.extend(generate_string(&generate_namelist(
-            &self.languages_server_to_client,
-        )));
+        ));
+        packet.extend(generate_namelist(&self.languages_client_to_server));
+        packet.extend(generate_namelist(&self.languages_server_to_client));
+        packet.extend(generate_namelist(&self.languages_server_to_client));
         packet.extend((self.first_kex_packet_follows as u8).to_be_bytes().to_vec());
         packet
     }
