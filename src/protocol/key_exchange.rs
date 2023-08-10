@@ -36,8 +36,8 @@ impl<T: KexMethod> Kex<T> {
         shared_secret: &[u8],
     ) -> Self {
         let mut data = vec![];
-        data.extend(client_version.generate_version_for_kex());
-        data.extend(server_version.generate_version_for_kex());
+        data.extend(generate_string(&client_version.generate_version_for_kex()));
+        data.extend(generate_string(&server_version.generate_version_for_kex()));
         data.extend(generate_string(&client_kex.generate_key_exchange_init()));
         data.extend(generate_string(&server_kex.generate_key_exchange_init()));
         data.extend(generate_string(server_public_host_key));
@@ -46,13 +46,16 @@ impl<T: KexMethod> Kex<T> {
         data.extend(generate_string(shared_secret));
         hexdump(&data);
         let exchange_hash = method.hash(&data);
-        println!("{}", hex(&exchange_hash));
+        println!("shared_secret: {:?}", hex(&shared_secret));
+        println!("exchange_hash: {:?}", hex(&exchange_hash));
+        println!("session_id: {:?}", hex(&session_id));
 
         Kex::<T> {
             method,
-            shared_secret_key: to_mpint(shared_secret),
-            exchange_hash: exchange_hash,
-            session_id: session_id.to_vec(),
+            shared_secret_key: shared_secret.to_vec(),
+            exchange_hash: exchange_hash.clone(),
+            session_id: exchange_hash,
+            // session_id: session_id.to_vec(),
         }
     }
 
