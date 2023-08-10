@@ -1,10 +1,10 @@
 mod authentification;
 mod binary_packet;
 pub mod client;
-mod encrypted_packet;
 mod key_exchange;
 mod key_exchange_init;
 pub mod server;
+pub mod session;
 pub mod ssh2;
 mod utils;
 pub mod version_exchange;

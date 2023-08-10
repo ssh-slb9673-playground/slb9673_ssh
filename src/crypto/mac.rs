@@ -20,7 +20,9 @@ enum MacAlgorithm {
 }
 
 pub trait MAC {
-    fn new(key: Vec<u8>) -> Self;
+    fn new(key: Vec<u8>) -> Self
+    where
+        Self: Sized;
     fn generate(&self, msg: &[u8]) -> Vec<u8>;
 }
 

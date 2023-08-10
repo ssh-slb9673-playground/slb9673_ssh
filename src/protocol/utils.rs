@@ -2,11 +2,11 @@ use nom::bytes::complete::take;
 use nom::number::complete::be_u32;
 use nom::IResult;
 
-pub fn parse_string(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+pub fn parse_string<'a>(input: &'a [u8]) -> IResult<&[u8], &'a [u8]> {
     let (input, length) = be_u32(input)?;
     let (input, payload) = take(length)(input)?;
 
-    Ok((input, payload.to_vec()))
+    Ok((input, payload))
 }
 
 pub fn generate_string(input: &[u8]) -> Vec<u8> {
@@ -31,7 +31,7 @@ pub fn parse_namelist(input: &[u8]) -> IResult<&[u8], NameList> {
 
     Ok((
         input,
-        String::from_utf8(algorithms)
+        String::from_utf8(algorithms.to_vec())
             .unwrap()
             .split(',')
             .map(|s| s.into())

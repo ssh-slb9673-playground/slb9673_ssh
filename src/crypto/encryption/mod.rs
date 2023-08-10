@@ -13,3 +13,13 @@ pub trait Encryption {
     fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>>;
     fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>>;
 }
+
+pub struct NoneEncryption {}
+impl Encryption for NoneEncryption {
+    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>> {
+        Some(plaintext.to_vec())
+    }
+    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+        Some(ciphertext.to_vec())
+    }
+}

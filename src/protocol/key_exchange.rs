@@ -35,8 +35,8 @@ impl<T: KexMethod> Kex<T> {
     pub fn new(
         method: T,
         session_id: &[u8],
-        client_version: Version,
-        server_version: Version,
+        client_version: &Version,
+        server_version: &Version,
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
         server_public_host_key: &[u8],
@@ -122,7 +122,7 @@ impl<T: KexMethod> Kex<T> {
     }
 }
 
-pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (Vec<u8>, Vec<u8>)> {
+pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (&'a [u8], &'a [u8])> {
     let (input, message_code) = be_u8(input)?;
     assert!(message_code == 31);
     // KEX host key
