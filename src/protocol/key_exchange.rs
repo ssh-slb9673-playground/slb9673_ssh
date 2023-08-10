@@ -3,7 +3,7 @@ use std::vec;
 
 use super::{key_exchange_init::KexAlgorithms, utils::generate_string, version_exchange::Version};
 use crate::{
-    crypto::{key_exchange::KexMethod, mpint::to_mpint},
+    crypto::key_exchange::KexMethod,
     protocol::utils::parse_string,
     utils::{hex, hexdump},
 };
