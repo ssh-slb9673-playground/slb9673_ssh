@@ -3,6 +3,7 @@ use nom::number::complete::{be_u32, be_u8};
 use nom::IResult;
 
 use crate::crypto::mac::MAC;
+use crate::utils::hex;
 
 //   uint32    packet_length
 //   byte      padding_length

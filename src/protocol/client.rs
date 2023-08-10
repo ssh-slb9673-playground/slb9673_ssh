@@ -168,10 +168,6 @@ impl SshClient {
 
         let shared_secret = method.shared_secret(&server_public_key);
 
-        println!("client pubkey: {}", hex(&method.public_key()));
-        println!("server pubkey: {}", hex(&server_public_key));
-        println!("shared_secret: {}", hex(&shared_secret));
-
         // New Keys
         let payload: Vec<u8> = vec![0x15];
         let packet = BinaryPacket::new(&payload).generate_binary_packet(0, &NoneMac {});

@@ -1,11 +1,11 @@
-use nom::{number::complete::be_u8, IResult};
+use nom::{number::complete::be_u8, HexDisplay, IResult};
 use std::vec;
 
 use super::{key_exchange_init::KexAlgorithms, utils::generate_string, version_exchange::Version};
 use crate::{
     crypto::{key_exchage::KexMethod, mpint::to_mpint},
     protocol::utils::parse_string,
-    utils::hex,
+    utils::{hex, hexdump},
 };
 
 #[derive(Debug)]
@@ -38,13 +38,15 @@ impl<T: KexMethod> Kex<T> {
         let mut data = vec![];
         data.extend(client_version.generate_version_for_kex());
         data.extend(server_version.generate_version_for_kex());
-        data.extend(client_kex.generate_key_exchange_init());
-        data.extend(server_kex.generate_key_exchange_init());
-        data.extend(server_public_host_key);
-        data.extend(client_public_key);
-        data.extend(server_public_key);
-        data.extend(shared_secret);
+        data.extend(generate_string(&client_kex.generate_key_exchange_init()));
+        data.extend(generate_string(&server_kex.generate_key_exchange_init()));
+        data.extend(generate_string(server_public_host_key));
+        data.extend(generate_string(client_public_key));
+        data.extend(generate_string(server_public_key));
+        data.extend(generate_string(shared_secret));
+        hexdump(&data);
         let exchange_hash = method.hash(&data);
+        println!("{}", hex(&exchange_hash));
 
         Kex::<T> {
             method,
@@ -111,7 +113,7 @@ impl<T: KexMethod> Kex<T> {
 
 pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (Vec<u8>, Vec<u8>)> {
     let (input, message_code) = be_u8(input)?;
-    assert!(message_code == 0x1f);
+    assert!(message_code == 31);
     // KEX host key
     let (input, host_public_key) = parse_string(input)?;
     let (input, public_key) = parse_string(input)?;
@@ -120,7 +122,7 @@ pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (Vec<u8>, Ve
 }
 
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
-    let mut packet = vec![0x1e];
+    let mut packet = vec![30];
     packet.extend(&generate_string(&method.public_key()));
     packet
 }

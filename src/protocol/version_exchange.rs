@@ -3,6 +3,8 @@ use nom::bytes::complete::{tag, take_until};
 use nom::error::Error;
 use nom::IResult;
 
+use super::utils::generate_string;
+
 // SSH_protoversion_softwareversion SP comments CR LF
 #[derive(Debug, PartialEq)]
 pub struct Version {
@@ -68,12 +70,12 @@ impl Version {
 
     pub fn generate_version_for_kex(&self) -> Vec<u8> {
         match &self.comments {
-            Some(comments) => format!("{} {}", self.ssh_protoversion_softwareversion, comments)
-                .as_bytes()
-                .to_vec(),
-            None => format!("{}", self.ssh_protoversion_softwareversion)
-                .as_bytes()
-                .to_vec(),
+            Some(comments) => generate_string(
+                format!("{} {}", self.ssh_protoversion_softwareversion, comments).as_bytes(),
+            ),
+            None => {
+                generate_string(format!("{}", self.ssh_protoversion_softwareversion).as_bytes())
+            }
         }
     }
 }
