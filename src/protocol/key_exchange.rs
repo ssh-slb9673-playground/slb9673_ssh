@@ -53,7 +53,6 @@ impl<T: KexMethod> Kex<T> {
         data.extend(generate_string(client_public_key));
         data.extend(generate_string(server_public_key));
         data.extend(generate_string(shared_secret));
-        hexdump(&data);
         let exchange_hash = method.hash(&data);
         println!("shared_secret: {:?}", hex(&shared_secret));
         println!("exchange_hash: {:?}", hex(&exchange_hash));

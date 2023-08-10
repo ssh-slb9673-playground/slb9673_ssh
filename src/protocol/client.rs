@@ -18,7 +18,6 @@ use crate::utils::{hex, hexdump};
 use super::authentification::Authentication;
 use super::encrypted_packet::EncryptedPacket;
 use super::key_exchange::Kex;
-use super::server;
 use super::ssh2::MessageCode;
 
 pub struct SshClient {
@@ -39,11 +38,7 @@ impl SshClient {
 
     pub fn connection_setup(&mut self) -> Result<&[u8], DisconnectCode> {
         let (client_version, server_version) = self.version_exchange()?;
-        println!("{:?}", server_version);
         let (client_kex_algorithms, server_kex_algorithms) = self.key_exchange_init()?;
-        println!("{:?}", client_kex_algorithms);
-        println!("cookie: {:?}", hex(&client_kex_algorithms.cookie));
-        println!("cookie: {:?}", hex(&server_kex_algorithms.cookie));
         let kex = self.key_exchange::<Curve25519Sha256>(
             &client_kex_algorithms.cookie,
             client_version,
@@ -51,16 +46,6 @@ impl SshClient {
             &client_kex_algorithms,
             &server_kex_algorithms,
         )?;
-        println!(
-            "client to server key: {:?}",
-            hex(&kex.encryption_key_client_to_server())
-        );
-        println!("{:?}", kex.encryption_key_client_to_server());
-        println!("{:?}", kex.initial_iv_client_to_server());
-        println!(
-            "server to client key: {:?}",
-            hex(&kex.encryption_key_server_to_client())
-        );
         let mut enc_server_to_client = EncryptedPacket::new(
             aes128_ctr::new(
                 &kex.encryption_key_server_to_client(),
@@ -95,7 +80,7 @@ impl SshClient {
             .client
             .recv()
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (input, server_version) = Version::from_bytes(&version_exchange_init_packet)
+        let (_input, server_version) = Version::from_bytes(&version_exchange_init_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         Ok((client_version, server_version))
     }
@@ -106,9 +91,9 @@ impl SshClient {
             .client
             .recv()
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (payload, binary_packet) = BinaryPacket::from_bytes(&key_exchange_init_packet)
+        let (payload, _binary_packet) = BinaryPacket::from_bytes(&key_exchange_init_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
+        let (_input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         // send key algorithms
@@ -165,9 +150,9 @@ impl SshClient {
             .client
             .recv()
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (payload, binary_packet) = BinaryPacket::from_bytes(&key_exchange_packet)
+        let (payload, _binary_packet) = BinaryPacket::from_bytes(&key_exchange_packet)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
-        let (input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
+        let (_input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         let shared_secret = method.shared_secret(&server_public_key);
