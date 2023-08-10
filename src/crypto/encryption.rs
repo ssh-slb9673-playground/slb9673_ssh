@@ -70,7 +70,7 @@ pub struct aes128_ctr {
 }
 impl aes128_ctr {
     pub fn new(key: &[u8], nonce: &[u8]) -> Self {
-        let cipher = ctr::Ctr128LE::<aes::Aes128>::new(key[..16].into(), nonce[..12].into());
+        let cipher = ctr::Ctr128LE::<aes::Aes128>::new(key[..16].into(), nonce[..16].into());
         // cipher.seek(0u32);
         aes128_ctr { cipher }
     }
@@ -87,11 +87,31 @@ impl Encryption for aes128_ctr {
         Some(ciphertext.to_vec())
     }
 }
+#[test]
+fn encrypt_decrypt() {
+    let key = [
+        76, 221, 190, 22, 88, 43, 120, 83, 238, 242, 103, 43, 102, 166, 2, 140, 2, 69, 26, 90, 97,
+        71, 171, 14, 75, 109, 150, 117, 175, 54, 125, 201,
+    ];
+    let nonce = [
+        106, 248, 5, 76, 65, 174, 5, 214, 70, 140, 56, 45, 247, 51, 224, 53, 112, 107, 129, 95,
+        164, 162, 3, 156, 15, 42, 36, 93, 33, 214, 3, 134,
+    ];
+    let mut cipher = aes128_ctr::new(key[..16].into(), nonce[..16].into());
+    let plaintext = "test".as_bytes();
+    let ciphertext = cipher.encrypt(plaintext).unwrap();
+    let mut cipher = aes128_ctr::new(key[..16].into(), nonce[..16].into());
+    let buf = cipher.decrypt(&ciphertext).unwrap();
+    println!("{}", hex(plaintext));
+    println!("{}", hex(&buf));
+    assert_eq!(plaintext, &buf);
+}
 
 pub struct chacha20_poly1305 {
     cipher: ChaCha20Poly1305,
     nonce: Nonce<typenum::U12>,
 }
+
 impl chacha20_poly1305 {
     pub fn new(key: &[u8], nonce: &[u8]) -> Self {
         let cipher = ChaCha20Poly1305::new(key.into());

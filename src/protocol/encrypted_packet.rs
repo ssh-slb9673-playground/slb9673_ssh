@@ -1,6 +1,6 @@
 use crate::{
     crypto::{encryption::Encryption, mac::MAC},
-    utils::hexdump,
+    utils::{hex, hexdump},
 };
 
 use super::binary_packet::BinaryPacket;
@@ -28,6 +28,7 @@ impl<E: Encryption, M: MAC> EncryptedPacket<E, M> {
         data.extend(&encrypted_packet);
         let mac = self.mac_method.generate(&data);
         encrypted_packet.extend(&mac);
+        hexdump(&encrypted_packet);
         self.sequence_number += 1;
         encrypted_packet
     }

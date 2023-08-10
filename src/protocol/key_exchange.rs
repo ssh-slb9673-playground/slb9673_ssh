@@ -3,7 +3,11 @@ use nom::{
     IResult,
 };
 
-use crate::{crypto::key_exchage::KexMethod, protocol::utils::parse_string};
+use crate::{
+    crypto::{key_exchage::KexMethod, mpint::to_mpint},
+    protocol::utils::parse_string,
+    utils::hex,
+};
 
 use super::utils::generate_string;
 
@@ -26,7 +30,7 @@ impl<T: KexMethod> Kex<T> {
         let exchange_hash = method.hash(shared_secret);
         Kex::<T> {
             method: method,
-            shared_secret_key: shared_secret.to_vec(),
+            shared_secret_key: to_mpint(shared_secret),
             exchange_hash: exchange_hash,
             session_id: session_id.to_vec(),
         }

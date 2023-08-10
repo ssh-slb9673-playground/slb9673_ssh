@@ -27,7 +27,6 @@ pub struct KexAlgorithms {
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, message_id) = be_u8(input)?;
-        println!("{}", message_id);
         assert!(message_id == 20);
         let (input, cookie) = take(16u8)(input)?;
         let (input, kex_algorithms) = parse_string(input)?;

@@ -27,7 +27,6 @@ pub trait MAC {
 pub struct NoneMac {}
 impl MAC for NoneMac {
     fn new(key: Vec<u8>) -> Self {
-        println!("test");
         NoneMac {}
     }
     fn generate(&self, msg: &[u8]) -> Vec<u8> {
