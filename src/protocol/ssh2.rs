@@ -53,13 +53,9 @@ pub enum MessageCode {
     SSH_MSG_CHANNEL_FAILURE,
     // 90 to 127  Channel related messages
     // Reserved for client protocols:
-
     // 128 to 191 Reserved
-
     // Local extensions:
-
     // 192 to 255 Local extensions
-
     /* misc */
     SSH2_OPEN_ADMINISTRATIVELY_PROHIBITED,
     SSH2_OPEN_CONNECT_FAILED,
@@ -298,6 +294,7 @@ impl ErrorCode {
             ErrorCode::SSH_ERR_DEVICE_NOT_FOUND => -60,
         }
     }
+
     pub fn to_str(&self) -> &str {
         match *self {
             ErrorCode::SSH_ERR_SUCCESS => "success",
