@@ -152,7 +152,7 @@ impl SshClient {
         let shared_secret = method.shared_secret(&server_public_key);
 
         // New Keys
-        let payload: Vec<u8> = vec![MessageCode::SSH_MSG_NEWKEYS.to_u8()];
+        let payload = vec![MessageCode::SSH_MSG_NEWKEYS.to_u8()];
         let packet = BinaryPacket::new(&payload).to_bytes(session);
         self.send(&packet)?;
         Ok(Kex::<Method>::new(

@@ -2,13 +2,8 @@ use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u8};
 use nom::IResult;
 
-use crate::crypto::compression::Compress;
-use crate::crypto::encryption::Encryption;
-use crate::crypto::mac::MAC;
-use crate::utils::hex;
-
 use super::session::Session;
-use super::utils::parse_string;
+use super::utils::{parse_string, put_bytes};
 
 //   uint32    packet_length
 //   byte      padding_length
@@ -61,15 +56,15 @@ impl BinaryPacket {
 
     pub fn to_bytes(&self, session: &Session) -> Vec<u8> {
         let mut packet = vec![];
-        packet.extend(self.packet_length.to_be_bytes());
-        packet.extend(self.padding_length.to_be_bytes());
-        packet.extend(&self.payload);
-        packet.extend(&self.padding);
-        let mut mac_data = vec![];
-        mac_data.extend(session.client_sequence_number.to_be_bytes());
-        mac_data.extend(&packet);
-        let mac = session.client_method.mac_method.generate(&mac_data);
-        packet.extend(&mac);
+        put_bytes(&mut packet, &self.packet_length.to_be_bytes());
+        put_bytes(&mut packet, &self.padding_length.to_be_bytes());
+        put_bytes(&mut packet, &self.payload);
+        put_bytes(&mut packet, &self.padding);
+        let mut tmp = vec![];
+        put_bytes(&mut tmp, &session.client_sequence_number.to_be_bytes());
+        put_bytes(&mut tmp, &packet);
+        let mac = session.client_method.mac_method.generate(&tmp);
+        put_bytes(&mut packet, &mac);
         packet
     }
 }

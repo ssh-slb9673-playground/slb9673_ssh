@@ -16,6 +16,18 @@ pub fn generate_string(input: &[u8]) -> Vec<u8> {
     bytes
 }
 
+pub fn put_bytes(data: &mut Vec<u8>, input: &[u8]) {
+    (*data).extend(input);
+}
+
+pub fn put_string(data: &mut Vec<u8>, input: &[u8]) {
+    (*data).extend(&generate_string(input));
+}
+
+pub fn put_namelist(data: &mut Vec<u8>, namelist: &NameList) {
+    (*data).extend(&generate_namelist(namelist));
+}
+
 pub fn to_mpint(input: &[u8]) -> Vec<u8> {
     let mut input = input.to_vec();
     if input[0] >= 0x80 {

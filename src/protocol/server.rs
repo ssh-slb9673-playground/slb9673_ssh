@@ -1,10 +1,9 @@
 use std::io::Result;
 use std::net::SocketAddr;
 
+use super::key_exchange_init::KexAlgorithms;
 use crate::network::tcp_server::TcpServer;
 use crate::protocol::version_exchange::Version;
-
-use super::key_exchange_init::KexAlgorithms;
 
 pub struct SshServer {
     address: SocketAddr,

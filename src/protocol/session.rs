@@ -1,5 +1,3 @@
-use super::binary_packet::BinaryPacket;
-use super::client;
 use super::key_exchange_init::KexAlgorithms;
 use super::version_exchange::Version;
 use crate::crypto::compression::NoneCompress;
@@ -88,15 +86,6 @@ impl<'a> Session<'a> {
             client_kex: Some(client_kex),
             server_kex: Some(server_kex),
         }
-    }
-
-    pub fn encrypt_packet(&mut self, payload: &[u8], session: &Session) -> Vec<u8> {
-        let packet = BinaryPacket::new(payload).to_bytes(session);
-        hexdump(&packet);
-        let encrypted_packet = self.client_method.enc_method.encrypt(&packet).unwrap();
-        hexdump(&encrypted_packet);
-        self.client_sequence_number += 1;
-        encrypted_packet
     }
 
     pub fn parse(&self, packet: &[u8]) {}

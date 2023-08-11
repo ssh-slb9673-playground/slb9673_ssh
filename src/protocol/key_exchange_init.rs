@@ -1,13 +1,12 @@
-use crate::protocol::utils::parse_namelist;
 use nom::{
     bytes::complete::take,
     number::complete::{be_u32, be_u8},
     IResult,
 };
 
-use super::{
+use crate::protocol::{
     ssh2::MessageCode,
-    utils::{generate_namelist, NameList},
+    utils::{parse_namelist, put_bytes, put_namelist, NameList},
 };
 
 #[derive(Debug)]
@@ -65,27 +64,22 @@ impl KexAlgorithms {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![MessageCode::SSH_MSG_KEXINIT.to_u8()];
-        packet.extend(&self.cookie);
-        packet.extend(generate_namelist(&self.kex_algorithms));
-        packet.extend(generate_namelist(&self.server_host_key_algorithms));
-        packet.extend(generate_namelist(
-            &self.encryption_algorithms_client_to_server,
-        ));
-        packet.extend(generate_namelist(
-            &self.encryption_algorithms_server_to_client,
-        ));
-        packet.extend(generate_namelist(&self.mac_algorithms_client_to_server));
-        packet.extend(generate_namelist(&self.mac_algorithms_server_to_client));
-        packet.extend(generate_namelist(
-            &self.compression_algorithms_client_to_server,
-        ));
-        packet.extend(generate_namelist(
-            &self.compression_algorithms_server_to_client,
-        ));
-        packet.extend(generate_namelist(&self.languages_client_to_server));
-        packet.extend(generate_namelist(&self.languages_server_to_client));
-        packet.extend(generate_namelist(&self.languages_server_to_client));
-        packet.extend((self.first_kex_packet_follows as u8).to_be_bytes().to_vec());
+        put_bytes(&mut packet, &self.cookie);
+        put_namelist(&mut packet, &self.kex_algorithms);
+        put_namelist(&mut packet, &self.server_host_key_algorithms);
+        put_namelist(&mut packet, &self.encryption_algorithms_client_to_server);
+        put_namelist(&mut packet, &self.encryption_algorithms_server_to_client);
+        put_namelist(&mut packet, &self.mac_algorithms_client_to_server);
+        put_namelist(&mut packet, &self.mac_algorithms_server_to_client);
+        put_namelist(&mut packet, &self.compression_algorithms_client_to_server);
+        put_namelist(&mut packet, &self.compression_algorithms_server_to_client);
+        put_namelist(&mut packet, &self.languages_client_to_server);
+        put_namelist(&mut packet, &self.languages_server_to_client);
+        put_namelist(&mut packet, &self.languages_server_to_client);
+        put_bytes(
+            &mut packet,
+            &(self.first_kex_packet_follows as u8).to_be_bytes(),
+        );
         packet
     }
 }
