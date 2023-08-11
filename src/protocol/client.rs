@@ -99,30 +99,7 @@ impl SshClient {
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
         // send key algorithms
-        let client_kex_algorithms = KexAlgorithms {
-            cookie: rand::thread_rng().gen::<[u8; 16]>().to_vec(),
-            kex_algorithms: server_kex_algorithms.kex_algorithms.clone(),
-            server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
-            encryption_algorithms_client_to_server: vec![
-                "aes128-ctr".to_string(),
-                // "aes256-gcm@openssh.com".to_string(),
-            ],
-            encryption_algorithms_server_to_client: vec![
-                "aes128-ctr".to_string(),
-                // "aes256-gcm@openssh.com".to_string(),
-            ],
-            mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
-            mac_algorithms_server_to_client: vec!["hmac-sha2-256".to_string()],
-            compression_algorithms_client_to_server: server_kex_algorithms
-                .compression_algorithms_client_to_server
-                .clone(),
-            compression_algorithms_server_to_client: server_kex_algorithms
-                .compression_algorithms_server_to_client
-                .clone(),
-            languages_client_to_server: server_kex_algorithms.languages_client_to_server.clone(),
-            languages_server_to_client: server_kex_algorithms.languages_server_to_client.clone(),
-            first_kex_packet_follows: server_kex_algorithms.first_kex_packet_follows.clone(),
-        };
+        let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
         self.send(&BinaryPacket::new(&client_kex_algorithms.to_bytes()).to_bytes(session))?;
 
         Ok((client_kex_algorithms, server_kex_algorithms))

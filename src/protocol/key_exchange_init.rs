@@ -3,6 +3,7 @@ use nom::{
     number::complete::{be_u32, be_u8},
     IResult,
 };
+use rand::Rng;
 
 use crate::protocol::{
     ssh2::MessageCode,
@@ -81,6 +82,33 @@ impl KexAlgorithms {
             &(self.first_kex_packet_follows as u8).to_be_bytes(),
         );
         packet
+    }
+
+    pub fn create_kex_from_kex(&self) -> Self {
+        KexAlgorithms {
+            cookie: rand::thread_rng().gen::<[u8; 16]>().to_vec(),
+            kex_algorithms: self.kex_algorithms.clone(),
+            server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
+            encryption_algorithms_client_to_server: vec![
+                "aes128-ctr".to_string(),
+                // "aes256-gcm@openssh.com".to_string(),
+            ],
+            encryption_algorithms_server_to_client: vec![
+                "aes128-ctr".to_string(),
+                // "aes256-gcm@openssh.com".to_string(),
+            ],
+            mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
+            mac_algorithms_server_to_client: vec!["hmac-sha2-256".to_string()],
+            compression_algorithms_client_to_server: self
+                .compression_algorithms_client_to_server
+                .clone(),
+            compression_algorithms_server_to_client: self
+                .compression_algorithms_server_to_client
+                .clone(),
+            languages_client_to_server: self.languages_client_to_server.clone(),
+            languages_server_to_client: self.languages_server_to_client.clone(),
+            first_kex_packet_follows: self.first_kex_packet_follows.clone(),
+        }
     }
 }
 
