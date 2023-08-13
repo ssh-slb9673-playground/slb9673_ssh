@@ -20,6 +20,7 @@ enum MacAlgorithm {
 }
 
 pub trait MAC {
+    fn size(&self) -> usize;
     fn new(key: Vec<u8>) -> Self
     where
         Self: Sized;
@@ -28,6 +29,9 @@ pub trait MAC {
 
 pub struct NoneMac {}
 impl MAC for NoneMac {
+    fn size(&self) -> usize {
+        0
+    }
     fn new(key: Vec<u8>) -> Self {
         NoneMac {}
     }
@@ -39,6 +43,9 @@ pub struct HmacSha1 {
     pub key: Vec<u8>,
 }
 impl MAC for HmacSha1 {
+    fn size(&self) -> usize {
+        20
+    }
     fn new(key: Vec<u8>) -> Self {
         HmacSha1 { key }
     }
@@ -53,6 +60,9 @@ pub struct HmacSha1_96 {
     pub key: Vec<u8>,
 }
 impl MAC for HmacSha1_96 {
+    fn size(&self) -> usize {
+        12
+    }
     fn new(key: Vec<u8>) -> Self {
         HmacSha1_96 { key }
     }
@@ -67,6 +77,9 @@ pub struct HmacSha2_256 {
     pub key: Vec<u8>,
 }
 impl MAC for HmacSha2_256 {
+    fn size(&self) -> usize {
+        32
+    }
     fn new(key: Vec<u8>) -> Self {
         HmacSha2_256 { key }
     }
@@ -81,6 +94,9 @@ pub struct HmacSha2_512 {
     key: Vec<u8>,
 }
 impl MAC for HmacSha2_512 {
+    fn size(&self) -> usize {
+        64
+    }
     fn new(key: Vec<u8>) -> Self {
         HmacSha2_512 { key }
     }

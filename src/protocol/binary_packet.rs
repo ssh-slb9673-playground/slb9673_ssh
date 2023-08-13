@@ -1,6 +1,6 @@
 use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u8};
-use nom::IResult;
+use nom::{Err, IResult};
 
 use crate::protocol::session::Session;
 use crate::protocol::utils::DataType;
@@ -11,7 +11,6 @@ use crate::protocol::utils::DataType;
 //   byte[n2]  random padding; n2 = padding_length
 //   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
 // mac = MAC(key, sequence_number || unencrypted_packet)
-
 #[derive(Debug)]
 pub struct BinaryPacket {
     packet_length: u32,
@@ -34,14 +33,22 @@ impl BinaryPacket {
     }
 
     pub fn from_bytes<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], BinaryPacket> {
-        let mac_length: usize = 0;
-        let (input, packet) = String::from_bytes(input)?;
+        let _input = input.clone();
+
         let (input, packet_length) = be_u32(input)?;
         let (input, padding_length) = be_u8(input)?;
         let payload_length = packet_length - padding_length as u32 - 1;
         let (input, payload) = take(payload_length)(input)?;
         let (input, padding) = take(padding_length)(input)?;
-        let (input, mac) = take(mac_length)(input)?;
+        let (_input, mac) = take(session.server_method.mac_method.size())(input)?;
+
+        let mut tmp = vec![];
+        session.client_sequence_number.put(&mut tmp);
+        _input.to_vec().put(&mut tmp);
+        if session.server_method.mac_method.generate(&tmp) != mac {
+            panic!("match mac");
+            // return Err(Err(input));
+        }
 
         Ok((
             payload,
