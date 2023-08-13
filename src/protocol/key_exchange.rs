@@ -2,7 +2,7 @@ use nom::{number::complete::be_u8, IResult};
 use std::vec;
 
 use crate::crypto::key_exchange::KexMethod;
-use crate::protocol::utils::{DataType, Stringb};
+use crate::protocol::utils::{ByteString, DataType};
 use crate::protocol::{
     key_exchange_init::KexAlgorithms, ssh2::MessageCode, version_exchange::Version,
 };
@@ -122,11 +122,11 @@ impl<T: KexMethod> Kex<T> {
     }
 }
 
-pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (Stringb, Stringb)> {
+pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (ByteString, ByteString)> {
     let (input, message_code) = be_u8(input)?;
     assert!(message_code == MessageCode::SSH2_MSG_KEX_ECDH_REPLY.to_u8());
-    let (input, host_public_key) = Stringb::from_bytes(input)?;
-    let (input, public_key) = Stringb::from_bytes(input)?;
+    let (input, host_public_key) = ByteString::from_bytes(input)?;
+    let (input, public_key) = ByteString::from_bytes(input)?;
 
     Ok((input, (host_public_key, public_key)))
 }
