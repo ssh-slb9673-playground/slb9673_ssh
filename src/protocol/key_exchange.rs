@@ -70,54 +70,54 @@ impl<T: KexMethod> Kex<T> {
     pub fn initial_iv_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
         self.shared_secret_key.put(&mut seed);
-        seed.extend(&self.exchange_hash);
-        seed.extend("A".as_bytes());
-        seed.extend(&self.session_id);
+        self.exchange_hash.put(&mut seed);
+        ('A' as u8).put(&mut seed);
+        self.session_id.put(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn initial_iv_server_to_client(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        seed.extend(&self.shared_secret_key);
-        seed.extend(&self.exchange_hash);
-        seed.extend("B".as_bytes());
-        seed.extend(&self.session_id);
+        self.shared_secret_key.put(&mut seed);
+        self.exchange_hash.put(&mut seed);
+        ('B' as u8).put(&mut seed);
+        self.session_id.put(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn encryption_key_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        seed.extend(&self.shared_secret_key);
-        seed.extend(&self.exchange_hash);
-        seed.extend("C".as_bytes());
-        seed.extend(&self.session_id);
+        self.shared_secret_key.put(&mut seed);
+        self.exchange_hash.put(&mut seed);
+        ('C' as u8).put(&mut seed);
+        self.session_id.put(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn encryption_key_server_to_client(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        seed.extend(&self.shared_secret_key);
-        seed.extend(&self.exchange_hash);
-        seed.extend("D".as_bytes());
-        seed.extend(&self.session_id);
+        self.shared_secret_key.put(&mut seed);
+        self.exchange_hash.put(&mut seed);
+        ('D' as u8).put(&mut seed);
+        self.session_id.put(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn integrity_key_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        seed.extend(&self.shared_secret_key);
-        seed.extend(&self.exchange_hash);
-        seed.extend("E".as_bytes());
-        seed.extend(&self.session_id);
+        self.shared_secret_key.put(&mut seed);
+        self.exchange_hash.put(&mut seed);
+        ('E' as u8).put(&mut seed);
+        self.session_id.put(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn integrity_key_server_to_client(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        seed.extend(&self.shared_secret_key);
-        seed.extend(&self.exchange_hash);
-        seed.extend("F".as_bytes());
-        seed.extend(&self.session_id);
+        self.shared_secret_key.put(&mut seed);
+        self.exchange_hash.put(&mut seed);
+        ('F' as u8).put(&mut seed);
+        self.session_id.put(&mut seed);
         self.method.hash(&seed)
     }
 }
@@ -133,8 +133,8 @@ pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (String, Str
 
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
     let mut packet = Vec::new();
-    vec![MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8()].put(&mut packet);
-    method.public_key();
+    MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8().put(&mut packet);
+    method.public_key().put(&mut packet);
     packet
 }
 

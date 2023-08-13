@@ -51,6 +51,25 @@ impl DataType for Boolean {
     }
 }
 
+impl DataType for u8 {
+    fn size(&self) -> Option<usize> {
+        Some(1)
+    }
+    fn from_bytes(input: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        let (input, num) = be_u8(input)?;
+        Ok((input, num))
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        (*self).to_be_bytes().to_vec()
+    }
+    fn put(&self, data: &mut Vec<u8>) {
+        data.extend(self.to_bytes());
+    }
+}
+
 // uint32
 // Represents a 32-bit unsigned integer. Stored as four bytes in the order of decreasing significance (network byte order). For example: the value 699921578 (0x29b7f4aa) is stored as 29 b7 f4 aa.
 impl DataType for u32 {

@@ -62,7 +62,8 @@ impl KexAlgorithms {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut packet: Vec<u8> = vec![MessageCode::SSH_MSG_KEXINIT.to_u8()];
+        let mut packet: Vec<u8> = vec![];
+        MessageCode::SSH_MSG_KEXINIT.to_u8().put(&mut packet);
         self.cookie.put(&mut packet);
         self.kex_algorithms.put(&mut packet);
         self.server_host_key_algorithms.put(&mut packet);

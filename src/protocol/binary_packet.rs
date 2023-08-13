@@ -56,23 +56,20 @@ impl BinaryPacket {
 
     pub fn to_bytes(&self, session: &Session) -> Vec<u8> {
         let mut packet = vec![];
-        self.packet_length.to_be_bytes().to_vec().put(&mut packet);
-        self.padding_length.to_be_bytes().to_vec().put(&mut packet);
-        self.payload.to_vec().put(&mut packet);
-        self.padding.to_vec().put(&mut packet);
-        let mut tmp = vec![];
+        self.packet_length.put(&mut packet);
+        self.padding_length.put(&mut packet);
+        self.payload.put(&mut packet);
+        self.padding.put(&mut packet);
+
+        let mut mac = vec![];
+        session.client_sequence_number.put(&mut mac);
+        packet.put(&mut mac);
         session
-            .client_sequence_number
-            .to_be_bytes()
-            .to_vec()
-            .put(&mut packet);
-        packet.to_vec().put(&mut packet);
-        let mac = session
             .client_method
             .mac_method
-            .generate(&tmp)
-            .to_vec()
+            .generate(&mac)
             .put(&mut packet);
+
         packet
     }
 }
