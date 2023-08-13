@@ -54,7 +54,9 @@ impl Authentication {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet = Vec::new();
-        vec![MessageCode::SSH_MSG_USERAUTH_REQUEST.to_u8()].put(&mut packet);
+        MessageCode::SSH_MSG_USERAUTH_REQUEST
+            .to_u8()
+            .put(&mut packet);
         self.user_name.as_bytes().to_vec().put(&mut packet);
         self.service_name.as_bytes().to_vec().put(&mut packet);
         self.method_name.as_bytes().to_vec().put(&mut packet);
