@@ -44,7 +44,7 @@ impl Version {
         ))
     }
 
-    pub fn generate(&self, crnl: bool) -> String {
+    pub fn generate(&self, crnl: bool) -> Vec<u8> {
         let mut payload = self.ssh_protoversion_softwareversion.clone();
         if let Some(comments) = &self.comments {
             payload += " ";
@@ -53,7 +53,7 @@ impl Version {
         if crnl {
             payload += "\r\n";
         }
-        payload
+        payload.into_bytes()
     }
 }
 

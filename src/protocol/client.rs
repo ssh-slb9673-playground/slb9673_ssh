@@ -131,7 +131,7 @@ impl SshClient {
         let (_input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
-        let shared_secret = method.shared_secret(&server_public_key.as_bytes());
+        let shared_secret = method.shared_secret(&server_public_key.0);
 
         // New Keys
         let mut payload = Vec::new();
@@ -145,9 +145,9 @@ impl SshClient {
             server_version,
             client_kex,
             server_kex,
-            &server_public_host_key.as_bytes(),
+            &server_public_host_key.to_bytes(),
             &client_public_key,
-            &server_public_key.as_bytes(),
+            &server_public_key.to_bytes(),
             &shared_secret,
         ))
     }
