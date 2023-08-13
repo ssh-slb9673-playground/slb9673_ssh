@@ -1,3 +1,5 @@
+use std::fmt;
+
 use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
 use nom::IResult;

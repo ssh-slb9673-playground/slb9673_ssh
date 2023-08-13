@@ -28,7 +28,10 @@
 // string    user name on the client host in ISO-10646 UTF-8 encoding [RFC3629]
 // string    signature
 
-use super::{ssh2::MessageCode, utils::DataType};
+use super::{
+    ssh2::MessageCode,
+    utils::{ByteString, DataType},
+};
 
 enum Method {
     publickey,
@@ -38,17 +41,24 @@ enum Method {
 }
 
 pub struct Authentication {
-    user_name: String,
-    service_name: String,
-    method_name: String,
+    user_name: ByteString,
+    service_name: ByteString,
+    method_name: ByteString,
+    pubkey_name: ByteString,
 }
 
 impl Authentication {
-    pub fn new(user_name: &str, service_name: &str, method_name: &str) -> Self {
+    pub fn new(
+        user_name: Vec<u8>,
+        service_name: Vec<u8>,
+        method_name: Vec<u8>,
+        pubkey_name: Vec<u8>,
+    ) -> Self {
         Authentication {
-            user_name: user_name.to_string(),
-            service_name: service_name.to_string(),
-            method_name: method_name.to_string(),
+            user_name: ByteString(user_name),
+            service_name: ByteString(service_name),
+            method_name: ByteString(method_name),
+            pubkey_name: ByteString(pubkey_name),
         }
     }
 
@@ -57,9 +67,13 @@ impl Authentication {
         MessageCode::SSH_MSG_USERAUTH_REQUEST
             .to_u8()
             .put(&mut packet);
-        self.user_name.as_bytes().to_vec().put(&mut packet);
-        self.service_name.as_bytes().to_vec().put(&mut packet);
-        self.method_name.as_bytes().to_vec().put(&mut packet);
+        self.user_name.put(&mut packet);
+        self.service_name.put(&mut packet);
+        self.method_name.put(&mut packet);
+        false.put(&mut packet);
+        // public key algorithm name
+        self.pubkey_name.put(&mut packet);
+        // public key blob
         packet
     }
 }

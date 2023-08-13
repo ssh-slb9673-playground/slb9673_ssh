@@ -16,7 +16,6 @@ use crate::protocol::key_exchange::{generate_key_exchange, parse_key_exchange};
 use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::ssh2::DisconnectCode;
 use crate::protocol::version_exchange::Version;
-use crate::utils::{hex, hexdump};
 
 pub struct SshClient {
     address: SocketAddr,
@@ -71,9 +70,8 @@ impl SshClient {
             &server_kex_algorithms,
         );
 
-        // let user_auth = self.user_auth(&mut session)?;
-        // Ok(user_auth)
-        Ok(&[])
+        let user_auth = self.user_auth(&mut session)?;
+        Ok(user_auth)
     }
 
     fn version_exchange(&mut self) -> Result<(Version, Version), DisconnectCode> {
@@ -152,11 +150,16 @@ impl SshClient {
         ))
     }
 
-    fn user_auth(&mut self, session: Session) -> Result<&[u8], DisconnectCode> {
-        let auth = Authentication::new("anko", "test", "publickey");
+    fn user_auth(&mut self, session: &mut Session) -> Result<&[u8], DisconnectCode> {
+        let auth = Authentication::new(
+            "anko".as_bytes().to_vec(),
+            "test".as_bytes().to_vec(),
+            "publickey".as_bytes().to_vec(),
+            "".as_bytes().to_vec(),
+        );
         let packet = auth.to_bytes();
-        // let packet = .generate_encrypted_packet(&packet);
-        // self.send(packet);
+        let packet = session.encrypt_packet(&packet);
+        self.send(&packet)?;
 
         Ok(&[])
     }

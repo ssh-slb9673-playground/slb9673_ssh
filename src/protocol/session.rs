@@ -5,7 +5,6 @@ use crate::crypto::compression::NoneCompress;
 use crate::crypto::encryption::NoneEncryption;
 use crate::crypto::mac::NoneMac;
 use crate::crypto::{compression::Compress, encryption::Encryption, mac::MAC};
-use crate::utils::{hex, hexdump};
 
 // pub struct NewKeys<E: Encryption, M: MAC, C: Compress> {
 //     pub enc_method: E,

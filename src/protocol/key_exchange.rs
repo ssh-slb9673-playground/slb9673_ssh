@@ -6,7 +6,7 @@ use crate::protocol::utils::{ByteString, DataType};
 use crate::protocol::{
     key_exchange_init::KexAlgorithms, ssh2::MessageCode, version_exchange::Version,
 };
-use crate::utils::{hex, hexdump};
+use crate::utils::hex;
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {

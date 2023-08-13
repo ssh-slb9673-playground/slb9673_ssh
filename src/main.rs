@@ -2,7 +2,7 @@ mod config;
 mod crypto;
 mod network;
 mod protocol;
-mod utils;
+pub mod utils;
 
 use crate::config::{cli, domain};
 use crate::protocol::client::SshClient;
