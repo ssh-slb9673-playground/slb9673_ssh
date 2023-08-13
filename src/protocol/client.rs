@@ -6,6 +6,7 @@ use super::authentification::Authentication;
 use super::key_exchange::Kex;
 use super::session::{NewKeys, Session};
 use super::ssh2::MessageCode;
+use super::utils::DataType;
 use crate::crypto::compression::NoneCompress;
 use crate::crypto::encryption::aes_ctr::aes128_ctr;
 use crate::crypto::key_exchange::{curve::Curve25519Sha256, KexMethod};
@@ -78,7 +79,7 @@ impl SshClient {
     fn version_exchange(&mut self) -> Result<(Version, Version), DisconnectCode> {
         // send version
         let client_version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
-        self.send(&client_version.to_bytes(true))?;
+        self.send(&client_version.generate(true).to_bytes())?;
 
         // recv version
         let (_input, server_version) = Version::from_bytes(&self.recv()?)
@@ -126,7 +127,7 @@ impl SshClient {
         let (_input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
-        let shared_secret = method.shared_secret(&server_public_key);
+        let shared_secret = method.shared_secret(&server_public_key.as_bytes());
 
         // New Keys
         let payload = vec![MessageCode::SSH_MSG_NEWKEYS.to_u8()];
@@ -139,9 +140,9 @@ impl SshClient {
             server_version,
             client_kex,
             server_kex,
-            &server_public_host_key,
+            &server_public_host_key.as_bytes(),
             &client_public_key,
-            &server_public_key,
+            &server_public_key.as_bytes(),
             &shared_secret,
         ))
     }
@@ -149,11 +150,8 @@ impl SshClient {
     fn user_auth(&mut self, session: Session) -> Result<&[u8], DisconnectCode> {
         let auth = Authentication::new("anko", "test", "publickey");
         let packet = auth.to_bytes();
-        // let packet = enc_server_to_client.generate_encrypted_packet(&packet);
-        // let packet = enc_client_to_server.to_bytes(&packet);
-        // self.client
-        //     .send(&packet)
-        //     .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
+        // let packet = .generate_encrypted_packet(&packet);
+        // self.send(packet);
 
         Ok(&[])
     }

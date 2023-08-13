@@ -2,12 +2,9 @@ use nom::{number::complete::be_u8, IResult};
 use std::vec;
 
 use crate::crypto::key_exchange::KexMethod;
+use crate::protocol::utils::DataType;
 use crate::protocol::{
-    key_exchange_init::KexAlgorithms,
-    ssh2::MessageCode,
-    utils::put_bytes,
-    utils::{parse_string, put_string},
-    version_exchange::Version,
+    key_exchange_init::KexAlgorithms, ssh2::MessageCode, version_exchange::Version,
 };
 use crate::utils::{hex, hexdump};
 
@@ -48,14 +45,14 @@ impl<T: KexMethod> Kex<T> {
         shared_secret: &[u8],
     ) -> Self {
         let mut data = vec![];
-        put_string(&mut data, &client_version.to_bytes(false));
-        put_string(&mut data, &server_version.to_bytes(false));
-        put_string(&mut data, &client_kex.to_bytes());
-        put_string(&mut data, &server_kex.to_bytes());
-        put_string(&mut data, server_public_host_key);
-        put_string(&mut data, client_public_key);
-        put_string(&mut data, server_public_key);
-        put_string(&mut data, shared_secret);
+        client_version.generate(false).put(&mut data);
+        server_version.generate(false).put(&mut data);
+        client_kex.to_bytes().put(&mut data);
+        server_kex.to_bytes().put(&mut data);
+        server_public_host_key.to_vec().put(&mut data);
+        client_public_key.to_vec().put(&mut data);
+        server_public_key.to_vec().put(&mut data);
+        shared_secret.to_vec().put(&mut data);
         let exchange_hash = method.hash(&data);
         println!("shared_secret: {:?}", hex(&shared_secret));
         println!("exchange_hash: {:?}", hex(&exchange_hash));
@@ -72,7 +69,7 @@ impl<T: KexMethod> Kex<T> {
 
     pub fn initial_iv_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        seed.extend(&self.shared_secret_key);
+        self.shared_secret_key.put(&mut seed);
         seed.extend(&self.exchange_hash);
         seed.extend("A".as_bytes());
         seed.extend(&self.session_id);
@@ -125,19 +122,19 @@ impl<T: KexMethod> Kex<T> {
     }
 }
 
-pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (&'a [u8], &'a [u8])> {
+pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (String, String)> {
     let (input, message_code) = be_u8(input)?;
     assert!(message_code == MessageCode::SSH2_MSG_KEX_ECDH_REPLY.to_u8());
-    let (input, host_public_key) = parse_string(input)?;
-    let (input, public_key) = parse_string(input)?;
+    let (input, host_public_key) = String::from_bytes(input)?;
+    let (input, public_key) = String::from_bytes(input)?;
 
     Ok((input, (host_public_key, public_key)))
 }
 
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
     let mut packet = Vec::new();
-    put_bytes(&mut packet, &[MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8()]);
-    put_string(&mut packet, &method.public_key());
+    vec![MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8()].put(&mut packet);
+    method.public_key();
     packet
 }
 

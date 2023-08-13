@@ -28,10 +28,7 @@
 // string    user name on the client host in ISO-10646 UTF-8 encoding [RFC3629]
 // string    signature
 
-use super::{
-    ssh2::MessageCode,
-    utils::{put_bytes, put_string},
-};
+use super::{ssh2::MessageCode, utils::DataType};
 
 enum Method {
     publickey,
@@ -57,13 +54,10 @@ impl Authentication {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut packet = Vec::new();
-        put_bytes(
-            &mut packet,
-            &[MessageCode::SSH_MSG_USERAUTH_REQUEST.to_u8()],
-        );
-        put_string(&mut packet, self.user_name.as_bytes());
-        put_string(&mut packet, self.service_name.as_bytes());
-        put_string(&mut packet, self.method_name.as_bytes());
+        vec![MessageCode::SSH_MSG_USERAUTH_REQUEST.to_u8()].put(&mut packet);
+        self.user_name.as_bytes().to_vec().put(&mut packet);
+        self.service_name.as_bytes().to_vec().put(&mut packet);
+        self.method_name.as_bytes().to_vec().put(&mut packet);
         packet
     }
 }

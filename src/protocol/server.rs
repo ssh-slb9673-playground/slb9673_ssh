@@ -26,7 +26,7 @@ impl SshServer {
         let version = Version::from_bytes(&version_exchange_packet);
 
         let version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
-        let version_exchange_packet = version.to_bytes(true);
+        let version_exchange_packet = version.generate(true);
         let kex = KexAlgorithms {
             cookie: vec![],
             kex_algorithms: vec!["a".to_string()],
