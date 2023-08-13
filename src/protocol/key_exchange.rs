@@ -134,7 +134,7 @@ pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (ByteString,
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
     let mut packet = Vec::new();
     MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8().put(&mut packet);
-    method.public_key().put(&mut packet);
+    ByteString(method.public_key()).put(&mut packet);
     packet
 }
 
