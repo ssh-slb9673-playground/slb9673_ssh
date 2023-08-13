@@ -1,4 +1,3 @@
-use rand::prelude::*;
 use std::io;
 use std::net::SocketAddr;
 
@@ -23,6 +22,7 @@ pub struct SshClient {
     address: SocketAddr,
     username: String,
     client: TcpClient,
+    // dispatch: [Box<dyn Fn()>; 256],
 }
 
 impl SshClient {
@@ -101,7 +101,10 @@ impl SshClient {
 
         // send key algorithms
         let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
-        self.send(&BinaryPacket::new(&client_kex_algorithms.to_bytes()).to_bytes(session))?;
+        self.send(
+            &BinaryPacket::new(&client_kex_algorithms.generate_key_exchange_init())
+                .to_bytes(session),
+        )?;
 
         Ok((client_kex_algorithms, server_kex_algorithms))
     }
@@ -116,8 +119,9 @@ impl SshClient {
         session: &Session,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
-        let payload = generate_key_exchange::<Method>(&method);
         let client_public_key = method.public_key();
+
+        let payload = generate_key_exchange::<Method>(&method);
         let packet = BinaryPacket::new(&payload).to_bytes(session);
         self.send(&packet)?;
 

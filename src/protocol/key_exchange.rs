@@ -16,7 +16,7 @@ pub struct Kex<T: KexMethod> {
     pub session_id: Vec<u8>,
 }
 
-// Initial IV client to server: HASH(K || H || "A" || session_id) (Here K is encoded as mpint and "A" as byte and session_id as raw data.  "A" means the single character A, ASCII 65).
+// Initial IV client to server: HASH(K || H || "A" || session_id)
 // Initial IV server to client: HASH(K || H || "B" || session_id)
 // Encryption key client to server: HASH(K || H || "C" || session_id)
 // Encryption key server to client: HASH(K || H || "D" || session_id)
@@ -47,8 +47,8 @@ impl<T: KexMethod> Kex<T> {
         let mut data = vec![];
         client_version.generate(false).put(&mut data);
         server_version.generate(false).put(&mut data);
-        client_kex.to_bytes().put(&mut data);
-        server_kex.to_bytes().put(&mut data);
+        client_kex.generate_key_exchange_init().put(&mut data);
+        server_kex.generate_key_exchange_init().put(&mut data);
         server_public_host_key.to_vec().put(&mut data);
         client_public_key.to_vec().put(&mut data);
         server_public_key.to_vec().put(&mut data);

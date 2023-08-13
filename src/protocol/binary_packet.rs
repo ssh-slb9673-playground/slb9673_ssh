@@ -47,7 +47,6 @@ impl BinaryPacket {
         _input.to_vec().put(&mut tmp);
         if session.server_method.mac_method.generate(&tmp) != mac {
             panic!("match mac");
-            // return Err(Err(input));
         }
 
         Ok((
