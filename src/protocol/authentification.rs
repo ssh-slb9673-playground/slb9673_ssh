@@ -29,6 +29,7 @@
 // string    signature
 
 use super::{
+    session::Session,
     ssh2::MessageCode,
     utils::{ByteString, DataType},
 };
@@ -62,17 +63,17 @@ impl Authentication {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn generate(&self, session: &mut Session) -> Vec<u8> {
         let mut packet = Vec::new();
         MessageCode::SSH_MSG_USERAUTH_REQUEST
             .to_u8()
-            .put(&mut packet);
-        self.user_name.put(&mut packet);
-        self.service_name.put(&mut packet);
-        self.method_name.put(&mut packet);
-        false.put(&mut packet);
+            .encode(&mut packet);
+        self.user_name.encode(&mut packet);
+        self.service_name.encode(&mut packet);
+        self.method_name.encode(&mut packet);
+        false.encode(&mut packet);
         // public key algorithm name
-        self.pubkey_name.put(&mut packet);
+        self.pubkey_name.encode(&mut packet);
         // public key blob
         packet
     }

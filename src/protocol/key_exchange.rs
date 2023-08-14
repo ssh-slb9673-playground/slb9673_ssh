@@ -39,20 +39,20 @@ impl<T: KexMethod> Kex<T> {
         server_version: &Version,
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
-        server_public_host_key: &[u8],
+        server_public_host_key: &ByteString,
         client_public_key: &[u8],
-        server_public_key: &[u8],
+        server_public_key: &ByteString,
         shared_secret: &[u8],
     ) -> Self {
         let mut data = vec![];
-        client_version.generate(false).put(&mut data);
-        server_version.generate(false).put(&mut data);
-        client_kex.generate_key_exchange_init().put(&mut data);
-        server_kex.generate_key_exchange_init().put(&mut data);
-        server_public_host_key.to_vec().put(&mut data);
-        client_public_key.to_vec().put(&mut data);
-        server_public_key.to_vec().put(&mut data);
-        shared_secret.to_vec().put(&mut data);
+        client_version.generate(false).encode(&mut data);
+        server_version.generate(false).encode(&mut data);
+        client_kex.generate_key_exchange_init().encode(&mut data);
+        server_kex.generate_key_exchange_init().encode(&mut data);
+        server_public_host_key.encode(&mut data);
+        client_public_key.to_vec().encode(&mut data);
+        server_public_key.encode(&mut data);
+        shared_secret.to_vec().encode(&mut data);
         let exchange_hash = method.hash(&data);
         println!("shared_secret: {:?}", hex(&shared_secret));
         println!("exchange_hash: {:?}", hex(&exchange_hash));
@@ -69,55 +69,74 @@ impl<T: KexMethod> Kex<T> {
 
     pub fn initial_iv_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        self.shared_secret_key.put(&mut seed);
-        self.exchange_hash.put(&mut seed);
-        ('A' as u8).put(&mut seed);
-        self.session_id.put(&mut seed);
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        ('A' as u8).encode(&mut seed);
+        self.session_id.encode(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn initial_iv_server_to_client(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        self.shared_secret_key.put(&mut seed);
-        self.exchange_hash.put(&mut seed);
-        ('B' as u8).put(&mut seed);
-        self.session_id.put(&mut seed);
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        ('B' as u8).encode(&mut seed);
+        self.session_id.encode(&mut seed);
         self.method.hash(&seed)
     }
 
+    // K1 = HASH(K || H || X || session_id) (X is e.g., "A") K2 = HASH(K || H || K1) K3 = HASH(K || H || K1 || K2) ... key = K1 || K2 || K3 || ...
     pub fn encryption_key_client_to_server(&self) -> Vec<u8> {
+        let mut key = vec![];
+
         let mut seed: Vec<u8> = vec![];
-        self.shared_secret_key.put(&mut seed);
-        self.exchange_hash.put(&mut seed);
-        ('C' as u8).put(&mut seed);
-        self.session_id.put(&mut seed);
-        self.method.hash(&seed)
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        ('C' as u8).encode(&mut seed);
+        self.session_id.encode(&mut seed);
+        self.method.hash(&seed).encode(&mut key);
+
+        let mut seed: Vec<u8> = vec![];
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        key[..32].to_vec().encode(&mut seed);
+        self.method.hash(&seed).encode(&mut key);
+        key
     }
 
     pub fn encryption_key_server_to_client(&self) -> Vec<u8> {
+        let mut key = vec![];
+
         let mut seed: Vec<u8> = vec![];
-        self.shared_secret_key.put(&mut seed);
-        self.exchange_hash.put(&mut seed);
-        ('D' as u8).put(&mut seed);
-        self.session_id.put(&mut seed);
-        self.method.hash(&seed)
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        ('D' as u8).encode(&mut seed);
+        self.session_id.encode(&mut seed);
+        self.method.hash(&seed).encode(&mut key);
+
+        let mut seed: Vec<u8> = vec![];
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        key[..32].to_vec().encode(&mut seed);
+        self.method.hash(&seed).encode(&mut key);
+        key
     }
 
     pub fn integrity_key_client_to_server(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        self.shared_secret_key.put(&mut seed);
-        self.exchange_hash.put(&mut seed);
-        ('E' as u8).put(&mut seed);
-        self.session_id.put(&mut seed);
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        ('E' as u8).encode(&mut seed);
+        self.session_id.encode(&mut seed);
         self.method.hash(&seed)
     }
 
     pub fn integrity_key_server_to_client(&self) -> Vec<u8> {
         let mut seed: Vec<u8> = vec![];
-        self.shared_secret_key.put(&mut seed);
-        self.exchange_hash.put(&mut seed);
-        ('F' as u8).put(&mut seed);
-        self.session_id.put(&mut seed);
+        self.shared_secret_key.encode(&mut seed);
+        self.exchange_hash.encode(&mut seed);
+        ('F' as u8).encode(&mut seed);
+        self.session_id.encode(&mut seed);
         self.method.hash(&seed)
     }
 }
@@ -125,16 +144,18 @@ impl<T: KexMethod> Kex<T> {
 pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (ByteString, ByteString)> {
     let (input, message_code) = be_u8(input)?;
     assert!(message_code == MessageCode::SSH2_MSG_KEX_ECDH_REPLY.to_u8());
-    let (input, host_public_key) = ByteString::from_bytes(input)?;
-    let (input, public_key) = ByteString::from_bytes(input)?;
+    let (input, host_public_key) = ByteString::decode(input)?;
+    let (input, public_key) = ByteString::decode(input)?;
 
     Ok((input, (host_public_key, public_key)))
 }
 
 pub fn generate_key_exchange<T: KexMethod>(method: &T) -> Vec<u8> {
     let mut packet = Vec::new();
-    MessageCode::SSH2_MSG_KEX_ECDH_INIT.to_u8().put(&mut packet);
-    ByteString(method.public_key()).put(&mut packet);
+    MessageCode::SSH2_MSG_KEX_ECDH_INIT
+        .to_u8()
+        .encode(&mut packet);
+    ByteString(method.public_key()).encode(&mut packet);
     packet
 }
 

@@ -1,3 +1,5 @@
+use self::chachapoly::Result;
+
 pub mod aes_ctr;
 pub mod aes_gcm;
 pub mod chachapoly;
@@ -10,16 +12,16 @@ pub mod chachapoly;
 // aes192 (cbc, ctr, gcm)	192 bits
 // aes256 (cbc, ctr, gcm)	256 bits
 pub trait Encryption {
-    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>>;
-    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>>;
+    fn encrypt(&mut self, buffer: &mut [u8]) -> Option<Vec<u8>>;
+    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8]) -> Result<()>;
 }
 
 pub struct NoneEncryption {}
 impl Encryption for NoneEncryption {
-    fn encrypt(&mut self, plaintext: &[u8]) -> Option<Vec<u8>> {
-        Some(plaintext.to_vec())
+    fn encrypt(&mut self, buffer: &mut [u8]) -> Option<Vec<u8>> {
+        None
     }
-    fn decrypt(&mut self, ciphertext: &[u8]) -> Option<Vec<u8>> {
-        Some(ciphertext.to_vec())
+    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8]) -> Result<()> {
+        Ok(())
     }
 }

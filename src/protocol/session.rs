@@ -96,9 +96,9 @@ impl<'a> Session<'a> {
     }
 
     pub fn encrypt_packet(&mut self, payload: &[u8]) -> Vec<u8> {
-        let packet = BinaryPacket::new(payload).to_bytes(&self);
-        let encrypted_packet = self.client_method.enc_method.encrypt(&packet).unwrap();
+        let mut packet = BinaryPacket::new(payload).to_bytes(&self);
+        let tag = self.client_method.enc_method.encrypt(&mut packet).unwrap();
         self.client_sequence_number += 1;
-        encrypted_packet
+        packet
     }
 }

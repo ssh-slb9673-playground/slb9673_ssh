@@ -25,25 +25,25 @@ pub struct KexAlgorithms {
 }
 
 impl KexAlgorithms {
-    pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
-        let (input, message_id) = be_u8(input)?;
+    pub fn parse_key_exchange_init(inencode: &[u8]) -> IResult<&[u8], Self> {
+        let (inencode, message_id) = be_u8(inencode)?;
         assert!(message_id == MessageCode::SSH_MSG_KEXINIT.to_u8());
-        let (input, cookie) = take(16u8)(input)?;
-        let (input, kex_algorithms) = NameList::from_bytes(input)?;
-        let (input, server_host_key_algorithms) = NameList::from_bytes(input)?;
-        let (input, encryption_algorithms_client_to_server) = NameList::from_bytes(input)?;
-        let (input, encryption_algorithms_server_to_client) = NameList::from_bytes(input)?;
-        let (input, mac_algorithms_client_to_server) = NameList::from_bytes(input)?;
-        let (input, mac_algorithms_server_to_client) = NameList::from_bytes(input)?;
-        let (input, compression_algorithms_client_to_server) = NameList::from_bytes(input)?;
-        let (input, compression_algorithms_server_to_client) = NameList::from_bytes(input)?;
-        let (input, languages_client_to_server) = NameList::from_bytes(input)?;
-        let (input, languages_server_to_client) = NameList::from_bytes(input)?;
-        let (input, first_kex_packet_follows) = take(1u8)(input)?;
-        let (input, _reserved) = be_u32(input)?;
+        let (inencode, cookie) = take(16u8)(inencode)?;
+        let (inencode, kex_algorithms) = NameList::decode(inencode)?;
+        let (inencode, server_host_key_algorithms) = NameList::decode(inencode)?;
+        let (inencode, encryption_algorithms_client_to_server) = NameList::decode(inencode)?;
+        let (inencode, encryption_algorithms_server_to_client) = NameList::decode(inencode)?;
+        let (inencode, mac_algorithms_client_to_server) = NameList::decode(inencode)?;
+        let (inencode, mac_algorithms_server_to_client) = NameList::decode(inencode)?;
+        let (inencode, compression_algorithms_client_to_server) = NameList::decode(inencode)?;
+        let (inencode, compression_algorithms_server_to_client) = NameList::decode(inencode)?;
+        let (inencode, languages_client_to_server) = NameList::decode(inencode)?;
+        let (inencode, languages_server_to_client) = NameList::decode(inencode)?;
+        let (inencode, first_kex_packet_follows) = take(1u8)(inencode)?;
+        let (inencode, _reserved) = be_u32(inencode)?;
 
         Ok((
-            input,
+            inencode,
             KexAlgorithms {
                 cookie: cookie.to_vec(),
                 kex_algorithms,
@@ -63,22 +63,24 @@ impl KexAlgorithms {
 
     pub fn generate_key_exchange_init(&self) -> Vec<u8> {
         let mut packet: Vec<u8> = vec![];
-        MessageCode::SSH_MSG_KEXINIT.to_u8().put(&mut packet);
-        self.cookie.put(&mut packet);
-        self.kex_algorithms.put(&mut packet);
-        self.server_host_key_algorithms.put(&mut packet);
-        self.encryption_algorithms_client_to_server.put(&mut packet);
-        self.encryption_algorithms_server_to_client.put(&mut packet);
-        self.mac_algorithms_client_to_server.put(&mut packet);
-        self.mac_algorithms_server_to_client.put(&mut packet);
+        MessageCode::SSH_MSG_KEXINIT.to_u8().encode(&mut packet);
+        self.cookie.encode(&mut packet);
+        self.kex_algorithms.encode(&mut packet);
+        self.server_host_key_algorithms.encode(&mut packet);
+        self.encryption_algorithms_client_to_server
+            .encode(&mut packet);
+        self.encryption_algorithms_server_to_client
+            .encode(&mut packet);
+        self.mac_algorithms_client_to_server.encode(&mut packet);
+        self.mac_algorithms_server_to_client.encode(&mut packet);
         self.compression_algorithms_client_to_server
-            .put(&mut packet);
+            .encode(&mut packet);
         self.compression_algorithms_server_to_client
-            .put(&mut packet);
-        self.languages_client_to_server.put(&mut packet);
-        self.languages_server_to_client.put(&mut packet);
-        self.languages_server_to_client.put(&mut packet);
-        self.first_kex_packet_follows.to_bytes().put(&mut packet);
+            .encode(&mut packet);
+        self.languages_client_to_server.encode(&mut packet);
+        self.languages_server_to_client.encode(&mut packet);
+        self.languages_server_to_client.encode(&mut packet);
+        self.first_kex_packet_follows.encode(&mut packet);
         packet
     }
 
@@ -88,11 +90,13 @@ impl KexAlgorithms {
             kex_algorithms: self.kex_algorithms.clone(),
             server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
             encryption_algorithms_client_to_server: vec![
-                "aes128-ctr".to_string(),
+                "chacha20-poly1305@openssh.com".to_string(),
+                // "aes128-ctr".to_string(),
                 // "aes256-gcm@openssh.com".to_string(),
             ],
             encryption_algorithms_server_to_client: vec![
-                "aes128-ctr".to_string(),
+                "chacha20-poly1305@openssh.com".to_string(),
+                // "aes128-ctr".to_string(),
                 // "aes256-gcm@openssh.com".to_string(),
             ],
             mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
