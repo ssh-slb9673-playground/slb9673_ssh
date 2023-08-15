@@ -1,4 +1,4 @@
-use nom::{bytes::complete::take, IResult};
+use nom::IResult;
 use rand::Rng;
 
 use crate::protocol::ssh2::MessageCode;

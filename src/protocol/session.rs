@@ -6,12 +6,6 @@ use crate::crypto::encryption::NoneEncryption;
 use crate::crypto::mac::NoneMac;
 use crate::crypto::{compression::Compress, encryption::Encryption, mac::MAC};
 
-// pub struct NewKeys<E: Encryption, M: MAC, C: Compress> {
-//     pub enc_method: E,
-//     pub mac_method: M,
-//     pub comp_method: C,
-// }
-
 pub struct NewKeys {
     pub enc_method: Box<dyn Encryption>,
     pub mac_method: Box<dyn MAC>,

@@ -5,12 +5,13 @@ use super::authentification::Authentication;
 use super::key_exchange::Kex;
 use super::session::{NewKeys, Session};
 use super::ssh2::MessageCode;
-use super::utils::DataType;
-use crate::crypto::compression::NoneCompress;
-// use crate::crypto::encryption::aes_ctr::aes128_ctr;
-use crate::crypto::encryption::chachapoly::{self, ChaCha20Poly1305};
-use crate::crypto::key_exchange::{curve::Curve25519Sha256, KexMethod};
-use crate::crypto::mac::{HmacSha2_256, MAC};
+use super::utils::{ByteString, DataType};
+use crate::crypto::{
+    compression::NoneCompress,
+    encryption::chachapoly::ChaCha20Poly1305,
+    key_exchange::{curve::Curve25519Sha256, KexMethod},
+    mac::{HmacSha2_256, MAC},
+};
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::binary_packet::BinaryPacket;
 use crate::protocol::key_exchange::{generate_key_exchange, parse_key_exchange};
@@ -38,8 +39,9 @@ impl SshClient {
 
     pub fn connection_setup(&mut self) -> Result<&[u8], DisconnectCode> {
         let session = Session::init_state();
-        let (client_version, server_version) = self.version_exchange()?;
-        let (client_kex_algorithms, server_kex_algorithms) = self.key_exchange_init(&session)?;
+        let (client_version, server_version) = self.version_exchange().unwrap();
+        let (client_kex_algorithms, server_kex_algorithms) =
+            self.key_exchange_init(&session).unwrap();
         let kex = self.key_exchange::<Curve25519Sha256>(
             &client_kex_algorithms.cookie,
             &client_version,
@@ -72,7 +74,7 @@ impl SshClient {
             &server_kex_algorithms,
         );
 
-        let user_auth = self.user_auth(&mut session)?;
+        let user_auth = self.user_auth(&mut session).unwrap();
         Ok(user_auth)
     }
 
@@ -122,7 +124,7 @@ impl SshClient {
         session: &Session,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
-        let client_public_key = method.public_key();
+        let client_public_key = ByteString(method.public_key());
 
         let payload = generate_key_exchange::<Method>(&method);
         let packet = BinaryPacket::new(&payload).to_bytes(session);
@@ -134,7 +136,7 @@ impl SshClient {
         let (_inencode, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
-        let shared_secret = method.shared_secret(&server_public_key.0);
+        let shared_secret = ByteString(method.shared_secret(&server_public_key.0));
 
         // New Keys
         let mut payload = Vec::new();

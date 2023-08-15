@@ -1,4 +1,4 @@
-use nom::{number::complete::be_u8, IResult};
+use nom::IResult;
 use std::vec;
 
 use crate::crypto::key_exchange::KexMethod;
@@ -31,6 +31,11 @@ pub struct Kex<T: KexMethod> {
 // string   Q_C, client's ephemeral public key octet string
 // string   Q_S, server's ephemeral public key octet string
 // mpint    K,   shared secret
+// K1 = HASH(K || H || X || session_id) (X is e.g., "A")
+// K2 = HASH(K || H || K1)
+// K3 = HASH(K || H || K1 || K2)
+// ...
+// key = K1 || K2 || K3 || ...
 impl<T: KexMethod> Kex<T> {
     pub fn new(
         method: T,
@@ -40,9 +45,9 @@ impl<T: KexMethod> Kex<T> {
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
         server_public_host_key: &ByteString,
-        client_public_key: &[u8],
+        client_public_key: &ByteString,
         server_public_key: &ByteString,
-        shared_secret: &[u8],
+        shared_secret_key: &ByteString,
     ) -> Self {
         let mut data = vec![];
         client_version.generate(false).encode(&mut data);
@@ -50,18 +55,18 @@ impl<T: KexMethod> Kex<T> {
         client_kex.generate_key_exchange_init().encode(&mut data);
         server_kex.generate_key_exchange_init().encode(&mut data);
         server_public_host_key.encode(&mut data);
-        client_public_key.to_vec().encode(&mut data);
+        client_public_key.encode(&mut data);
         server_public_key.encode(&mut data);
-        shared_secret.to_vec().encode(&mut data);
+        shared_secret_key.encode(&mut data);
         hexdump(&data);
         let exchange_hash = method.hash(&data);
-        println!("shared_secret: {:?}", hex(&shared_secret));
+        println!("shared_secret: {:?}", hex(&shared_secret_key.0));
         println!("exchange_hash: {:?}", hex(&exchange_hash));
         println!("session_id: {:?}", hex(&session_id));
 
         Kex::<T> {
             method,
-            shared_secret_key: shared_secret.to_vec(),
+            shared_secret_key: shared_secret_key.0.clone(),
             exchange_hash: exchange_hash.clone(),
             session_id: exchange_hash,
             // session_id: session_id.to_vec(),
@@ -86,7 +91,6 @@ impl<T: KexMethod> Kex<T> {
         self.method.hash(&seed)
     }
 
-    // K1 = HASH(K || H || X || session_id) (X is e.g., "A") K2 = HASH(K || H || K1) K3 = HASH(K || H || K1 || K2) ... key = K1 || K2 || K3 || ...
     pub fn encryption_key_client_to_server(&self) -> Vec<u8> {
         let mut key = vec![];
 
@@ -143,7 +147,7 @@ impl<T: KexMethod> Kex<T> {
 }
 
 pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (ByteString, ByteString)> {
-    let (input, message_code) = be_u8(input)?;
+    let (input, message_code) = u8::decode(input)?;
     assert!(message_code == MessageCode::SSH2_MSG_KEX_ECDH_REPLY.to_u8());
     let (input, host_public_key) = ByteString::decode(input)?;
     let (input, public_key) = ByteString::decode(input)?;

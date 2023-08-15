@@ -1,5 +1,4 @@
 use core::fmt;
-
 use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
 use nom::IResult;
@@ -114,7 +113,7 @@ impl DataType for usize {
         Ok(4)
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        buf.extend(&self.to_be_bytes())
+        buf.extend(&(*self as u32).to_be_bytes())
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         let (input, num) = be_u32(input)?;
@@ -173,7 +172,7 @@ impl<const N: usize> DataType for [u8; N] {
         buf.extend(self)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
-        let (inencode, result) = take(N as u8)(input)?;
+        let (input, result) = take(N as u8)(input)?;
         Ok((input, result.try_into().unwrap()))
     }
     fn to_bytes(&self) -> Vec<u8> {
@@ -190,10 +189,8 @@ impl DataType for ByteString {
         Ok(self.0.len())
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        let mut bytes = vec![];
-        self.0.len().encode(&mut bytes);
-        self.0.encode(&mut bytes);
-        buf.extend(bytes)
+        self.0.len().encode(buf);
+        self.0.encode(buf)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         let (input, length) = be_u32(input)?;
@@ -213,10 +210,8 @@ impl DataType for String {
         Ok(self.len())
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        let mut bytes = vec![];
-        self.len().encode(&mut bytes);
-        self.as_bytes().to_vec().encode(&mut bytes);
-        buf.extend(bytes)
+        self.len().encode(buf);
+        self.as_bytes().to_vec().encode(buf);
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         let (input, length) = be_u32(input)?;

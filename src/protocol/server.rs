@@ -1,7 +1,6 @@
 use std::io::Result;
 use std::net::SocketAddr;
 
-use super::key_exchange_init::KexAlgorithms;
 use crate::network::tcp_server::TcpServer;
 use crate::protocol::version_exchange::Version;
 
@@ -27,21 +26,6 @@ impl SshServer {
 
         let version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
         let version_exchange_packet = version.generate(true);
-        let kex = KexAlgorithms {
-            cookie: [0; 16],
-            kex_algorithms: vec!["a".to_string()],
-            server_host_key_algorithms: vec!["a".to_string()],
-            encryption_algorithms_client_to_server: vec!["a".to_string()],
-            encryption_algorithms_server_to_client: vec!["a".to_string()],
-            mac_algorithms_client_to_server: vec!["a".to_string()],
-            mac_algorithms_server_to_client: vec!["a".to_string()],
-            compression_algorithms_client_to_server: vec!["a".to_string()],
-            compression_algorithms_server_to_client: vec!["a".to_string()],
-            languages_client_to_server: vec!["a".to_string()],
-            languages_server_to_client: vec!["a".to_string()],
-            first_kex_packet_follows: true,
-        };
-        let key_exchange_packet = kex.generate_key_exchange_init();
 
         let a = self.server.recv()?;
         Ok(a)
