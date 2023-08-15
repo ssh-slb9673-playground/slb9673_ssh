@@ -1,50 +1,13 @@
-// "publickey"             REQUIRED
-// "password"              OPTIONAL
-// "hostbased"             OPTIONAL
-// "none"                  NOT RECOMMENDED
-
-// byte      SSH_MSG_USERAUTH_REQUEST
-// string    user name in ISO-10646 UTF-8 encoding [RFC3629]
-// string    service name in US-ASCII
-// string    "publickey"
-// boolean   FALSE
-// string    public key algorithm name
-// string    public key blob
-
-// byte      SSH_MSG_USERAUTH_REQUEST
-// string    user name
-// string    service name
-// string    "password"
-// boolean   FALSE
-// string    plaintext password in ISO-10646 UTF-8 encoding [RFC3629]
-
-// byte      SSH_MSG_USERAUTH_REQUEST
-// string    user name
-// string    service name
-// string    "hostbased"
-// string    public key algorithm for host key
-// string    public host key and certificates for client host
-// string    client host name expressed as the FQDN in US-ASCII
-// string    user name on the client host in ISO-10646 UTF-8 encoding [RFC3629]
-// string    signature
-
 use super::{
     session::Session,
     ssh2::MessageCode,
     utils::{ByteString, DataType},
 };
 
-enum Method {
-    publickey,
-    password,
-    hostbased,
-    none,
-}
-
 pub struct Authentication {
     user_name: ByteString,
     service_name: ByteString,
-    method_name: ByteString,
+    method_name: ByteString, // publickey, password, hostbased, none
     pubkey_name: ByteString,
 }
 
@@ -64,17 +27,30 @@ impl Authentication {
     }
 
     pub fn generate(&self, session: &mut Session) -> Vec<u8> {
-        let mut packet = Vec::new();
+        let mut payload = Vec::new();
         MessageCode::SSH_MSG_USERAUTH_REQUEST
             .to_u8()
-            .encode(&mut packet);
-        self.user_name.encode(&mut packet);
-        self.service_name.encode(&mut packet);
-        self.method_name.encode(&mut packet);
-        false.encode(&mut packet);
-        // public key algorithm name
-        self.pubkey_name.encode(&mut packet);
-        // public key blob
-        packet
+            .encode(&mut payload);
+        self.user_name.encode(&mut payload);
+        self.service_name.encode(&mut payload);
+        self.method_name.encode(&mut payload);
+        false.encode(&mut payload);
+        // public key
+        // string    public key algorithm name
+        // string    public key blob
+        self.pubkey_name.encode(&mut payload);
+        // password
+        // string    plaintext password in ISO-10646 UTF-8 encoding [RFC3629]
+        payload
     }
 }
+
+// byte      SSH_MSG_USERAUTH_REQUEST
+// string    user name
+// string    service name
+// string    "hostbased"
+// string    public key algorithm for host key
+// string    public host key and certificates for client host
+// string    client host name expressed as the FQDN in US-ASCII
+// string    user name on the client host in ISO-10646 UTF-8 encoding [RFC3629]
+// string    signature

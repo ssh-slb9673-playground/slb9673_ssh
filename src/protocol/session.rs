@@ -1,4 +1,3 @@
-use super::binary_packet::BinaryPacket;
 use super::key_exchange_init::KexAlgorithms;
 use super::version_exchange::Version;
 use crate::crypto::compression::NoneCompress;
@@ -80,19 +79,5 @@ impl<'a> Session<'a> {
             client_kex: Some(client_kex),
             server_kex: Some(server_kex),
         }
-    }
-
-    pub fn decrypt_packet(&self, packet: &[u8]) {
-        // let encrypted_packet = self.client_method.enc_method.decrypt(&packet).unwrap();
-        // let packet = BinaryPacket::from_bytes(packet).to_bytes(&self);
-        // self.client_sequence_number += 1;
-        // encrypted_packet
-    }
-
-    pub fn encrypt_packet(&mut self, payload: &[u8]) -> Vec<u8> {
-        let mut packet = BinaryPacket::new(payload).to_bytes(&self);
-        let tag = self.client_method.enc_method.encrypt(&mut packet).unwrap();
-        self.client_sequence_number += 1;
-        packet
     }
 }

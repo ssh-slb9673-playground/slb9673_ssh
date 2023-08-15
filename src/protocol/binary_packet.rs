@@ -1,6 +1,5 @@
 use nom::bytes::complete::take;
-use nom::number::complete::{be_u32, be_u8};
-use nom::{Err, IResult};
+use nom::IResult;
 
 use crate::protocol::session::Session;
 use crate::protocol::utils::DataType;
@@ -32,11 +31,20 @@ impl BinaryPacket {
         }
     }
 
-    pub fn from_bytes<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], BinaryPacket> {
+    pub fn decode<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], BinaryPacket> {
         let _input = input.clone();
 
-        let (input, packet_length) = be_u32(input)?;
-        let (input, padding_length) = be_u8(input)?;
+        // session
+        //     .client_method
+        //     .enc_method
+        //     .decrypt(&mut _input)
+        //     .unwrap();
+        // let packet = BinaryPacket::from_bytes(packet).to_bytes(&self);
+        // self.client_sequence_number += 1;
+        // encrypted_packet
+
+        let (input, packet_length) = <u32>::decode(input)?;
+        let (input, padding_length) = <u8>::decode(input)?;
         let payload_length = packet_length - padding_length as u32 - 1;
         let (input, payload) = take(payload_length)(input)?;
         let (input, padding) = take(padding_length)(input)?;
@@ -60,7 +68,7 @@ impl BinaryPacket {
         ))
     }
 
-    pub fn to_bytes(&self, session: &Session) -> Vec<u8> {
+    pub fn encode(&self, session: &Session) -> Vec<u8> {
         let mut packet = vec![];
         self.packet_length.encode(&mut packet);
         self.padding_length.encode(&mut packet);
@@ -70,12 +78,18 @@ impl BinaryPacket {
         let mut mac = vec![];
         session.client_sequence_number.encode(&mut mac);
         packet.encode(&mut mac);
-        session
-            .client_method
-            .mac_method
-            .generate(&mac)
-            .encode(&mut packet);
+        mac = session.client_method.mac_method.generate(&mac);
 
-        packet
+        let mut encrypted_packet = packet.clone();
+        let tag = session
+            .client_method
+            .enc_method
+            .encrypt(&mut encrypted_packet)
+            .unwrap();
+        session.client_sequence_number += 1;
+
+        mac.encode(&mut encrypted_packet);
+
+        encrypted_packet
     }
 }

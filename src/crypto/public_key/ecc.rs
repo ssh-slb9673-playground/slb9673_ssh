@@ -1,10 +1,10 @@
 use super::PublicKey;
 
-struct ssh_ed25519 {
+struct SshEd25519 {
     px: u64,
     py: u64,
 }
-impl PublicKey for ssh_ed25519 {
+impl PublicKey for SshEd25519 {
     fn identifier(&self) -> Vec<u8> {
         "ssh-ed25519".as_bytes().to_vec()
     }

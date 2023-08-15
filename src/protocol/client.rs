@@ -98,7 +98,7 @@ impl SshClient {
     ) -> Result<(KexAlgorithms, KexAlgorithms), DisconnectCode> {
         // recv key algorithms
         let packet = self.recv()?;
-        let (payload, _binary_packet) = BinaryPacket::from_bytes(&packet, &session)
+        let (payload, _binary_packet) = BinaryPacket::decode(&packet, &session)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (_input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -106,8 +106,7 @@ impl SshClient {
         // send key algorithms
         let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
         self.send(
-            &BinaryPacket::new(&client_kex_algorithms.generate_key_exchange_init())
-                .to_bytes(session),
+            &BinaryPacket::new(&client_kex_algorithms.generate_key_exchange_init()).encode(session),
         )?;
 
         Ok((client_kex_algorithms, server_kex_algorithms))
@@ -126,11 +125,11 @@ impl SshClient {
         let client_public_key = ByteString(method.public_key());
 
         let payload = generate_key_exchange::<Method>(&method);
-        let packet = BinaryPacket::new(&payload).to_bytes(session);
+        let packet = BinaryPacket::new(&payload).encode(session);
         self.send(&packet)?;
 
         let key_exchange_packet = self.recv()?;
-        let (payload, _binary_packet) = BinaryPacket::from_bytes(&key_exchange_packet, session)
+        let (payload, _binary_packet) = BinaryPacket::decode(&key_exchange_packet, session)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (_input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -140,7 +139,7 @@ impl SshClient {
         // New Keys
         let mut payload = Vec::new();
         MessageCode::SSH_MSG_NEWKEYS.to_u8().encode(&mut payload);
-        let packet = BinaryPacket::new(&payload).to_bytes(session);
+        let packet = BinaryPacket::new(&payload).encode(session);
         self.send(&packet)?;
         Ok(Kex::<Method>::new(
             method,
@@ -164,7 +163,6 @@ impl SshClient {
             "".as_bytes().to_vec(),
         );
         let packet = auth.generate(session);
-        let packet = session.encrypt_packet(&packet);
         self.send(&packet)?;
 
         Ok(&[])

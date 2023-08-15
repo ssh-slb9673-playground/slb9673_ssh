@@ -1,3 +1,4 @@
+#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum MessageCode {
     // Transport layer protocol
@@ -132,6 +133,7 @@ impl MessageCode {
 }
 
 /* disconnect reason code */
+#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum DisconnectCode {
     SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT,
@@ -163,6 +165,7 @@ impl std::fmt::Display for DisconnectCode {
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum ErrorCode {
     SSH_ERR_SUCCESS,

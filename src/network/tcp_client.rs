@@ -1,5 +1,5 @@
 use std::io::Read;
-use std::io::{Error, ErrorKind, Result, Write};
+use std::io::{Result, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::time::Duration;
 
@@ -31,6 +31,6 @@ impl TcpClient {
                 return Ok(recv_data[..packet_length].to_vec());
             }
         }
-        Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
+        // Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
     }
 }

@@ -9,7 +9,7 @@
 //! [PROTOCOL.chacha20poly1305]: https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.chacha20poly1305?annotate=HEAD
 
 // use crate::{Error, Nonce, Result, Tag};
-use chacha20::{ChaCha20, Key};
+use chacha20::{ChaCha20Legacy, Key};
 use cipher::{KeyInit, KeyIvInit, StreamCipher, StreamCipherSeek};
 use poly1305::Poly1305;
 use subtle::ConstantTimeEq;
@@ -60,7 +60,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 pub(crate) struct ChaCha20Poly1305 {
-    cipher: ChaCha20,
+    cipher: ChaCha20Legacy,
     mac: Poly1305,
 }
 
@@ -82,7 +82,7 @@ impl ChaCha20Poly1305 {
             Nonce::try_from(nonce).map_err(|_| Error::IvSize)?
         };
 
-        let mut cipher = ChaCha20::new(key, &nonce.into());
+        let mut cipher = ChaCha20Legacy::new(key, &nonce.into());
         let mut poly1305_key = poly1305::Key::default();
         cipher.apply_keystream(&mut poly1305_key);
 
