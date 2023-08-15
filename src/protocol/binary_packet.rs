@@ -32,22 +32,19 @@ impl BinaryPacket {
         }
     }
 
-    pub fn from_bytes<'a>(
-        inencode: &'a [u8],
-        session: &Session,
-    ) -> IResult<&'a [u8], BinaryPacket> {
-        let _inencode = inencode.clone();
+    pub fn from_bytes<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], BinaryPacket> {
+        let _input = input.clone();
 
-        let (inencode, packet_length) = be_u32(inencode)?;
-        let (inencode, padding_length) = be_u8(inencode)?;
+        let (input, packet_length) = be_u32(input)?;
+        let (input, padding_length) = be_u8(input)?;
         let payload_length = packet_length - padding_length as u32 - 1;
-        let (inencode, payload) = take(payload_length)(inencode)?;
-        let (inencode, padding) = take(padding_length)(inencode)?;
-        let (_inencode, mac) = take(session.server_method.mac_method.size())(inencode)?;
+        let (input, payload) = take(payload_length)(input)?;
+        let (input, padding) = take(padding_length)(input)?;
+        let (_input, mac) = take(session.server_method.mac_method.size())(input)?;
 
         let mut tmp = vec![];
         session.client_sequence_number.encode(&mut tmp);
-        _inencode.to_vec().encode(&mut tmp);
+        _input.to_vec().encode(&mut tmp);
         if session.server_method.mac_method.generate(&tmp) != mac {
             panic!("match mac");
         }
