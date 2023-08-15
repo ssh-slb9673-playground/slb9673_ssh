@@ -1,8 +1,4 @@
-use nom::{
-    bytes::complete::take,
-    number::complete::{be_u32, be_u8},
-    IResult,
-};
+use nom::{bytes::complete::take, IResult};
 use rand::Rng;
 
 use crate::protocol::ssh2::MessageCode;
@@ -10,7 +6,7 @@ use crate::protocol::utils::{DataType, NameList};
 
 #[derive(Debug)]
 pub struct KexAlgorithms {
-    pub cookie: Vec<u8>,
+    pub cookie: [u8; 16],
     pub kex_algorithms: NameList,
     pub server_host_key_algorithms: NameList,
     pub encryption_algorithms_client_to_server: NameList,
@@ -26,9 +22,9 @@ pub struct KexAlgorithms {
 
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(inencode: &[u8]) -> IResult<&[u8], Self> {
-        let (inencode, message_id) = be_u8(inencode)?;
+        let (inencode, message_id) = u8::decode(inencode)?;
         assert!(message_id == MessageCode::SSH_MSG_KEXINIT.to_u8());
-        let (inencode, cookie) = take(16u8)(inencode)?;
+        let (inencode, cookie) = <[u8; 16]>::decode(inencode)?;
         let (inencode, kex_algorithms) = NameList::decode(inencode)?;
         let (inencode, server_host_key_algorithms) = NameList::decode(inencode)?;
         let (inencode, encryption_algorithms_client_to_server) = NameList::decode(inencode)?;
@@ -39,13 +35,13 @@ impl KexAlgorithms {
         let (inencode, compression_algorithms_server_to_client) = NameList::decode(inencode)?;
         let (inencode, languages_client_to_server) = NameList::decode(inencode)?;
         let (inencode, languages_server_to_client) = NameList::decode(inencode)?;
-        let (inencode, first_kex_packet_follows) = take(1u8)(inencode)?;
-        let (inencode, _reserved) = be_u32(inencode)?;
+        let (inencode, first_kex_packet_follows) = bool::decode(inencode)?;
+        let (inencode, _reserved) = u32::decode(inencode)?;
 
         Ok((
             inencode,
             KexAlgorithms {
-                cookie: cookie.to_vec(),
+                cookie,
                 kex_algorithms,
                 server_host_key_algorithms,
                 encryption_algorithms_client_to_server,
@@ -56,7 +52,7 @@ impl KexAlgorithms {
                 compression_algorithms_server_to_client,
                 languages_client_to_server,
                 languages_server_to_client,
-                first_kex_packet_follows: first_kex_packet_follows[0] != 0,
+                first_kex_packet_follows,
             },
         ))
     }
@@ -86,7 +82,7 @@ impl KexAlgorithms {
 
     pub fn create_kex_from_kex(&self) -> Self {
         KexAlgorithms {
-            cookie: rand::thread_rng().gen::<[u8; 16]>().to_vec(),
+            cookie: rand::thread_rng().gen::<[u8; 16]>(),
             kex_algorithms: self.kex_algorithms.clone(),
             server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
             encryption_algorithms_client_to_server: vec![

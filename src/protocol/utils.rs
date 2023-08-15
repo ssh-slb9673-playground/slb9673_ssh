@@ -173,7 +173,8 @@ impl<const N: usize> DataType for [u8; N] {
         buf.extend(self)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
-        todo!();
+        let (inencode, result) = take(N as u8)(input)?;
+        Ok((input, result.try_into().unwrap()))
     }
     fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![];

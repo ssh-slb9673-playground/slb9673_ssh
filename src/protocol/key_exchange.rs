@@ -6,7 +6,7 @@ use crate::protocol::utils::{ByteString, DataType};
 use crate::protocol::{
     key_exchange_init::KexAlgorithms, ssh2::MessageCode, version_exchange::Version,
 };
-use crate::utils::hex;
+use crate::utils::{hex, hexdump};
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -53,6 +53,7 @@ impl<T: KexMethod> Kex<T> {
         client_public_key.to_vec().encode(&mut data);
         server_public_key.encode(&mut data);
         shared_secret.to_vec().encode(&mut data);
+        hexdump(&data);
         let exchange_hash = method.hash(&data);
         println!("shared_secret: {:?}", hex(&shared_secret));
         println!("exchange_hash: {:?}", hex(&exchange_hash));
