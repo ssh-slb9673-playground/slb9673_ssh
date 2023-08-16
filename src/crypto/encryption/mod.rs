@@ -27,13 +27,13 @@ impl Encryption for NoneEncryption {
     fn group_size(&self) -> u32 {
         8
     }
-    fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32) {}
+    fn encrypt(&mut self, buffer: &mut Vec<u8>, _sequence_number: u32) {}
     fn decrypt(
         &mut self,
-        buffer: &mut [u8],
-        tag: &[u8],
-        sequence_number: u32,
+        _buffer: &mut [u8],
+        _tag: &[u8],
+        _sequence_number: u32,
     ) -> Result<Vec<u8>, SshError> {
-        Ok(vec![])
+        Ok(Vec::new())
     }
 }

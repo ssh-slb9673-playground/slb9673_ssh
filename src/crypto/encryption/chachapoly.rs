@@ -1,19 +1,6 @@
-//! OpenSSH variant of ChaCha20Poly1305: `chacha20-poly1305@openssh.com`
-//!
-//! Differences from ChaCha20Poly1305 as described in RFC8439:
-//!
-//! - Construction uses two separately keyed instances of ChaCha20: one for data, one for lengths
-//! - The input of Poly1305 is not padded
-//! - The lengths of ciphertext and AAD are not authenticated using Poly1305
-//!
-//! [PROTOCOL.chacha20poly1305]: https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.chacha20poly1305?annotate=HEAD
-
-// use crate::{Error, Nonce, Result, Tag};
-use ring::aead::chacha20_poly1305_openssh::{OpeningKey, SealingKey};
-
-use crate::protocol::error::SshError;
-
 use super::Encryption;
+use crate::protocol::error::SshError;
+use ring::aead::chacha20_poly1305_openssh::{OpeningKey, SealingKey};
 
 const BSIZE: usize = 64;
 
@@ -53,7 +40,7 @@ impl Encryption for ChaCha20Poly1305 {
     fn decrypt(
         &mut self,
         buf: &mut [u8],
-        tag: &[u8],
+        _tag: &[u8],
         sequence_number: u32,
     ) -> Result<Vec<u8>, SshError> {
         let mut packet_len_slice = [0_u8; 4];

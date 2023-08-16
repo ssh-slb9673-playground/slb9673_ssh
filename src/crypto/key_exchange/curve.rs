@@ -43,7 +43,7 @@ impl KexMethod for Curve448Sha512 {
     fn public_key(&self) -> Vec<u8> {
         todo!()
     }
-    fn shared_secret(&mut self, public_key: &[u8]) -> Vec<u8> {
+    fn shared_secret(&mut self, _public_key: &[u8]) -> Vec<u8> {
         todo!()
     }
     fn hash(&self, seed: &[u8]) -> Vec<u8> {

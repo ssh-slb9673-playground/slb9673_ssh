@@ -1,10 +1,10 @@
 use nom::IResult;
 use rand::Rng;
 
+use crate::protocol::data::{DataType, NameList};
 use crate::protocol::ssh2::message_code;
-use crate::protocol::utils::{DataType, NameList};
 
-use super::utils::Data;
+use super::data::Data;
 
 #[derive(Debug)]
 pub struct KexAlgorithms {

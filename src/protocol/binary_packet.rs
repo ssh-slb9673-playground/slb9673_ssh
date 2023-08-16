@@ -1,8 +1,8 @@
 use nom::bytes::complete::take;
 use nom::{AsBytes, IResult};
 
+use crate::protocol::data::{Data, DataType};
 use crate::protocol::session::Session;
-use crate::protocol::utils::{Data, DataType};
 use crate::utils::hexdump;
 
 //   uint32    packet_length
@@ -29,11 +29,12 @@ impl SshPacket {
         // self.client_sequence_number += 1;
         // encrypted_packet
 
-        let (input, packet_length) = <u32>::decode(input)?;
-        let (input, padding_length) = <u8>::decode(input)?;
+        let mut data: Data = input.into();
+        let packet_length = data.get_u32();
+        let padding_length = data.get_u8();
         let payload_length = packet_length - padding_length as u32 - 1;
         let (input, payload) = take(payload_length)(input)?;
-        let (input, padding) = take(padding_length)(input)?;
+        let (input, _) = take(padding_length)(input)?;
         let (_input, mac) = take(session.server_method.mac_method.size())(input)?;
 
         let mut data = Data::new();
@@ -70,7 +71,6 @@ impl SshPacket {
             .put(&padding_length)
             .put(&payload.as_bytes())
             .put(&padding.as_bytes());
-
         let packet = data.into_inner();
 
         let mut mac = Data::new();

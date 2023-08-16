@@ -1,41 +1,6 @@
-use core::fmt;
 use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
 use nom::{AsBytes, IResult};
-
-/// Error type.
-#[derive(Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum Error {
-    /// Character encoding-related errors.
-    CharacterEncoding,
-    /// Invalid label.
-    Label,
-    /// Invalid length.
-    Length,
-    /// Overflow errors.
-    Overflow,
-    /// Unexpected trailing data at end of message.
-    TrailingData {
-        /// Number of bytes of remaining data at end of message.
-        remaining: usize,
-    },
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::CharacterEncoding => write!(f, "character encoding invalid"),
-            Error::Label => write!(f, "label"),
-            Error::Length => write!(f, "length invalid"),
-            Error::Overflow => write!(f, "internal overflow error"),
-            Error::TrailingData { remaining } => write!(
-                f,
-                "unexpected trailing data at end of message ({remaining} bytes)",
-            ),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Data(Vec<u8>);
@@ -52,11 +17,28 @@ impl Data {
         self
     }
 
-    pub fn get<T>(&mut self) -> IResult<&[u8], T>
-    where
-        T: DataType,
-    {
-        T::decode(&mut self.0)
+    // pub fn get<T>(&mut self) -> T
+    // where
+    //     T: DataType,
+    // {
+    //     let (_, data) = T::decode(&self.0).unwrap();
+    //     self.0.drain(..self.size());
+    //     data
+    // }
+
+    pub fn get_u8(&mut self) -> u8 {
+        self.0.remove(0)
+    }
+
+    pub fn get_u32(&mut self) -> u32 {
+        let u32_buf = self.0.drain(..4).into_iter().collect::<Vec<u8>>();
+        u32::from_be_bytes(u32_buf.try_into().unwrap())
+    }
+
+    pub fn get_u8s(&mut self) -> Vec<u8> {
+        let len = self.get_u32() as usize;
+        let bytes = self.0.drain(..len).into_iter().collect::<Vec<u8>>();
+        bytes
     }
 
     pub fn into_inner(self) -> Vec<u8> {
@@ -72,7 +54,7 @@ impl<'a> From<&'a [u8]> for Data {
 
 // [RFC4251 § 5](https://datatracker.ietf.org/doc/html/rfc4251#section-5)
 pub trait DataType {
-    fn size(&self) -> Result<usize, Error>;
+    fn size(&self) -> usize;
     fn encode(&self, buf: &mut Vec<u8>);
     fn decode(input: &[u8]) -> IResult<&[u8], Self>
     where
@@ -81,8 +63,8 @@ pub trait DataType {
 }
 
 impl DataType for bool {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(1)
+    fn size(&self) -> usize {
+        1
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         if *self {
@@ -96,7 +78,7 @@ impl DataType for bool {
         Ok((input, boolean != 0))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -104,8 +86,8 @@ impl DataType for bool {
 
 // byte
 impl DataType for u8 {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(1)
+    fn size(&self) -> usize {
+        1
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.to_be_bytes())
@@ -115,7 +97,7 @@ impl DataType for u8 {
         Ok((input, num))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -123,8 +105,8 @@ impl DataType for u8 {
 
 // uint32
 impl DataType for u32 {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(4)
+    fn size(&self) -> usize {
+        4
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(&(*self as u32).to_be_bytes())
@@ -134,7 +116,7 @@ impl DataType for u32 {
         Ok((input, num))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -142,8 +124,8 @@ impl DataType for u32 {
 
 // uint32
 impl DataType for usize {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(4)
+    fn size(&self) -> usize {
+        4
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(&(*self as u32).to_be_bytes())
@@ -153,7 +135,7 @@ impl DataType for usize {
         Ok((input, num as usize))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -161,8 +143,8 @@ impl DataType for usize {
 
 // uint64
 impl DataType for u64 {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(8)
+    fn size(&self) -> usize {
+        8
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(&self.to_be_bytes())
@@ -172,7 +154,7 @@ impl DataType for u64 {
         Ok((input, num))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -180,8 +162,8 @@ impl DataType for u64 {
 
 // byte[n]
 impl DataType for &[u8] {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(self.len())
+    fn size(&self) -> usize {
+        self.len()
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(*self)
@@ -190,7 +172,7 @@ impl DataType for &[u8] {
         todo!();
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -198,8 +180,8 @@ impl DataType for &[u8] {
 
 // byte[n]
 impl<const N: usize> DataType for [u8; N] {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(N)
+    fn size(&self) -> usize {
+        N
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self)
@@ -209,7 +191,7 @@ impl<const N: usize> DataType for [u8; N] {
         Ok((input, result.try_into().unwrap()))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -217,9 +199,15 @@ impl<const N: usize> DataType for [u8; N] {
 
 // string
 pub struct ByteString(pub Vec<u8>);
+impl ByteString {
+    pub fn from_str(value: &str) -> Self {
+        ByteString(value.as_bytes().to_vec())
+    }
+}
+
 impl DataType for ByteString {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(self.0.len())
+    fn size(&self) -> usize {
+        self.0.len()
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         self.0.len().encode(buf);
@@ -231,7 +219,7 @@ impl DataType for ByteString {
         Ok((input, ByteString(payload.to_vec())))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -239,7 +227,7 @@ impl DataType for ByteString {
 
 // string
 // impl DataType for &str {
-//     fn size(&self) -> Result<usize, Error> {
+//     fn size(&self) -> usize {
 //         Ok((*self).len())
 //     }
 //     fn encode(&self, buf: &mut Vec<u8>) {
@@ -252,7 +240,7 @@ impl DataType for ByteString {
 //         Ok((input, from_utf8(payload).unwrap()))
 //     }
 //     fn to_bytes(&self) -> Vec<u8> {
-//         let mut buf = vec![];
+//         let mut buf = Vec::new();
 //         self.encode(&mut buf);
 //         buf
 //     }
@@ -261,11 +249,11 @@ impl DataType for ByteString {
 // name-list
 pub type NameList = Vec<String>;
 impl DataType for NameList {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(0)
+    fn size(&self) -> usize {
+        0
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        ByteString(self.join(",").as_bytes().to_vec()).encode(buf)
+        ByteString::from_str(&self.join(",")).encode(buf)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         let (input, payload) = <ByteString>::decode(input)?;
@@ -279,7 +267,7 @@ impl DataType for NameList {
         ))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
@@ -289,11 +277,11 @@ impl DataType for NameList {
 #[derive(Debug, Clone)]
 pub struct Mpint(pub Vec<u8>);
 impl DataType for Mpint {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(self.0.len())
+    fn size(&self) -> usize {
+        self.0.len()
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        if self.0[0] >= 0x80 {
+        if self.0[0] & 0x80 != 1 {
             (self.0.len() + 1).encode(buf);
             (0 as u8).encode(buf);
             self.0.as_bytes().encode(buf)
@@ -308,15 +296,15 @@ impl DataType for Mpint {
         Ok((input, Mpint(payload.to_vec())))
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }
 }
 
 impl DataType for Data {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(self.0.len())
+    fn size(&self) -> usize {
+        self.0.len()
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.clone().into_inner());
@@ -325,7 +313,7 @@ impl DataType for Data {
         todo!();
     }
     fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
+        let mut buf = Vec::new();
         self.encode(&mut buf);
         buf
     }

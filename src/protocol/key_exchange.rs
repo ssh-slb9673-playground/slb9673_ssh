@@ -1,25 +1,3 @@
-use nom::{AsBytes, IResult};
-
-use crate::crypto::key_exchange::KexMethod;
-use crate::protocol::utils::{ByteString, Data, DataType, Mpint};
-use crate::protocol::{
-    key_exchange_init::KexAlgorithms, ssh2::message_code, version_exchange::Version,
-};
-
-#[derive(Debug)]
-pub struct Kex<T: KexMethod> {
-    pub method: T,
-    pub shared_secret_key: Mpint,
-    pub exchange_hash: Vec<u8>,
-    pub session_id: Vec<u8>,
-    pub initial_iv_client_to_server: Vec<u8>,
-    pub initial_iv_server_to_client: Vec<u8>,
-    pub encryption_key_client_to_server: Vec<u8>,
-    pub encryption_key_server_to_client: Vec<u8>,
-    pub integrity_key_client_to_server: Vec<u8>,
-    pub integrity_key_server_to_client: Vec<u8>,
-}
-
 // Initial IV client to server: HASH(K || H || "A" || session_id)
 // Initial IV server to client: HASH(K || H || "B" || session_id)
 // Encryption key client to server: HASH(K || H || "C" || session_id)
@@ -40,6 +18,29 @@ pub struct Kex<T: KexMethod> {
 // K3 = HASH(K || H || K1 || K2)
 // ...
 // key = K1 || K2 || K3 || ...
+
+use nom::{AsBytes, IResult};
+
+use crate::crypto::key_exchange::KexMethod;
+use crate::protocol::data::{ByteString, Data, DataType, Mpint};
+use crate::protocol::{
+    key_exchange_init::KexAlgorithms, ssh2::message_code, version_exchange::Version,
+};
+
+#[derive(Debug)]
+pub struct Kex<T: KexMethod> {
+    pub method: T,
+    pub shared_secret_key: Mpint,
+    pub exchange_hash: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub initial_iv_client_to_server: Vec<u8>,
+    pub initial_iv_server_to_client: Vec<u8>,
+    pub encryption_key_client_to_server: Vec<u8>,
+    pub encryption_key_server_to_client: Vec<u8>,
+    pub integrity_key_client_to_server: Vec<u8>,
+    pub integrity_key_server_to_client: Vec<u8>,
+}
+
 impl<T: KexMethod> Kex<T> {
     pub fn new(
         method: T,
