@@ -313,3 +313,20 @@ impl DataType for Mpint {
         buf
     }
 }
+
+impl DataType for Data {
+    fn size(&self) -> Result<usize, Error> {
+        Ok(self.0.len())
+    }
+    fn encode(&self, buf: &mut Vec<u8>) {
+        buf.extend(self.clone().into_inner());
+    }
+    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+        todo!();
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = vec![];
+        self.encode(&mut buf);
+        buf
+    }
+}

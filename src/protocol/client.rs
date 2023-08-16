@@ -51,41 +51,20 @@ impl SshClient {
             &server_kex_algorithms,
             &mut session,
         )?;
-        println!(
-            "encryption_key_client_to_server: {}",
-            hex(&kex.encryption_key_client_to_server()),
-        );
-        println!(
-            "encryption_key_server_to_client: {}",
-            hex(&kex.encryption_key_server_to_client()),
-        );
-        println!(
-            "initial_iv_client_to_server: {}",
-            hex(&kex.initial_iv_client_to_server()),
-        );
-        println!(
-            "initial_iv_server_to_client: {}",
-            hex(&kex.initial_iv_server_to_client()),
-        );
-        println!(
-            "cookie: {} {}",
-            hex(&client_kex_algorithms.cookie),
-            hex(&server_kex_algorithms.cookie)
-        );
 
         let mut session = Session::new(
             NewKeys::new(
                 Box::new(ChaCha20Poly1305::new(
-                    &kex.encryption_key_client_to_server(),
-                    &kex.encryption_key_server_to_client(),
+                    &kex.encryption_key_client_to_server,
+                    &kex.encryption_key_server_to_client,
                 )),
                 Box::new(NoneMac {}),
                 Box::new(NoneCompress {}),
             ),
             NewKeys::new(
                 Box::new(ChaCha20Poly1305::new(
-                    &kex.encryption_key_client_to_server(),
-                    &kex.encryption_key_server_to_client(),
+                    &kex.encryption_key_client_to_server,
+                    &kex.encryption_key_server_to_client,
                 )),
                 Box::new(NoneMac {}),
                 Box::new(NoneCompress {}),
