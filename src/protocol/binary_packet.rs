@@ -29,12 +29,11 @@ impl SshPacket {
         // self.client_sequence_number += 1;
         // encrypted_packet
 
-        let mut data: Data = input.into();
-        let packet_length = data.get_u32();
-        let padding_length = data.get_u8();
+        let (input, packet_length) = <u32>::decode(input)?;
+        let (input, padding_length) = <u8>::decode(input)?;
         let payload_length = packet_length - padding_length as u32 - 1;
         let (input, payload) = take(payload_length)(input)?;
-        let (input, _) = take(padding_length)(input)?;
+        let (input, padding) = take(padding_length)(input)?;
         let (_input, mac) = take(session.server_method.mac_method.size())(input)?;
 
         let mut data = Data::new();
