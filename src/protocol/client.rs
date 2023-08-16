@@ -5,7 +5,7 @@ use super::authentification::Authentication;
 use super::key_exchange::Kex;
 use super::session::{NewKeys, Session};
 use super::ssh2::MessageCode;
-use super::utils::{DataType, Mpint};
+use super::utils::{ByteString, DataType, Mpint};
 use crate::crypto::mac::NoneMac;
 use crate::crypto::{
     compression::NoneCompress,
@@ -44,7 +44,6 @@ impl SshClient {
         let (client_kex_algorithms, server_kex_algorithms) =
             self.key_exchange_init(&mut session).unwrap();
         let kex = self.key_exchange::<Curve25519Sha256>(
-            &client_kex_algorithms.cookie,
             &client_version,
             &server_version,
             &client_kex_algorithms,
@@ -53,7 +52,24 @@ impl SshClient {
         )?;
         println!(
             "encryption_key_client_to_server: {}",
-            hex(&kex.encryption_key_client_to_server())
+            hex(&kex.encryption_key_client_to_server()),
+        );
+        println!(
+            "encryption_key_server_to_client: {}",
+            hex(&kex.encryption_key_server_to_client()),
+        );
+        println!(
+            "initial_iv_client_to_server: {}",
+            hex(&kex.initial_iv_client_to_server()),
+        );
+        println!(
+            "initial_iv_server_to_client: {}",
+            hex(&kex.initial_iv_server_to_client()),
+        );
+        println!(
+            "cookie: {} {}",
+            hex(&client_kex_algorithms.cookie),
+            hex(&server_kex_algorithms.cookie)
         );
 
         let mut session = Session::new(
@@ -119,7 +135,6 @@ impl SshClient {
 
     fn key_exchange<Method: KexMethod>(
         &mut self,
-        session_id: &[u8],
         client_version: &Version,
         server_version: &Version,
         client_kex: &KexAlgorithms,
@@ -127,8 +142,7 @@ impl SshClient {
         session: &mut Session,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
-        let client_public_key = Mpint(method.public_key());
-        // let client_public_key = ByteString(vec![]);
+        let client_public_key = ByteString(method.public_key());
 
         let payload = generate_key_exchange::<Method>(&method);
         let packet = BinaryPacket::new(&payload).encode(session);
@@ -147,9 +161,9 @@ impl SshClient {
         MessageCode::SSH_MSG_NEWKEYS.to_u8().encode(&mut payload);
         let packet = BinaryPacket::new(&payload).encode(session);
         self.send(&packet)?;
+
         Ok(Kex::<Method>::new(
             method,
-            session_id,
             client_version,
             server_version,
             client_kex,

@@ -47,5 +47,5 @@ pub fn hexdump(byte_array: &[u8]) {
 pub fn hex(bytes: &[u8]) -> String {
     bytes
         .iter()
-        .fold("".to_owned(), |s, b| s + &format!("{:x}", b))
+        .fold("".to_owned(), |s, b| s + &format!("{:02x}", b))
 }

@@ -246,6 +246,7 @@ impl DataType for NameList {
 }
 
 // mpint
+#[derive(Debug, Clone)]
 pub struct Mpint(pub Vec<u8>);
 impl DataType for Mpint {
     fn size(&self) -> Result<usize, Error> {

@@ -11,7 +11,7 @@ use crate::utils::{hex, hexdump};
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
     pub method: T,
-    pub shared_secret_key: Vec<u8>,
+    pub shared_secret_key: Mpint,
     pub exchange_hash: Vec<u8>,
     pub session_id: Vec<u8>,
 }
@@ -39,13 +39,12 @@ pub struct Kex<T: KexMethod> {
 impl<T: KexMethod> Kex<T> {
     pub fn new(
         method: T,
-        session_id: &[u8],
         client_version: &Version,
         server_version: &Version,
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
         server_public_host_key: &ByteString,
-        client_public_key: &Mpint,
+        client_public_key: &ByteString,
         server_public_key: &ByteString,
         shared_secret_key: &Mpint,
     ) -> Self {
@@ -63,14 +62,13 @@ impl<T: KexMethod> Kex<T> {
         let exchange_hash = method.hash(&data);
         println!("shared_secret: {:?}", hex(&shared_secret_key.0));
         println!("exchange_hash: {:?}", hex(&exchange_hash));
-        println!("session_id: {:?}", hex(&session_id));
+        println!("session_id: {:?}", hex(&exchange_hash));
 
         Kex::<T> {
             method,
-            shared_secret_key: shared_secret_key.0.clone(),
+            shared_secret_key: shared_secret_key.clone(),
             exchange_hash: exchange_hash.clone(),
             session_id: exchange_hash,
-            // session_id: session_id.to_vec(),
         }
     }
 
