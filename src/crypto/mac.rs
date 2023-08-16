@@ -9,16 +9,6 @@ use sha2::{Sha256, Sha512};
 // hmac-sha2-256     RECOMMENDED   HMAC-SHA2-256 (digest length = 32 bytes, key length = 32 bytes)
 // hmac-sha2-512     OPTIONAL      HMAC-SHA2-512 (digest length = 64 bytes, key length = 64 bytes)
 // none         OPTIONAL        no MAC; NOT RECOMMENDED
-enum MacAlgorithm {
-    HmacSha1,
-    HmacSha1_96,
-    HmacSha2_256,
-    HmacSha2_512,
-    HmacMd5,
-    HmacMd5_96,
-    None,
-}
-
 pub trait MAC {
     fn size(&self) -> usize;
     fn new(key: Vec<u8>) -> Self
@@ -32,10 +22,10 @@ impl MAC for NoneMac {
     fn size(&self) -> usize {
         0
     }
-    fn new(key: Vec<u8>) -> Self {
+    fn new(_key: Vec<u8>) -> Self {
         NoneMac {}
     }
-    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+    fn generate(&self, _msg: &[u8]) -> Vec<u8> {
         vec![]
     }
 }

@@ -5,7 +5,8 @@ use super::authentification::Authentication;
 use super::key_exchange::Kex;
 use super::session::{NewKeys, Session};
 use super::ssh2::MessageCode;
-use super::utils::{ByteString, DataType};
+use super::utils::{DataType, Mpint};
+use crate::crypto::mac::NoneMac;
 use crate::crypto::{
     compression::NoneCompress,
     encryption::chachapoly::ChaCha20Poly1305,
@@ -18,7 +19,7 @@ use crate::protocol::key_exchange::{generate_key_exchange, parse_key_exchange};
 use crate::protocol::key_exchange_init::KexAlgorithms;
 use crate::protocol::ssh2::DisconnectCode;
 use crate::protocol::version_exchange::Version;
-use crate::utils::hexdump;
+use crate::utils::{hex, hexdump};
 
 pub struct SshClient {
     address: SocketAddr,
@@ -50,22 +51,26 @@ impl SshClient {
             &server_kex_algorithms,
             &mut session,
         )?;
+        println!(
+            "encryption_key_client_to_server: {}",
+            hex(&kex.encryption_key_client_to_server())
+        );
 
         let mut session = Session::new(
             NewKeys::new(
                 Box::new(
-                    ChaCha20Poly1305::new(&kex.encryption_key_server_to_client(), &[0; 12])
-                        .unwrap(),
+                    ChaCha20Poly1305::new(&kex.encryption_key_server_to_client(), &[0; 8]).unwrap(),
                 ),
-                Box::new(HmacSha2_256::new(kex.integrity_key_server_to_client())),
+                Box::new(NoneMac {}),
+                // Box::new(HmacSha2_256::new(kex.integrity_key_server_to_client())),
                 Box::new(NoneCompress {}),
             ),
             NewKeys::new(
                 Box::new(
-                    ChaCha20Poly1305::new(&kex.encryption_key_server_to_client(), &[0; 12])
-                        .unwrap(),
+                    ChaCha20Poly1305::new(&kex.encryption_key_server_to_client(), &[0; 8]).unwrap(),
                 ),
-                Box::new(HmacSha2_256::new(kex.integrity_key_server_to_client())),
+                Box::new(NoneMac {}),
+                // Box::new(HmacSha2_256::new(kex.integrity_key_server_to_client())),
                 Box::new(NoneCompress {}),
             ),
             &client_version,
@@ -122,7 +127,8 @@ impl SshClient {
         session: &mut Session,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
-        let client_public_key = ByteString(method.public_key());
+        let client_public_key = Mpint(method.public_key());
+        // let client_public_key = ByteString(vec![]);
 
         let payload = generate_key_exchange::<Method>(&method);
         let packet = BinaryPacket::new(&payload).encode(session);
@@ -134,7 +140,7 @@ impl SshClient {
         let (_input, (server_public_host_key, server_public_key)) = parse_key_exchange(payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
 
-        let shared_secret = ByteString(method.shared_secret(&server_public_key.0));
+        let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
 
         // New Keys
         let mut payload = Vec::new();
@@ -162,7 +168,8 @@ impl SshClient {
             "publickey".as_bytes().to_vec(),
             "".as_bytes().to_vec(),
         );
-        let packet = auth.generate(session);
+        let payload = auth.generate(session);
+        let packet = BinaryPacket::new(&payload).encode(session);
         self.send(&packet)?;
 
         Ok(&[])

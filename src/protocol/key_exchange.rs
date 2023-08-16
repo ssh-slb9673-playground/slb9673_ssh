@@ -2,7 +2,7 @@ use nom::IResult;
 use std::vec;
 
 use crate::crypto::key_exchange::KexMethod;
-use crate::protocol::utils::{ByteString, DataType};
+use crate::protocol::utils::{ByteString, DataType, Mpint};
 use crate::protocol::{
     key_exchange_init::KexAlgorithms, ssh2::MessageCode, version_exchange::Version,
 };
@@ -45,19 +45,20 @@ impl<T: KexMethod> Kex<T> {
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
         server_public_host_key: &ByteString,
-        client_public_key: &ByteString,
+        client_public_key: &Mpint,
         server_public_key: &ByteString,
-        shared_secret_key: &ByteString,
+        shared_secret_key: &Mpint,
     ) -> Self {
         let mut data = vec![];
-        client_version.generate(false).encode(&mut data);
-        server_version.generate(false).encode(&mut data);
-        client_kex.generate_key_exchange_init().encode(&mut data);
-        server_kex.generate_key_exchange_init().encode(&mut data);
+        ByteString(client_version.generate(false)).encode(&mut data);
+        ByteString(server_version.generate(false)).encode(&mut data);
+        ByteString(client_kex.generate_key_exchange_init()).encode(&mut data);
+        ByteString(server_kex.generate_key_exchange_init()).encode(&mut data);
         server_public_host_key.encode(&mut data);
         client_public_key.encode(&mut data);
         server_public_key.encode(&mut data);
         shared_secret_key.encode(&mut data);
+        println!();
         hexdump(&data);
         let exchange_hash = method.hash(&data);
         println!("shared_secret: {:?}", hex(&shared_secret_key.0));

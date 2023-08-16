@@ -41,10 +41,10 @@ impl KexMethod for Curve448Sha512 {
         Curve448Sha512 {}
     }
     fn public_key(&self) -> Vec<u8> {
-        vec![]
+        todo!()
     }
     fn shared_secret(&mut self, public_key: &[u8]) -> Vec<u8> {
-        vec![]
+        todo!()
     }
     fn hash(&self, seed: &[u8]) -> Vec<u8> {
         let mut hasher = Sha512::new();

@@ -246,7 +246,29 @@ impl DataType for NameList {
 }
 
 // mpint
-pub struct Mpint {
-    /// Inner big endian-serialized integer value
-    inner: Box<[u8]>,
+pub struct Mpint(pub Vec<u8>);
+impl DataType for Mpint {
+    fn size(&self) -> Result<usize, Error> {
+        Ok(self.0.len())
+    }
+    fn encode(&self, buf: &mut Vec<u8>) {
+        if self.0[0] >= 0x80 {
+            (self.0.len() + 1).encode(buf);
+            (0 as u8).encode(buf);
+            self.0.encode(buf)
+        } else {
+            self.0.len().encode(buf);
+            self.0.encode(buf)
+        }
+    }
+    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+        let (input, length) = be_u32(input)?;
+        let (input, payload) = take(length)(input)?;
+        Ok((input, Mpint(payload.to_vec())))
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = vec![];
+        self.encode(&mut buf);
+        buf
+    }
 }

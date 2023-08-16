@@ -26,10 +26,10 @@ impl KexMethod for DiffieHellmanGroup14Sha1 {
         DiffieHellmanGroup14Sha1 {}
     }
     fn public_key(&self) -> Vec<u8> {
-        vec![]
+        todo!()
     }
     fn shared_secret(&mut self, public_key: &[u8]) -> Vec<u8> {
-        vec![]
+        todo!()
     }
     fn hash(&self, seed: &[u8]) -> Vec<u8> {
         let mut hasher = Sha1::new();
