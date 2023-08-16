@@ -15,7 +15,7 @@ use poly1305::Poly1305;
 use subtle::ConstantTimeEq;
 
 const KEY_SIZE: usize = 32;
-pub type Nonce = [u8; 12];
+pub type Nonce = [u8; 8];
 pub type Tag = [u8; 16];
 use core::fmt;
 

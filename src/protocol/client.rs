@@ -38,17 +38,17 @@ impl SshClient {
     }
 
     pub fn connection_setup(&mut self) -> Result<&[u8], DisconnectCode> {
-        let session = Session::init_state();
+        let mut session = Session::init_state();
         let (client_version, server_version) = self.version_exchange().unwrap();
         let (client_kex_algorithms, server_kex_algorithms) =
-            self.key_exchange_init(&session).unwrap();
+            self.key_exchange_init(&mut session).unwrap();
         let kex = self.key_exchange::<Curve25519Sha256>(
             &client_kex_algorithms.cookie,
             &client_version,
             &server_version,
             &client_kex_algorithms,
             &server_kex_algorithms,
-            &session,
+            &mut session,
         )?;
 
         let mut session = Session::new(
@@ -94,11 +94,11 @@ impl SshClient {
 
     fn key_exchange_init(
         &mut self,
-        session: &Session,
+        session: &mut Session,
     ) -> Result<(KexAlgorithms, KexAlgorithms), DisconnectCode> {
         // recv key algorithms
         let packet = self.recv()?;
-        let (payload, _binary_packet) = BinaryPacket::decode(&packet, &session)
+        let (payload, _binary_packet) = BinaryPacket::decode(&packet, session)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
         let (_input, server_kex_algorithms) = KexAlgorithms::parse_key_exchange_init(&payload)
             .map_err(|_| DisconnectCode::SSH2_DISCONNECT_KEY_EXCHANGE_FAILED)?;
@@ -119,7 +119,7 @@ impl SshClient {
         server_version: &Version,
         client_kex: &KexAlgorithms,
         server_kex: &KexAlgorithms,
-        session: &Session,
+        session: &mut Session,
     ) -> Result<Kex<Method>, DisconnectCode> {
         let mut method = Method::new();
         let client_public_key = ByteString(method.public_key());

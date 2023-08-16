@@ -68,7 +68,7 @@ impl BinaryPacket {
         ))
     }
 
-    pub fn encode(&self, session: &Session) -> Vec<u8> {
+    pub fn encode(&self, session: &mut Session) -> Vec<u8> {
         let mut packet = vec![];
         self.packet_length.encode(&mut packet);
         self.padding_length.encode(&mut packet);
@@ -84,8 +84,7 @@ impl BinaryPacket {
         let tag = session
             .client_method
             .enc_method
-            .encrypt(&mut encrypted_packet)
-            .unwrap();
+            .encrypt(&mut encrypted_packet);
         session.client_sequence_number += 1;
 
         mac.encode(&mut encrypted_packet);
