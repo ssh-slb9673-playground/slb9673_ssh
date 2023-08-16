@@ -2,10 +2,8 @@ use nom::bytes::complete::take;
 use nom::{AsBytes, IResult};
 
 use crate::protocol::session::Session;
-use crate::protocol::utils::DataType;
-use crate::utils::{hex, hexdump};
-
-use super::utils::Data;
+use crate::protocol::utils::{Data, DataType};
+use crate::utils::hexdump;
 
 //   uint32    packet_length
 //   byte      padding_length

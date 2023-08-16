@@ -1,7 +1,7 @@
 use nom::IResult;
 use rand::Rng;
 
-use crate::protocol::ssh2::MessageCode;
+use crate::protocol::ssh2::message_code;
 use crate::protocol::utils::{DataType, NameList};
 
 use super::utils::Data;
@@ -25,7 +25,7 @@ pub struct KexAlgorithms {
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, message_id) = u8::decode(input)?;
-        assert!(message_id == MessageCode::SSH_MSG_KEXINIT);
+        assert!(message_id == message_code::SSH_MSG_KEXINIT);
         let (input, cookie) = <[u8; 16]>::decode(input)?;
         let (input, kex_algorithms) = NameList::decode(input)?;
         let (input, server_host_key_algorithms) = NameList::decode(input)?;
@@ -61,7 +61,7 @@ impl KexAlgorithms {
 
     pub fn generate_key_exchange_init(&self) -> Data {
         let mut data = Data::new();
-        data.put(&MessageCode::SSH_MSG_KEXINIT)
+        data.put(&message_code::SSH_MSG_KEXINIT)
             .put(&self.cookie)
             .put(&self.kex_algorithms)
             .put(&self.server_host_key_algorithms)

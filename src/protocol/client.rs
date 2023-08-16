@@ -6,7 +6,7 @@ use nom::AsBytes;
 use super::error::SshError;
 use super::key_exchange::Kex;
 use super::session::{NewKeys, Session};
-use super::ssh2::MessageCode;
+use super::ssh2::message_code;
 use super::utils::{ByteString, Data, DataType, Mpint};
 use crate::crypto::mac::NoneMac;
 use crate::crypto::{
@@ -127,7 +127,7 @@ impl SshClient {
 
         let mut payload = Data::new();
         payload
-            .put(&MessageCode::SSH2_MSG_KEX_ECDH_INIT)
+            .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
             .put(&ByteString(method.public_key()));
         let packet: SshPacket = payload.into();
         self.send(&packet.encode(session))?;
@@ -142,7 +142,7 @@ impl SshClient {
 
         // New Keys
         let mut payload = Data::new();
-        payload.put(&MessageCode::SSH_MSG_NEWKEYS);
+        payload.put(&message_code::SSH_MSG_NEWKEYS);
         let packet: SshPacket = payload.into();
         self.send(&packet.encode(session))?;
 
@@ -162,14 +162,14 @@ impl SshClient {
     fn user_auth(&mut self, session: &mut Session) -> Result<&[u8], SshError> {
         let mut payload = Data::new();
         payload
-            .put(&MessageCode::SSH_MSG_SERVICE_REQUEST)
+            .put(&message_code::SSH_MSG_SERVICE_REQUEST)
             .put(&ByteString("ssh-userauth".as_bytes().to_vec()));
         let packet: SshPacket = payload.into();
         self.send(&packet.encode(session))?;
 
         let mut payload = Data::new();
         payload
-            .put(&MessageCode::SSH_MSG_USERAUTH_REQUEST)
+            .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&ByteString("anko".as_bytes().to_vec()))
             .put(&ByteString("ssh-connection".as_bytes().to_vec()))
             .put(&ByteString("publickey".as_bytes().to_vec()))

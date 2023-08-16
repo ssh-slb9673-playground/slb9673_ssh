@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    fmt::{self, write},
-    io,
-};
+use std::{error::Error, fmt, io};
 
 #[derive(Debug)]
 pub enum SshError {

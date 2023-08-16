@@ -1,14 +1,10 @@
 use nom::{AsBytes, IResult};
-use std::vec;
 
 use crate::crypto::key_exchange::KexMethod;
-use crate::protocol::utils::{ByteString, DataType, Mpint};
+use crate::protocol::utils::{ByteString, Data, DataType, Mpint};
 use crate::protocol::{
-    key_exchange_init::KexAlgorithms, ssh2::MessageCode, version_exchange::Version,
+    key_exchange_init::KexAlgorithms, ssh2::message_code, version_exchange::Version,
 };
-use crate::utils::{hex, hexdump};
-
-use super::utils::Data;
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -108,7 +104,7 @@ impl<T: KexMethod> Kex<T> {
 
 pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (ByteString, ByteString)> {
     let (input, message_code) = u8::decode(input)?;
-    assert!(message_code == MessageCode::SSH2_MSG_KEX_ECDH_REPLY);
+    assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
     let (input, host_public_key) = ByteString::decode(input)?;
     let (input, public_key) = ByteString::decode(input)?;
 

@@ -1,4 +1,4 @@
-use self::chachapoly::Result;
+use crate::protocol::error::SshError;
 
 pub mod aes_ctr;
 pub mod aes_gcm;
@@ -14,7 +14,12 @@ pub mod chachapoly;
 pub trait Encryption {
     fn group_size(&self) -> u32;
     fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32);
-    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8], sequence_number: u32) -> Result<Vec<u8>>;
+    fn decrypt(
+        &mut self,
+        buffer: &mut [u8],
+        tag: &[u8],
+        sequence_number: u32,
+    ) -> Result<Vec<u8>, SshError>;
 }
 
 pub struct NoneEncryption {}
@@ -23,7 +28,12 @@ impl Encryption for NoneEncryption {
         8
     }
     fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32) {}
-    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8], sequence_number: u32) -> Result<Vec<u8>> {
+    fn decrypt(
+        &mut self,
+        buffer: &mut [u8],
+        tag: &[u8],
+        sequence_number: u32,
+    ) -> Result<Vec<u8>, SshError> {
         Ok(vec![])
     }
 }

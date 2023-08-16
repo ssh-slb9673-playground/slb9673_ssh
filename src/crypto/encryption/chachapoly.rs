@@ -11,53 +11,11 @@
 // use crate::{Error, Nonce, Result, Tag};
 use ring::aead::chacha20_poly1305_openssh::{OpeningKey, SealingKey};
 
-const KEY_SIZE: usize = 32;
-pub type Nonce = [u8; 12];
-pub type Tag = [u8; 16];
-use core::fmt;
-
-use crate::utils::hex;
+use crate::protocol::error::SshError;
 
 use super::Encryption;
 
-/// Result type with `ssh-cipher` crate's [`Error`] as the error type.
-pub type Result<T> = core::result::Result<T, Error>;
-
-/// Error type.
-#[derive(Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum Error {
-    /// Cryptographic errors.
-    Crypto,
-
-    /// Invalid key size.
-    KeySize,
-
-    /// Invalid initialization vector / nonce size.
-    IvSize,
-
-    /// Invalid AEAD tag size.
-    TagSize,
-
-    /// Unsupported cipher.
-    UnsupportedCipher,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::Crypto => write!(f, "cryptographic error"),
-            Error::KeySize => write!(f, "invalid key size"),
-            Error::IvSize => write!(f, "invalid initialization vector size"),
-            Error::TagSize => write!(f, "invalid AEAD tag size"),
-            Error::UnsupportedCipher => write!(f, "unsupported cipher"),
-        }
-    }
-}
-
 const BSIZE: usize = 64;
-#[cfg(feature = "std")]
-impl std::error::Error for Error {}
 
 pub(crate) struct ChaCha20Poly1305 {
     client_key: SealingKey,
@@ -92,7 +50,12 @@ impl Encryption for ChaCha20Poly1305 {
     }
 
     #[inline]
-    fn decrypt(&mut self, buf: &mut [u8], tag: &[u8], sequence_number: u32) -> Result<Vec<u8>> {
+    fn decrypt(
+        &mut self,
+        buf: &mut [u8],
+        tag: &[u8],
+        sequence_number: u32,
+    ) -> Result<Vec<u8>, SshError> {
         let mut packet_len_slice = [0_u8; 4];
         let len = &buf[..4];
         packet_len_slice.copy_from_slice(len);
@@ -105,7 +68,7 @@ impl Encryption for ChaCha20Poly1305 {
         tag.copy_from_slice(tag_);
         match self.server_key.open_in_place(sequence_number, buf, &tag) {
             Ok(result) => Ok([&packet_len_slice[..], result].concat()),
-            Err(_) => Err(Error::Crypto),
+            Err(_) => Err(SshError::ParseError),
         }
     }
 }
