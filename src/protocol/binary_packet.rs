@@ -1,8 +1,11 @@
 use nom::bytes::complete::take;
-use nom::IResult;
+use nom::{AsBytes, IResult};
 
 use crate::protocol::session::Session;
 use crate::protocol::utils::DataType;
+use crate::utils::{hex, hexdump};
+
+use super::utils::Data;
 
 //   uint32    packet_length
 //   byte      padding_length
@@ -10,28 +13,13 @@ use crate::protocol::utils::DataType;
 //   byte[n2]  random padding; n2 = padding_length
 //   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
 // mac = MAC(key, sequence_number || unencrypted_packet)
-#[derive(Debug)]
-pub struct BinaryPacket {
-    packet_length: u32,
-    padding_length: u8,
-    payload: Vec<u8>,
-    padding: Vec<u8>,
+#[derive(Debug, Clone)]
+pub struct SshPacket {
+    payload: Data,
 }
 
-impl BinaryPacket {
-    pub fn new(payload: &[u8]) -> Self {
-        let payload_length = (payload.len() + 1) as u32;
-        let packet_length = (payload_length + 7) / 8 * 8 + 4;
-        let padding_length = (packet_length - payload_length) as u8;
-        BinaryPacket {
-            packet_length,
-            padding_length,
-            payload: payload.to_vec(),
-            padding: vec![0; padding_length as usize],
-        }
-    }
-
-    pub fn decode<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], BinaryPacket> {
+impl SshPacket {
+    pub fn decode<'a>(input: &'a [u8], session: &Session) -> IResult<&'a [u8], SshPacket> {
         let _input = input.clone();
 
         // session
@@ -50,45 +38,65 @@ impl BinaryPacket {
         let (input, padding) = take(padding_length)(input)?;
         let (_input, mac) = take(session.server_method.mac_method.size())(input)?;
 
-        let mut tmp = vec![];
-        session.client_sequence_number.encode(&mut tmp);
-        _input.to_vec().encode(&mut tmp);
-        if session.server_method.mac_method.generate(&tmp) != mac {
+        let mut data = Data::new();
+        data.put(&session.client_sequence_number).put(&_input);
+        if session
+            .server_method
+            .mac_method
+            .generate(&data.into_inner())
+            != mac
+        {
             panic!("match mac");
         }
 
-        Ok((
-            payload,
-            BinaryPacket {
-                packet_length,
-                padding_length,
-                payload: payload.to_vec(),
-                padding: padding.to_vec(),
-            },
-        ))
+        let mut data = Data::new();
+        data.put(&payload);
+
+        Ok((payload, SshPacket { payload: data }))
     }
 
     pub fn encode(&self, session: &mut Session) -> Vec<u8> {
-        let mut packet = vec![];
-        self.packet_length.encode(&mut packet);
-        self.padding_length.encode(&mut packet);
-        self.payload.encode(&mut packet);
-        self.padding.encode(&mut packet);
+        let payload = self.payload.clone().into_inner();
 
-        let mut mac = vec![];
-        session.client_sequence_number.encode(&mut mac);
-        packet.encode(&mut mac);
-        mac = session.client_method.mac_method.generate(&mac);
+        let payload_length = (payload.len() + 1) as u32;
+        let group_size = session.client_method.enc_method.group_size();
+        let mut packet_length = (payload_length + group_size - 1) / group_size * group_size;
+        if let None = session.client_kex {
+            packet_length += 4;
+        }
+        let padding_length = (packet_length - payload_length) as u8;
+        let padding = vec![0; padding_length as usize];
 
+        let mut data = Data::new();
+        data.put(&packet_length)
+            .put(&padding_length)
+            .put(&payload.as_bytes())
+            .put(&padding.as_bytes());
+
+        let packet = data.into_inner();
+
+        let mut mac = Data::new();
+        mac.put(&session.client_sequence_number)
+            .put(&packet.as_bytes());
+        let mac = session.client_method.mac_method.generate(&mac.into_inner());
+
+        println!("pre enc");
+        hexdump(&packet);
         let mut encrypted_packet = packet.clone();
-        let tag = session
+        session
             .client_method
             .enc_method
-            .encrypt(&mut encrypted_packet);
+            .encrypt(&mut encrypted_packet, session.client_sequence_number);
         session.client_sequence_number += 1;
 
-        mac.encode(&mut encrypted_packet);
+        mac.as_bytes().encode(&mut encrypted_packet);
 
         encrypted_packet
+    }
+}
+
+impl<'a> From<Data> for SshPacket {
+    fn from(data: Data) -> Self {
+        Self { payload: data }
     }
 }

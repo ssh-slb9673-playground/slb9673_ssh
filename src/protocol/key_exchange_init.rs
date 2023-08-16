@@ -4,6 +4,8 @@ use rand::Rng;
 use crate::protocol::ssh2::MessageCode;
 use crate::protocol::utils::{DataType, NameList};
 
+use super::utils::Data;
+
 #[derive(Debug)]
 pub struct KexAlgorithms {
     pub cookie: [u8; 16],
@@ -23,7 +25,7 @@ pub struct KexAlgorithms {
 impl KexAlgorithms {
     pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, message_id) = u8::decode(input)?;
-        assert!(message_id == MessageCode::SSH_MSG_KEXINIT.to_u8());
+        assert!(message_id == MessageCode::SSH_MSG_KEXINIT);
         let (input, cookie) = <[u8; 16]>::decode(input)?;
         let (input, kex_algorithms) = NameList::decode(input)?;
         let (input, server_host_key_algorithms) = NameList::decode(input)?;
@@ -57,27 +59,23 @@ impl KexAlgorithms {
         ))
     }
 
-    pub fn generate_key_exchange_init(&self) -> Vec<u8> {
-        let mut packet: Vec<u8> = vec![];
-        MessageCode::SSH_MSG_KEXINIT.to_u8().encode(&mut packet);
-        self.cookie.encode(&mut packet);
-        self.kex_algorithms.encode(&mut packet);
-        self.server_host_key_algorithms.encode(&mut packet);
-        self.encryption_algorithms_client_to_server
-            .encode(&mut packet);
-        self.encryption_algorithms_server_to_client
-            .encode(&mut packet);
-        self.mac_algorithms_client_to_server.encode(&mut packet);
-        self.mac_algorithms_server_to_client.encode(&mut packet);
-        self.compression_algorithms_client_to_server
-            .encode(&mut packet);
-        self.compression_algorithms_server_to_client
-            .encode(&mut packet);
-        self.languages_client_to_server.encode(&mut packet);
-        self.languages_server_to_client.encode(&mut packet);
-        self.languages_server_to_client.encode(&mut packet);
-        self.first_kex_packet_follows.encode(&mut packet);
-        packet
+    pub fn generate_key_exchange_init(&self) -> Data {
+        let mut data = Data::new();
+        data.put(&MessageCode::SSH_MSG_KEXINIT)
+            .put(&self.cookie)
+            .put(&self.kex_algorithms)
+            .put(&self.server_host_key_algorithms)
+            .put(&self.encryption_algorithms_client_to_server)
+            .put(&self.encryption_algorithms_server_to_client)
+            .put(&self.mac_algorithms_client_to_server)
+            .put(&self.mac_algorithms_server_to_client)
+            .put(&self.compression_algorithms_client_to_server)
+            .put(&self.compression_algorithms_server_to_client)
+            .put(&self.languages_client_to_server)
+            .put(&self.languages_server_to_client)
+            .put(&self.languages_server_to_client)
+            .put(&self.first_kex_packet_follows);
+        data
     }
 
     pub fn create_kex_from_kex(&self) -> Self {
@@ -140,7 +138,7 @@ none,zlib@openssh.com,zlib\
     let gen_packet = algo.generate_key_exchange_init();
     // hexdump(packet);
     // hexdump(&gen_packet);
-    assert!(packet[..] == gen_packet[..]);
+    assert!(packet[..] == gen_packet.into_inner()[..]);
 }
 
 /*

@@ -12,16 +12,18 @@ pub mod chachapoly;
 // aes192 (cbc, ctr, gcm)	192 bits
 // aes256 (cbc, ctr, gcm)	256 bits
 pub trait Encryption {
-    fn encrypt(&mut self, buffer: &mut [u8]) -> Option<Vec<u8>>;
-    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8]) -> Result<()>;
+    fn group_size(&self) -> u32;
+    fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32);
+    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8], sequence_number: u32) -> Result<Vec<u8>>;
 }
 
 pub struct NoneEncryption {}
 impl Encryption for NoneEncryption {
-    fn encrypt(&mut self, buffer: &mut [u8]) -> Option<Vec<u8>> {
-        None
+    fn group_size(&self) -> u32 {
+        8
     }
-    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8]) -> Result<()> {
-        Ok(())
+    fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32) {}
+    fn decrypt(&mut self, buffer: &mut [u8], tag: &[u8], sequence_number: u32) -> Result<Vec<u8>> {
+        Ok(vec![])
     }
 }

@@ -1,6 +1,6 @@
-mod authentification;
 mod binary_packet;
 pub mod client;
+pub mod error;
 mod key_exchange;
 mod key_exchange_init;
 pub mod server;

@@ -1,7 +1,7 @@
 use core::fmt;
 use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
-use nom::IResult;
+use nom::{AsBytes, IResult};
 
 /// Error type.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -34,6 +34,39 @@ impl fmt::Display for Error {
                 "unexpected trailing data at end of message ({remaining} bytes)",
             ),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Data(Vec<u8>);
+impl Data {
+    pub fn new() -> Data {
+        Data(Vec::new())
+    }
+
+    pub fn put<T>(&mut self, v: &T) -> &mut Self
+    where
+        T: DataType,
+    {
+        v.encode(&mut self.0);
+        self
+    }
+
+    pub fn get<T>(&mut self) -> IResult<&[u8], T>
+    where
+        T: DataType,
+    {
+        T::decode(&mut self.0)
+    }
+
+    pub fn into_inner(self) -> Vec<u8> {
+        self.0
+    }
+}
+
+impl<'a> From<&'a [u8]> for Data {
+    fn from(data: &'a [u8]) -> Self {
+        Self(data.to_vec())
     }
 }
 
@@ -146,12 +179,12 @@ impl DataType for u64 {
 }
 
 // byte[n]
-impl DataType for Vec<u8> {
+impl DataType for &[u8] {
     fn size(&self) -> Result<usize, Error> {
         Ok(self.len())
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        buf.extend(self)
+        buf.extend(*self)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         todo!();
@@ -190,7 +223,7 @@ impl DataType for ByteString {
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         self.0.len().encode(buf);
-        self.0.encode(buf)
+        self.0.as_bytes().encode(buf)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         let (input, length) = be_u32(input)?;
@@ -205,25 +238,25 @@ impl DataType for ByteString {
 }
 
 // string
-impl DataType for String {
-    fn size(&self) -> Result<usize, Error> {
-        Ok(self.len())
-    }
-    fn encode(&self, buf: &mut Vec<u8>) {
-        self.len().encode(buf);
-        self.as_bytes().to_vec().encode(buf);
-    }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
-        let (input, length) = be_u32(input)?;
-        let (input, payload) = take(length)(input)?;
-        Ok((input, String::from_utf8(payload.to_vec()).unwrap()))
-    }
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = vec![];
-        self.encode(&mut buf);
-        buf
-    }
-}
+// impl DataType for &str {
+//     fn size(&self) -> Result<usize, Error> {
+//         Ok((*self).len())
+//     }
+//     fn encode(&self, buf: &mut Vec<u8>) {
+//         self.len().encode(buf);
+//         (*self).as_bytes().encode(buf);
+//     }
+//     fn decode<'a>(input: &'a [u8]) -> IResult<&'a [u8], &'a str> {
+//         let (input, length) = be_u32(input)?;
+//         let (input, payload) = take(length)(input)?;
+//         Ok((input, from_utf8(payload).unwrap()))
+//     }
+//     fn to_bytes(&self) -> Vec<u8> {
+//         let mut buf = vec![];
+//         self.encode(&mut buf);
+//         buf
+//     }
+// }
 
 // name-list
 pub type NameList = Vec<String>;
@@ -232,11 +265,18 @@ impl DataType for NameList {
         Ok(0)
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        self.join(",").encode(buf)
+        ByteString(self.join(",").as_bytes().to_vec()).encode(buf)
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
-        let (input, payload) = String::decode(input)?;
-        Ok((input, payload.split(',').map(|s| s.into()).collect()))
+        let (input, payload) = <ByteString>::decode(input)?;
+        Ok((
+            input,
+            String::from_utf8(payload.0)
+                .unwrap()
+                .split(',')
+                .map(|s| s.into())
+                .collect(),
+        ))
     }
     fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![];
@@ -256,10 +296,10 @@ impl DataType for Mpint {
         if self.0[0] >= 0x80 {
             (self.0.len() + 1).encode(buf);
             (0 as u8).encode(buf);
-            self.0.encode(buf)
+            self.0.as_bytes().encode(buf)
         } else {
             self.0.len().encode(buf);
-            self.0.encode(buf)
+            self.0.as_bytes().encode(buf)
         }
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
