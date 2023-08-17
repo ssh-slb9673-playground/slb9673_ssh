@@ -1,9 +1,9 @@
-mod binary_packet;
 pub mod client;
 pub mod data;
 pub mod error;
 mod key_exchange;
 mod key_exchange_init;
+mod packet;
 pub mod server;
 pub mod session;
 pub mod ssh2;

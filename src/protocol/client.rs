@@ -10,11 +10,11 @@ use crate::crypto::{
 };
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::{
-    binary_packet::SshPacket,
     data::{ByteString, Data, DataType, Mpint},
     error::SshError,
     key_exchange::{parse_key_exchange, Kex},
     key_exchange_init::KexAlgorithms,
+    packet::SshPacket,
     session::{NewKeys, Session},
     ssh2::message_code,
     version_exchange::Version,

@@ -14,7 +14,7 @@ pub trait MAC {
     fn new(key: Vec<u8>) -> Self
     where
         Self: Sized;
-    fn generate(&self, msg: &[u8]) -> Vec<u8>;
+    fn sign(&self, msg: &[u8]) -> Vec<u8>;
 }
 
 pub struct NoneMac {}
@@ -25,7 +25,7 @@ impl MAC for NoneMac {
     fn new(_key: Vec<u8>) -> Self {
         NoneMac {}
     }
-    fn generate(&self, _msg: &[u8]) -> Vec<u8> {
+    fn sign(&self, _msg: &[u8]) -> Vec<u8> {
         vec![]
     }
 }
@@ -39,7 +39,7 @@ impl MAC for HmacSha1 {
     fn new(key: Vec<u8>) -> Self {
         HmacSha1 { key }
     }
-    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+    fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
         mac.update(&msg);
         mac.finalize().into_bytes().to_vec()
@@ -56,7 +56,7 @@ impl MAC for HmacSha1_96 {
     fn new(key: Vec<u8>) -> Self {
         HmacSha1_96 { key }
     }
-    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+    fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
         mac.update(&msg);
         mac.finalize().into_bytes().to_vec()
@@ -73,7 +73,7 @@ impl MAC for HmacSha2_256 {
     fn new(key: Vec<u8>) -> Self {
         HmacSha2_256 { key }
     }
-    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+    fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha256>::new_from_slice(&self.key).unwrap();
         mac.update(&msg);
         mac.finalize().into_bytes().to_vec()
@@ -90,7 +90,7 @@ impl MAC for HmacSha2_512 {
     fn new(key: Vec<u8>) -> Self {
         HmacSha2_512 { key }
     }
-    fn generate(&self, msg: &[u8]) -> Vec<u8> {
+    fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha512>::new_from_slice(&self.key).unwrap();
         mac.update(&msg);
         mac.finalize().into_bytes().to_vec()

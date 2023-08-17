@@ -33,17 +33,12 @@ impl SshPacket {
         let (input, padding_length) = <u8>::decode(input)?;
         let payload_length = packet_length - padding_length as u32 - 1;
         let (input, payload) = take(payload_length)(input)?;
-        let (input, padding) = take(padding_length)(input)?;
+        let (input, _padding) = take(padding_length)(input)?;
         let (_input, mac) = take(session.server_method.mac_method.size())(input)?;
 
         let mut data = Data::new();
         data.put(&session.client_sequence_number).put(&_input);
-        if session
-            .server_method
-            .mac_method
-            .generate(&data.into_inner())
-            != mac
-        {
+        if session.server_method.mac_method.sign(&data.into_inner()) != mac {
             panic!("match mac");
         }
 
@@ -75,7 +70,7 @@ impl SshPacket {
         let mut mac = Data::new();
         mac.put(&session.client_sequence_number)
             .put(&packet.as_bytes());
-        let mac = session.client_method.mac_method.generate(&mac.into_inner());
+        let mac = session.client_method.mac_method.sign(&mac.into_inner());
 
         println!("pre enc");
         hexdump(&packet);

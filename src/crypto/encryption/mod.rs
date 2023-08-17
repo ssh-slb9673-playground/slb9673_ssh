@@ -27,7 +27,7 @@ impl Encryption for NoneEncryption {
     fn group_size(&self) -> u32 {
         8
     }
-    fn encrypt(&mut self, buffer: &mut Vec<u8>, _sequence_number: u32) {}
+    fn encrypt(&mut self, _buffer: &mut Vec<u8>, _sequence_number: u32) {}
     fn decrypt(
         &mut self,
         _buffer: &mut [u8],

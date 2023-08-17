@@ -17,32 +17,24 @@ impl Data {
         self
     }
 
-    // pub fn get<T>(&mut self) -> T
-    // where
-    //     T: DataType,
-    // {
-    //     let (_, data) = T::decode(&self.0).unwrap();
-    //     self.0.drain(..self.size());
-    //     data
-    // }
-
-    pub fn get_u8(&mut self) -> u8 {
-        self.0.remove(0)
+    pub fn get<T>(&mut self) -> T
+    where
+        T: DataType,
+    {
+        let (_, data) = T::decode(&self.0).unwrap();
+        self.0.drain(..self.size());
+        data
     }
-
-    pub fn get_u32(&mut self) -> u32 {
-        let u32_buf = self.0.drain(..4).into_iter().collect::<Vec<u8>>();
-        u32::from_be_bytes(u32_buf.try_into().unwrap())
-    }
-
-    pub fn get_u8s(&mut self) -> Vec<u8> {
-        let len = self.get_u32() as usize;
+    pub fn get_bytes(&mut self, len: usize) -> Vec<u8> {
         let bytes = self.0.drain(..len).into_iter().collect::<Vec<u8>>();
         bytes
     }
 
     pub fn into_inner(self) -> Vec<u8> {
         self.0
+    }
+    pub fn size(&self) -> usize {
+        self.0.len()
     }
 }
 
