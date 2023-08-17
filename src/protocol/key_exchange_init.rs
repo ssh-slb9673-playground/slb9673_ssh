@@ -1,10 +1,7 @@
-use nom::IResult;
 use rand::Rng;
 
-use crate::protocol::data::{DataType, NameList};
+use crate::protocol::data::{Data, NameList};
 use crate::protocol::ssh2::message_code;
-
-use super::data::Data;
 
 #[derive(Debug)]
 pub struct KexAlgorithms {
@@ -41,7 +38,6 @@ impl KexAlgorithms {
             languages_server_to_client: input.get(),
             first_kex_packet_follows: input.get(),
         };
-        println!("{:?}", kex);
 
         let _reserved: u32 = input.get();
         kex

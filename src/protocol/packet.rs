@@ -1,10 +1,9 @@
-use nom::{AsBytes, IResult};
+use nom::AsBytes;
 
+use super::error::SshError;
 use crate::protocol::data::{Data, DataType};
 use crate::protocol::session::Session;
 use crate::utils::hexdump;
-
-use super::error::SshError;
 
 //   uint32    packet_length
 //   byte      padding_length

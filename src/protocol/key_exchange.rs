@@ -19,10 +19,10 @@
 // ...
 // key = K1 || K2 || K3 || ...
 
-use nom::{AsBytes, IResult};
+use nom::AsBytes;
 
 use crate::crypto::key_exchange::KexMethod;
-use crate::protocol::data::{ByteString, Data, DataType, Mpint};
+use crate::protocol::data::{ByteString, Data, Mpint};
 use crate::protocol::{
     key_exchange_init::KexAlgorithms, ssh2::message_code, version_exchange::Version,
 };
