@@ -41,11 +41,12 @@ impl SshClient {
                 let pubkey_algo: ByteString = payload.get();
                 let pubkey_blob: ByteString = payload.get();
             }
-            message_code::SSH_MSG_USERAUTH_SUCCESS => {}
             message_code::SSH_MSG_USERAUTH_FAILURE => {
                 let auth: NameList = payload.get();
                 let success: bool = payload.get();
+                println!("{:?} {}", auth, success);
             }
+            message_code::SSH_MSG_USERAUTH_SUCCESS => {}
             message_code::SSH_MSG_USERAUTH_BANNER => {
                 let message: ByteString = payload.get();
                 let language_tag: ByteString = payload.get();
@@ -62,31 +63,17 @@ impl SshClient {
         let mut payload = self.recv()?.pack(session).unseal()?;
         let message_code: u8 = payload.get();
         match message_code {
+            message_code::SSH_MSG_DISCONNECT => {
+                let disconnect_code: u32 = payload.get();
+                let description: String = payload.get();
+                let language_tag: String = payload.get();
+            }
             message_code::SSH_MSG_SERVICE_REQUEST => {
                 let service_name: String = payload.get();
             }
             message_code::SSH_MSG_SERVICE_ACCEPT => {
                 let service_name: String = payload.get();
                 println!("{:?}", service_name);
-            }
-            message_code::SSH2_MSG_USERAUTH_PK_OK => {
-                let pubkey_algo: String = payload.get();
-                let pubkey_blob: ByteString = payload.get();
-            }
-            message_code::SSH_MSG_USERAUTH_SUCCESS => {}
-            message_code::SSH_MSG_USERAUTH_FAILURE => {
-                println!("failure");
-                let auth: NameList = payload.get();
-                let success: bool = payload.get();
-            }
-            message_code::SSH_MSG_USERAUTH_BANNER => {
-                let message: String = payload.get();
-                let language_tag: String = payload.get();
-            }
-            message_code::SSH_MSG_DISCONNECT => {
-                let disconnect_code: u32 = payload.get();
-                let description: String = payload.get();
-                let language_tag: String = payload.get();
             }
             message_code::SSH_MSG_USERAUTH_REQUEST => {
                 let user_name: String = payload.get();
@@ -123,9 +110,23 @@ impl SshClient {
                     }
                 }
             }
+            message_code::SSH_MSG_USERAUTH_FAILURE => {
+                println!("failure");
+                let auth: NameList = payload.get();
+                let success: bool = payload.get();
+            }
+            message_code::SSH_MSG_USERAUTH_SUCCESS => {}
+            message_code::SSH_MSG_USERAUTH_BANNER => {
+                let message: String = payload.get();
+                let language_tag: String = payload.get();
+            }
             message_code::SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ => {
                 let prompt: String = payload.get();
                 let language_tag: String = payload.get();
+            }
+            message_code::SSH2_MSG_USERAUTH_PK_OK => {
+                let pubkey_algo: String = payload.get();
+                let pubkey_blob: ByteString = payload.get();
             }
             _ => {
                 panic!("unexpected message code")

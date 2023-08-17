@@ -25,6 +25,7 @@ impl<'a> SshPacket<'a> {
             .enc_method
             .decrypt(&mut input, self.session.server_sequence_number)?;
         let mut packet = Data(packet);
+        println!("plaintext");
         packet.hexdump();
         self.session.server_sequence_number += 1;
 
@@ -79,7 +80,7 @@ impl<'a> SshPacket<'a> {
             .mac_method
             .sign(&mac.into_inner());
 
-        println!("pre enc");
+        println!("plaintext");
         let packet = data.into_inner();
         hexdump(&packet);
         let mut encrypted_packet = packet.clone();
