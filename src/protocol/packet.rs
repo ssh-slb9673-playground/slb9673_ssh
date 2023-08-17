@@ -18,22 +18,23 @@ pub struct SshPacket<'a> {
 
 impl<'a> SshPacket<'a> {
     pub fn unseal(&mut self) -> Result<Data, SshError> {
-        // let mut input = self.payload.clone().into_inner();
-        // self.session
-        //     .client_method
-        //     .enc_method
-        //     .decrypt(&mut input)
-        //     .unwrap();
-        // let packet = BinaryPacket::from_bytes(packet).to_bytes(&self);
-        // self.client_sequence_number += 1;
+        let mut input = self.payload.clone().into_inner();
+        let packet = self
+            .session
+            .client_method
+            .enc_method
+            .decrypt(&mut input, self.session.server_sequence_number)?;
+        let mut packet = Data(packet);
+        packet.hexdump();
+        self.session.server_sequence_number += 1;
 
-        let packet_length: u32 = self.payload.get();
-        let padding_length: u8 = self.payload.get();
+        let packet_length: u32 = packet.get();
+        let padding_length: u8 = packet.get();
         let payload_length = packet_length - padding_length as u32 - 1;
         let mac_length = self.session.server_method.mac_method.size();
-        let payload: Vec<u8> = self.payload.get_bytes(payload_length as usize);
-        let padding: Vec<u8> = self.payload.get_bytes(padding_length as usize);
-        let mac: Vec<u8> = self.payload.get_bytes(mac_length);
+        let payload: Vec<u8> = packet.get_bytes(payload_length as usize);
+        let padding: Vec<u8> = packet.get_bytes(padding_length as usize);
+        let mac: Vec<u8> = packet.get_bytes(mac_length);
 
         let mut data = Data::new();
         data.put(&self.session.client_sequence_number)

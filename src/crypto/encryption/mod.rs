@@ -14,12 +14,7 @@ pub mod chachapoly;
 pub trait Encryption {
     fn group_size(&self) -> u32;
     fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32);
-    fn decrypt(
-        &mut self,
-        buffer: &mut [u8],
-        tag: &[u8],
-        sequence_number: u32,
-    ) -> Result<Vec<u8>, SshError>;
+    fn decrypt(&mut self, buffer: &mut [u8], sequence_number: u32) -> Result<Vec<u8>, SshError>;
 }
 
 #[derive(Debug, Clone)]
@@ -29,12 +24,7 @@ impl Encryption for NoneEncryption {
         8
     }
     fn encrypt(&mut self, _buffer: &mut Vec<u8>, _sequence_number: u32) {}
-    fn decrypt(
-        &mut self,
-        _buffer: &mut [u8],
-        _tag: &[u8],
-        _sequence_number: u32,
-    ) -> Result<Vec<u8>, SshError> {
-        Ok(Vec::new())
+    fn decrypt(&mut self, buffer: &mut [u8], _sequence_number: u32) -> Result<Vec<u8>, SshError> {
+        Ok(buffer.to_vec())
     }
 }

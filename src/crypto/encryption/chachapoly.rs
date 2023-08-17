@@ -37,12 +37,7 @@ impl Encryption for ChaCha20Poly1305 {
     }
 
     #[inline]
-    fn decrypt(
-        &mut self,
-        buf: &mut [u8],
-        _tag: &[u8],
-        sequence_number: u32,
-    ) -> Result<Vec<u8>, SshError> {
+    fn decrypt(&mut self, buf: &mut [u8], sequence_number: u32) -> Result<Vec<u8>, SshError> {
         let mut packet_len_slice = [0_u8; 4];
         let len = &buf[..4];
         packet_len_slice.copy_from_slice(len);
