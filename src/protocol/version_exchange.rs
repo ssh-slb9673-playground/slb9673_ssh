@@ -4,7 +4,7 @@ use nom::error::Error;
 use nom::IResult;
 
 // SSH_protoversion_softwareversion SP comments CR LF
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Version {
     ssh_protoversion_softwareversion: String,
     comments: Option<String>,

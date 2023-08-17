@@ -3,7 +3,7 @@ use rand::Rng;
 use crate::protocol::data::{Data, NameList};
 use crate::protocol::ssh2::message_code;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KexAlgorithms {
     pub cookie: [u8; 16],
     pub kex_algorithms: NameList,

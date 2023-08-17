@@ -22,6 +22,7 @@ pub trait Encryption {
     ) -> Result<Vec<u8>, SshError>;
 }
 
+#[derive(Debug, Clone)]
 pub struct NoneEncryption {}
 impl Encryption for NoneEncryption {
     fn group_size(&self) -> u32 {

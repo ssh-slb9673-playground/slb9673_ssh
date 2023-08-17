@@ -4,6 +4,9 @@ use nom::{AsBytes, IResult};
 
 use crate::utils::hexdump;
 
+use super::packet::SshPacket;
+use super::session::Session;
+
 #[derive(Debug, Clone)]
 pub struct Data(pub Vec<u8>);
 impl Data {
@@ -38,6 +41,13 @@ impl Data {
 
     pub fn hexdump(&self) {
         hexdump(&self.clone().into_inner());
+    }
+
+    pub fn pack<'a>(&self, session: &'a mut Session) -> SshPacket<'a> {
+        SshPacket {
+            payload: self.clone(),
+            session,
+        }
     }
 }
 
