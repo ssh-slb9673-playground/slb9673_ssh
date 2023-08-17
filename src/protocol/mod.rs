@@ -1,4 +1,5 @@
 mod auth;
+mod channel;
 pub mod client;
 pub mod data;
 pub mod error;
