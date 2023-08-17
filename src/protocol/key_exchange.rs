@@ -23,9 +23,7 @@ use nom::AsBytes;
 
 use crate::crypto::key_exchange::KexMethod;
 use crate::protocol::data::{ByteString, Data, Mpint};
-use crate::protocol::{
-    key_exchange_init::KexAlgorithms, ssh2::message_code, version_exchange::Version,
-};
+use crate::protocol::{key_exchange_init::KexAlgorithms, version_exchange::Version};
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -88,6 +86,7 @@ impl<T: KexMethod> Kex<T> {
 
             keys.push(key.into_inner());
         }
+
         Kex::<T> {
             method,
             shared_secret_key: shared_secret_key.clone(),
@@ -101,13 +100,4 @@ impl<T: KexMethod> Kex<T> {
             integrity_key_server_to_client: keys[5].clone(),
         }
     }
-}
-
-pub fn parse_key_exchange<'a>(input: &mut Data) -> (ByteString, ByteString) {
-    let message_code: u8 = input.get();
-    assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
-    let host_public_key: ByteString = input.get();
-    let public_key: ByteString = input.get();
-
-    (host_public_key, public_key)
 }

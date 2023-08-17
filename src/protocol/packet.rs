@@ -17,7 +17,7 @@ pub struct SshPacket {
 }
 
 impl SshPacket {
-    pub fn decode<'a>(input: &mut Data, session: &Session) -> Result<SshPacket, SshError> {
+    pub fn unseal<'a>(input: &mut Data, session: &Session) -> Result<SshPacket, SshError> {
         // session
         //     .client_method
         //     .enc_method
@@ -29,11 +29,8 @@ impl SshPacket {
 
         let packet_length: u32 = input.get();
         let padding_length: u8 = input.get();
-        println!("test");
         let payload_length = packet_length - padding_length as u32 - 1;
-        println!("test");
         let payload: Vec<u8> = input.get_bytes(payload_length as usize);
-        println!("test");
         let padding: Vec<u8> = input.get_bytes(padding_length as usize);
         let mac: Vec<u8> = input.get_bytes(session.server_method.mac_method.size());
 
@@ -52,7 +49,7 @@ impl SshPacket {
         })
     }
 
-    pub fn encode(&self, session: &mut Session) -> Vec<u8> {
+    pub fn seal(&self, session: &mut Session) -> Vec<u8> {
         let payload = self.payload.clone().into_inner();
 
         let payload_length = (payload.len() + 1) as u32;

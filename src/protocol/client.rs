@@ -12,7 +12,7 @@ use crate::network::tcp_client::TcpClient;
 use crate::protocol::{
     data::{ByteString, Data, DataType, Mpint},
     error::SshError,
-    key_exchange::{parse_key_exchange, Kex},
+    key_exchange::Kex,
     key_exchange_init::KexAlgorithms,
     packet::SshPacket,
     session::{NewKeys, Session},
@@ -100,13 +100,13 @@ impl SshClient {
     ) -> Result<(KexAlgorithms, KexAlgorithms), SshError> {
         // recv key algorithms
         let mut packet = self.recv()?;
-        let mut payload = SshPacket::decode(&mut packet, session)?.into_inner();
+        let mut payload = SshPacket::unseal(&mut packet, session)?.into_inner();
         let server_kex_algorithms = KexAlgorithms::parse_key_exchange_init(&mut payload);
 
         // send key algorithms
         let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
         let packet: SshPacket = client_kex_algorithms.generate_key_exchange_init().into();
-        self.send(&packet.encode(session))?;
+        self.send(&packet.seal(session))?;
 
         Ok((client_kex_algorithms, server_kex_algorithms))
     }
@@ -127,12 +127,14 @@ impl SshClient {
             .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
             .put(&ByteString(method.public_key()));
         let packet: SshPacket = payload.into();
-        self.send(&packet.encode(session))?;
+        self.send(&packet.seal(session))?;
 
         let mut key_exchange_packet = self.recv()?;
-        let payload = SshPacket::decode(&mut key_exchange_packet, session)?;
-        let (server_public_host_key, server_public_key) =
-            parse_key_exchange(&mut payload.into_inner());
+        let mut payload = SshPacket::unseal(&mut key_exchange_packet, session)?.into_inner();
+        let message_code: u8 = payload.get();
+        assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
+        let server_public_host_key: ByteString = payload.get();
+        let server_public_key: ByteString = payload.get();
 
         let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
 
@@ -140,7 +142,7 @@ impl SshClient {
         let mut payload = Data::new();
         payload.put(&message_code::SSH_MSG_NEWKEYS);
         let packet: SshPacket = payload.into();
-        self.send(&packet.encode(session))?;
+        self.send(&packet.seal(session))?;
 
         Ok(Kex::<Method>::new(
             method,
@@ -161,7 +163,7 @@ impl SshClient {
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
             .put(&ByteString::from_str("ssh-userauth"));
         let packet: SshPacket = payload.into();
-        self.send(&packet.encode(session))?;
+        self.send(&packet.seal(session))?;
 
         let mut payload = Data::new();
         payload
@@ -172,7 +174,7 @@ impl SshClient {
             .put(&false)
             .put(&ByteString::from_str("rsa-sha2-256"));
         let packet: SshPacket = payload.into();
-        self.send(&packet.encode(session))?;
+        self.send(&packet.seal(session))?;
 
         let packet = self.recv()?;
 

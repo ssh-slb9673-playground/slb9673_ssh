@@ -23,11 +23,8 @@ impl Data {
     where
         T: DataType,
     {
-        self.hexdump();
         let (_, data) = T::decode(&self.0).unwrap();
-        println!("{}", data.size());
         self.0.drain(..data.size());
-        self.hexdump();
         data
     }
     pub fn get_bytes(&mut self, len: usize) -> Vec<u8> {

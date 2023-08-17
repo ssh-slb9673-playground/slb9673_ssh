@@ -120,8 +120,6 @@ none,zlib@openssh.com,zlib\
     let parsed = KexAlgorithms::parse_key_exchange_init(&mut packet);
     let algo = parsed;
     let gen_packet = algo.generate_key_exchange_init();
-    // hexdump(packet);
-    // hexdump(&gen_packet);
     assert!(packet.into_inner()[..] == gen_packet.into_inner()[..]);
 }
 
