@@ -72,11 +72,7 @@ impl DataType for bool {
         1
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        if *self {
-            buf.extend([1])
-        } else {
-            buf.extend([0])
-        }
+        buf.extend([*self as u8])
     }
     fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
         let (input, boolean) = be_u8(input)?;

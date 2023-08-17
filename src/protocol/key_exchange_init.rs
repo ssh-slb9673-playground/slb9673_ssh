@@ -116,9 +116,8 @@ none,zlib@openssh.com,zlib\
 none,zlib@openssh.com,zlib\
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
     //\x00\x00\x00\x00";
-    let mut packet = Data(packet.to_vec());
-    let parsed = KexAlgorithms::parse_key_exchange_init(&mut packet);
-    let algo = parsed;
+    let mut payload = Data(packet.to_vec());
+    let algo = KexAlgorithms::parse_key_exchange_init(&mut payload);
     let gen_packet = algo.generate_key_exchange_init();
-    assert!(packet.into_inner()[..] == gen_packet.into_inner()[..]);
+    assert!(packet[..] == gen_packet.into_inner()[..]);
 }

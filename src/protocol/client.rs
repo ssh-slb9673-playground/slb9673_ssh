@@ -171,6 +171,7 @@ impl SshClient {
             .put(&ByteString::from_str("publickey"))
             .put(&false)
             .put(&ByteString::from_str("rsa-sha2-256"));
+
         self.send(&payload.pack(session).seal())?;
 
         let packet = self.recv()?;
