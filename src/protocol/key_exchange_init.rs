@@ -23,40 +23,28 @@ pub struct KexAlgorithms {
 }
 
 impl KexAlgorithms {
-    pub fn parse_key_exchange_init(input: &[u8]) -> IResult<&[u8], Self> {
-        let (input, message_id) = u8::decode(input)?;
-        assert!(message_id == message_code::SSH_MSG_KEXINIT);
-        let (input, cookie) = <[u8; 16]>::decode(input)?;
-        let (input, kex_algorithms) = NameList::decode(input)?;
-        let (input, server_host_key_algorithms) = NameList::decode(input)?;
-        let (input, encryption_algorithms_client_to_server) = NameList::decode(input)?;
-        let (input, encryption_algorithms_server_to_client) = NameList::decode(input)?;
-        let (input, mac_algorithms_client_to_server) = NameList::decode(input)?;
-        let (input, mac_algorithms_server_to_client) = NameList::decode(input)?;
-        let (input, compression_algorithms_client_to_server) = NameList::decode(input)?;
-        let (input, compression_algorithms_server_to_client) = NameList::decode(input)?;
-        let (input, languages_client_to_server) = NameList::decode(input)?;
-        let (input, languages_server_to_client) = NameList::decode(input)?;
-        let (input, first_kex_packet_follows) = bool::decode(input)?;
-        let (input, _reserved) = u32::decode(input)?;
+    pub fn parse_key_exchange_init(input: &mut Data) -> Self {
+        let message_code: u8 = input.get();
+        assert!(message_code == message_code::SSH_MSG_KEXINIT);
 
-        Ok((
-            input,
-            KexAlgorithms {
-                cookie,
-                kex_algorithms,
-                server_host_key_algorithms,
-                encryption_algorithms_client_to_server,
-                encryption_algorithms_server_to_client,
-                mac_algorithms_client_to_server,
-                mac_algorithms_server_to_client,
-                compression_algorithms_client_to_server,
-                compression_algorithms_server_to_client,
-                languages_client_to_server,
-                languages_server_to_client,
-                first_kex_packet_follows,
-            },
-        ))
+        let kex = KexAlgorithms {
+            cookie: input.get(),
+            kex_algorithms: input.get(),
+            server_host_key_algorithms: input.get(),
+            encryption_algorithms_client_to_server: input.get(),
+            encryption_algorithms_server_to_client: input.get(),
+            mac_algorithms_client_to_server: input.get(),
+            mac_algorithms_server_to_client: input.get(),
+            compression_algorithms_client_to_server: input.get(),
+            compression_algorithms_server_to_client: input.get(),
+            languages_client_to_server: input.get(),
+            languages_server_to_client: input.get(),
+            first_kex_packet_follows: input.get(),
+        };
+        println!("{:?}", kex);
+
+        let _reserved: u32 = input.get();
+        kex
     }
 
     pub fn generate_key_exchange_init(&self) -> Data {
@@ -132,13 +120,13 @@ none,zlib@openssh.com,zlib\
 none,zlib@openssh.com,zlib\
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
     //\x00\x00\x00\x00";
-    let parsed = KexAlgorithms::parse_key_exchange_init(packet);
-    assert!(parsed.is_ok());
-    let (_, algo) = parsed.unwrap();
+    let mut packet = Data(packet.to_vec());
+    let parsed = KexAlgorithms::parse_key_exchange_init(&mut packet);
+    let algo = parsed;
     let gen_packet = algo.generate_key_exchange_init();
     // hexdump(packet);
     // hexdump(&gen_packet);
-    assert!(packet[..] == gen_packet.into_inner()[..]);
+    assert!(packet.into_inner()[..] == gen_packet.into_inner()[..]);
 }
 
 /*

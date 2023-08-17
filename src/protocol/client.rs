@@ -88,7 +88,7 @@ impl SshClient {
         self.send(&packet)?;
 
         // recv version
-        let (_input, server_version) = Version::from_bytes(&self.recv()?)
+        let (_input, server_version) = Version::from_bytes(&self.recv()?.into_inner())
             .map_err(|_| SshError::RecvError("version".to_string()))?;
 
         Ok((client_version, server_version))
@@ -99,11 +99,9 @@ impl SshClient {
         session: &mut Session,
     ) -> Result<(KexAlgorithms, KexAlgorithms), SshError> {
         // recv key algorithms
-        let packet = self.recv()?;
-        let (input, _binary_packet) =
-            SshPacket::decode(&packet, session).map_err(|_| SshError::ParseError)?;
-        let (_input, server_kex_algorithms) =
-            KexAlgorithms::parse_key_exchange_init(input).map_err(|_| SshError::ParseError)?;
+        let mut packet = self.recv()?;
+        let mut payload = SshPacket::decode(&mut packet, session)?.into_inner();
+        let server_kex_algorithms = KexAlgorithms::parse_key_exchange_init(&mut payload);
 
         // send key algorithms
         let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
@@ -131,11 +129,10 @@ impl SshClient {
         let packet: SshPacket = payload.into();
         self.send(&packet.encode(session))?;
 
-        let key_exchange_packet = self.recv()?;
-        let (payload, _binary_packet) =
-            SshPacket::decode(&key_exchange_packet, session).map_err(|_| SshError::ParseError)?;
-        let (_input, (server_public_host_key, server_public_key)) =
-            parse_key_exchange(payload).map_err(|_| SshError::ParseError)?;
+        let mut key_exchange_packet = self.recv()?;
+        let payload = SshPacket::decode(&mut key_exchange_packet, session)?;
+        let (server_public_host_key, server_public_key) =
+            parse_key_exchange(&mut payload.into_inner());
 
         let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
 
@@ -178,7 +175,6 @@ impl SshClient {
         self.send(&packet.encode(session))?;
 
         let packet = self.recv()?;
-        hexdump(&packet);
 
         Ok(&[])
     }
@@ -191,13 +187,14 @@ impl SshClient {
             .map_err(|_| SshError::SendError("io".to_string()))
     }
 
-    pub fn recv(&mut self) -> Result<Vec<u8>, SshError> {
+    pub fn recv(&mut self) -> Result<Data, SshError> {
         let packet = self
             .client
             .recv()
             .map_err(|_| SshError::RecvError("io".to_string()))?;
+        let packet = Data(packet);
         println!("server -> client");
-        hexdump(&packet);
+        packet.hexdump();
         Ok(packet)
     }
 }

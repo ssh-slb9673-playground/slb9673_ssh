@@ -2,8 +2,10 @@ use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
 use nom::{AsBytes, IResult};
 
+use crate::utils::hexdump;
+
 #[derive(Debug, Clone)]
-pub struct Data(Vec<u8>);
+pub struct Data(pub Vec<u8>);
 impl Data {
     pub fn new() -> Data {
         Data(Vec::new())
@@ -21,8 +23,11 @@ impl Data {
     where
         T: DataType,
     {
+        self.hexdump();
         let (_, data) = T::decode(&self.0).unwrap();
-        self.0.drain(..self.size());
+        println!("{}", data.size());
+        self.0.drain(..data.size());
+        self.hexdump();
         data
     }
     pub fn get_bytes(&mut self, len: usize) -> Vec<u8> {
@@ -33,8 +38,9 @@ impl Data {
     pub fn into_inner(self) -> Vec<u8> {
         self.0
     }
-    pub fn size(&self) -> usize {
-        self.0.len()
+
+    pub fn hexdump(&self) {
+        hexdump(&self.clone().into_inner());
     }
 }
 
@@ -199,7 +205,7 @@ impl ByteString {
 
 impl DataType for ByteString {
     fn size(&self) -> usize {
-        self.0.len()
+        self.0.len() + 4
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         self.0.len().encode(buf);
@@ -242,7 +248,7 @@ impl DataType for ByteString {
 pub type NameList = Vec<String>;
 impl DataType for NameList {
     fn size(&self) -> usize {
-        0
+        self.join(",").len() + 4
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         ByteString::from_str(&self.join(",")).encode(buf)
@@ -270,7 +276,7 @@ impl DataType for NameList {
 pub struct Mpint(pub Vec<u8>);
 impl DataType for Mpint {
     fn size(&self) -> usize {
-        self.0.len()
+        self.0.len() + 4
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         if self.0[0] & 0x80 != 1 {

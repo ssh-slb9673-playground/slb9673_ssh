@@ -103,11 +103,11 @@ impl<T: KexMethod> Kex<T> {
     }
 }
 
-pub fn parse_key_exchange<'a>(input: &'a [u8]) -> IResult<&'a [u8], (ByteString, ByteString)> {
-    let (input, message_code) = u8::decode(input)?;
+pub fn parse_key_exchange<'a>(input: &mut Data) -> (ByteString, ByteString) {
+    let message_code: u8 = input.get();
     assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
-    let (input, host_public_key) = ByteString::decode(input)?;
-    let (input, public_key) = ByteString::decode(input)?;
+    let host_public_key: ByteString = input.get();
+    let public_key: ByteString = input.get();
 
-    Ok((input, (host_public_key, public_key)))
+    (host_public_key, public_key)
 }
