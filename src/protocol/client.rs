@@ -10,7 +10,7 @@ use crate::crypto::{
 };
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::{
-    data::{ByteString, Data, DataType, Mpint},
+    data::{ByteString, Data, DataType, Mpint, NameList},
     error::SshError,
     key_exchange::Kex,
     key_exchange_init::KexAlgorithms,
@@ -163,20 +163,127 @@ impl SshClient {
             .put(&ByteString::from_str("ssh-userauth"));
         self.send(&payload.pack(session).seal())?;
 
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let message_code: u8 = payload.get();
+        assert!(message_code == message_code::SSH_MSG_SERVICE_ACCEPT);
+        let service_name: ByteString = payload.get();
+        println!("{:?}", String::from_utf8(service_name.0));
+
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&ByteString::from_str("anko"))
             .put(&ByteString::from_str("ssh-connection"))
             .put(&ByteString::from_str("publickey"))
-            .put(&false)
-            .put(&ByteString::from_str("rsa-sha2-256"));
+            .put(&true)
+            .put(&ByteString::from_str("rsa-sha2-256"))
+            .put(&ByteString::from_str("signature"));
 
         self.send(&payload.pack(session).seal())?;
 
-        let packet = self.recv()?;
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let message_code: u8 = payload.get();
+        match message_code {
+            message_code::SSH_MSG_SERVICE_ACCEPT => {
+                let service_name: ByteString = payload.get();
+                println!("{:?}", String::from_utf8(service_name.0));
+            }
+            message_code::SSH2_MSG_USERAUTH_PK_OK => {
+                let pubkey_algo: ByteString = payload.get();
+                let pubkey_blob: ByteString = payload.get();
+            }
+            message_code::SSH_MSG_USERAUTH_SUCCESS => {}
+            message_code::SSH_MSG_USERAUTH_FAILURE => {
+                println!("failure");
+                let auth: NameList = payload.get();
+                let success: bool = payload.get();
+            }
+            message_code::SSH_MSG_USERAUTH_BANNER => {
+                let message: ByteString = payload.get();
+                let language_tag: ByteString = payload.get();
+            }
+            _ => {
+                panic!("unexpected message code")
+            }
+        }
 
         Ok(&[])
+    }
+
+    pub fn parse(&mut self, session: &mut Session) -> Result<(), SshError> {
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let message_code: u8 = payload.get();
+        match message_code {
+            message_code::SSH_MSG_SERVICE_REQUEST => {
+                let service_name: ByteString = payload.get();
+            }
+            message_code::SSH_MSG_SERVICE_ACCEPT => {
+                let service_name: ByteString = payload.get();
+                println!("{:?}", String::from_utf8(service_name.0));
+            }
+            message_code::SSH2_MSG_USERAUTH_PK_OK => {
+                let pubkey_algo: ByteString = payload.get();
+                let pubkey_blob: ByteString = payload.get();
+            }
+            message_code::SSH_MSG_USERAUTH_SUCCESS => {}
+            message_code::SSH_MSG_USERAUTH_FAILURE => {
+                println!("failure");
+                let auth: NameList = payload.get();
+                let success: bool = payload.get();
+            }
+            message_code::SSH_MSG_USERAUTH_BANNER => {
+                let message: ByteString = payload.get();
+                let language_tag: ByteString = payload.get();
+            }
+            message_code::SSH_MSG_DISCONNECT => {
+                let disconnect_code: u32 = payload.get();
+                let description: ByteString = payload.get();
+                let language_tag: ByteString = payload.get();
+            }
+            message_code::SSH_MSG_USERAUTH_REQUEST => {
+                let user_name: ByteString = payload.get();
+                let service_name: ByteString = payload.get();
+                let method_name: String = payload.get();
+                match method_name.as_str() {
+                    "publickey" => {
+                        let is_signature: bool = payload.get();
+                        let pubkey_algo: String = payload.get();
+                        let pubkey_blob: ByteString = payload.get();
+                        let signature: ByteString = payload.get();
+                    }
+                    "password" => {
+                        let is_first: bool = payload.get();
+                        if is_first {
+                            let password: String = payload.get();
+                        } else {
+                            let old_password: String = payload.get();
+                            let new_password: String = payload.get();
+                        }
+                    }
+                    "hostbased" => {
+                        let host_pubkey_algo: String = payload.get();
+                        let host_pubkey_cert: ByteString = payload.get();
+                        let hostname: String = payload.get();
+                        let username: String = payload.get();
+                        let signature: ByteString = payload.get();
+                    }
+                    "none" => {
+                        panic!("none auth");
+                    }
+                    _ => {
+                        panic!("unknown");
+                    }
+                }
+            }
+            message_code::SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ => {
+                let prompt: String = payload.get();
+                let language_tag: String = payload.get();
+            }
+            _ => {
+                panic!("unexpected message code")
+            }
+        }
+        Ok(())
     }
 
     pub fn send(&self, packet: &[u8]) -> Result<(), SshError> {
