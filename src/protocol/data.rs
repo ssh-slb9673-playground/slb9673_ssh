@@ -2,10 +2,9 @@ use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
 use nom::{AsBytes, IResult};
 
-use crate::utils::hexdump;
-
 use super::packet::SshPacket;
 use super::session::Session;
+use crate::utils::hexdump;
 
 #[derive(Debug, Clone)]
 pub struct Data(pub Vec<u8>);
@@ -227,25 +226,6 @@ impl DataType for ByteString {
 }
 
 // string
-// impl DataType for &str {
-//     fn size(&self) -> usize {
-//         Ok((*self).len())
-//     }
-//     fn encode(&self, buf: &mut Vec<u8>) {
-//         self.len().encode(buf);
-//         (*self).as_bytes().encode(buf);
-//     }
-//     fn decode<'a>(input: &'a [u8]) -> IResult<&'a [u8], &'a str> {
-//         let (input, length) = be_u32(input)?;
-//         let (input, payload) = take(length)(input)?;
-//         Ok((input, from_utf8(payload).unwrap()))
-//     }
-//     fn to_bytes(&self) -> Vec<u8> {
-//         let mut buf = Vec::new();
-//         self.encode(&mut buf);
-//         buf
-//     }
-// }
 impl DataType for String {
     fn size(&self) -> usize {
         self.len()

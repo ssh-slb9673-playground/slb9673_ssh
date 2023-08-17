@@ -23,7 +23,12 @@ use nom::AsBytes;
 
 use crate::crypto::key_exchange::KexMethod;
 use crate::protocol::data::{ByteString, Data, Mpint};
+use crate::protocol::ssh2::message_code;
 use crate::protocol::{key_exchange_init::KexAlgorithms, version_exchange::Version};
+
+use super::client::SshClient;
+use super::error::SshError;
+use super::session::Session;
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -99,5 +104,50 @@ impl<T: KexMethod> Kex<T> {
             integrity_key_client_to_server: keys[4].clone(),
             integrity_key_server_to_client: keys[5].clone(),
         }
+    }
+}
+
+impl SshClient {
+    pub fn key_exchange<Method: KexMethod>(
+        &mut self,
+        client_version: &Version,
+        server_version: &Version,
+        client_kex: &KexAlgorithms,
+        server_kex: &KexAlgorithms,
+        session: &mut Session,
+    ) -> Result<Kex<Method>, SshError> {
+        let mut method = Method::new();
+
+        let mut payload = Data::new();
+        payload
+            .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
+            .put(&ByteString(method.public_key()));
+        self.send(&payload.pack(session).seal())?;
+
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let message_code: u8 = payload.get();
+        assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
+        let server_public_host_key: ByteString = payload.get();
+        let server_public_key: ByteString = payload.get();
+
+        let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
+
+        // New Keys
+        let mut payload = Data::new();
+        payload.put(&message_code::SSH_MSG_NEWKEYS);
+        self.send(&payload.pack(session).seal())?;
+
+        let client_public_key = ByteString(method.public_key());
+        Ok(Kex::<Method>::new(
+            method,
+            client_version,
+            server_version,
+            client_kex,
+            server_kex,
+            &server_public_host_key,
+            &client_public_key,
+            &server_public_key,
+            &shared_secret,
+        ))
     }
 }

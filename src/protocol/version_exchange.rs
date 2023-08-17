@@ -1,7 +1,12 @@
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
 use nom::error::Error;
+use nom::AsBytes;
 use nom::IResult;
+
+use super::client::SshClient;
+use super::error::SshError;
+use crate::protocol::data::DataType;
 
 // SSH_protoversion_softwareversion SP comments CR LF
 #[derive(Debug, Clone, PartialEq)]
@@ -54,6 +59,22 @@ impl Version {
             payload += "\r\n";
         }
         payload.into_bytes()
+    }
+}
+
+impl SshClient {
+    pub fn version_exchange(&mut self) -> Result<(Version, Version), SshError> {
+        // send version
+        let mut packet = Vec::new();
+        let client_version = Version::new("SSH-2.0-OpenSSH_8.9p1", Some("Ubuntu-3ubuntu0.1"));
+        client_version.generate(true).as_bytes().encode(&mut packet);
+        self.send(&packet)?;
+
+        // recv version
+        let (_input, server_version) = Version::from_bytes(&self.recv()?.into_inner())
+            .map_err(|_| SshError::RecvError("version".to_string()))?;
+
+        Ok((client_version, server_version))
     }
 }
 

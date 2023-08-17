@@ -1,7 +1,10 @@
 use rand::Rng;
 
-use crate::protocol::data::{Data, NameList};
-use crate::protocol::ssh2::message_code;
+use super::client::SshClient;
+use super::data::{Data, NameList};
+use super::error::SshError;
+use super::session::Session;
+use super::ssh2::message_code;
 
 #[derive(Debug, Clone)]
 pub struct KexAlgorithms {
@@ -89,6 +92,28 @@ impl KexAlgorithms {
             first_kex_packet_follows: self.first_kex_packet_follows.clone(),
             reserved: 0,
         }
+    }
+}
+
+impl SshClient {
+    pub fn key_exchange_init(
+        &mut self,
+        session: &mut Session,
+    ) -> Result<(KexAlgorithms, KexAlgorithms), SshError> {
+        // recv key algorithms
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let server_kex_algorithms = KexAlgorithms::parse_key_exchange_init(&mut payload);
+
+        // send key algorithms
+        let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
+        self.send(
+            &client_kex_algorithms
+                .generate_key_exchange_init()
+                .pack(session)
+                .seal(),
+        )?;
+
+        Ok((client_kex_algorithms, server_kex_algorithms))
     }
 }
 
