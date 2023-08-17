@@ -1,7 +1,6 @@
 use nom::AsBytes;
 
 use super::error::SshError;
-use crate::network::tcp_client::TcpClient;
 use crate::protocol::data::{Data, DataType};
 use crate::protocol::session::Session;
 use crate::utils::hexdump;
@@ -19,23 +18,22 @@ pub struct SshPacket<'a> {
 
 impl<'a> SshPacket<'a> {
     pub fn unseal(&mut self) -> Result<Data, SshError> {
-        // session
+        // let mut input = self.payload.clone().into_inner();
+        // self.session
         //     .client_method
         //     .enc_method
-        //     .decrypt(&mut _input)
+        //     .decrypt(&mut input)
         //     .unwrap();
         // let packet = BinaryPacket::from_bytes(packet).to_bytes(&self);
         // self.client_sequence_number += 1;
-        // encrypted_packet
 
         let packet_length: u32 = self.payload.get();
         let padding_length: u8 = self.payload.get();
         let payload_length = packet_length - padding_length as u32 - 1;
+        let mac_length = self.session.server_method.mac_method.size();
         let payload: Vec<u8> = self.payload.get_bytes(payload_length as usize);
         let padding: Vec<u8> = self.payload.get_bytes(padding_length as usize);
-        let mac: Vec<u8> = self
-            .payload
-            .get_bytes(self.session.server_method.mac_method.size());
+        let mac: Vec<u8> = self.payload.get_bytes(mac_length);
 
         let mut data = Data::new();
         data.put(&self.session.client_sequence_number)
@@ -60,18 +58,18 @@ impl<'a> SshPacket<'a> {
 
         let payload_length = (payload.len() + 1) as u32;
         let group_size = self.session.client_method.enc_method.group_size();
-        let mut packet_length = (payload_length + group_size - 1) / group_size * group_size;
-        if let None = self.session.client_kex {
-            packet_length += 4;
-        }
+        let packet_length = if let None = self.session.client_kex {
+            (payload_length + group_size - 1) / group_size * group_size + 4
+        } else {
+            (payload_length + group_size - 1) / group_size * group_size
+        };
         let padding_length = (packet_length - payload_length) as u8;
-        let padding = vec![0; padding_length as usize];
 
         let mut data = Data::new();
         data.put(&packet_length)
             .put(&padding_length)
             .put(&payload.as_bytes())
-            .put(&padding.as_bytes());
+            .put(&vec![0; padding_length as usize].as_bytes());
         let mut mac = Data::new();
         mac.put(&self.session.client_sequence_number).put(&data);
         let mac = self

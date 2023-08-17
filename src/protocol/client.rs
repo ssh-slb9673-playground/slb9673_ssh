@@ -127,14 +127,13 @@ impl SshClient {
         payload
             .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
             .put(&ByteString(method.public_key()));
-        // payload.seal().send()?;
         self.send(&payload.pack(session).seal())?;
 
-        let mut key_exchange = self.recv()?.pack(session).unseal()?;
-        let message_code: u8 = key_exchange.get();
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
-        let server_public_host_key: ByteString = key_exchange.get();
-        let server_public_key: ByteString = key_exchange.get();
+        let server_public_host_key: ByteString = payload.get();
+        let server_public_key: ByteString = payload.get();
 
         let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
 
@@ -157,7 +156,7 @@ impl SshClient {
         ))
     }
 
-    fn user_auth<'a>(&mut self, session: &'a mut Session) -> Result<&[u8], SshError> {
+    fn user_auth(&mut self, session: &mut Session) -> Result<&[u8], SshError> {
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
