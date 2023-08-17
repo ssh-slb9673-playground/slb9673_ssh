@@ -278,19 +278,19 @@ impl DataType for NameList {
 pub struct Mpint(pub Vec<u8>);
 impl DataType for Mpint {
     fn size(&self) -> usize {
-        if self.0[0] & 0x80 != 1 {
+        if self.0[0] & 0x80 == 0 {
             self.0.len() + 4
         } else {
             self.0.len() + 5
         }
     }
     fn encode(&self, buf: &mut Vec<u8>) {
-        if self.0[0] & 0x80 != 1 {
-            (self.0.len() + 1).encode(buf);
-            (0 as u8).encode(buf);
+        if self.0[0] & 0x80 == 0 {
+            self.0.len().encode(buf);
             self.0.as_bytes().encode(buf)
         } else {
-            self.0.len().encode(buf);
+            (self.0.len() + 1).encode(buf);
+            (0 as u8).encode(buf);
             self.0.as_bytes().encode(buf)
         }
     }
