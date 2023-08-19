@@ -1,6 +1,18 @@
+use std::net::SocketAddr;
+
 use crate::protocol::{
     client::SshClient, data::ByteString, error::SshError, session::Session, ssh2::message_code,
 };
+
+pub struct Channel {
+    client: SshClient,
+    address: SocketAddr,
+    sender_channel: u32,
+    recipient_channel: u32,
+    want_reply: Option<u32>,
+    initial_window_size: u32,
+    maximum_packet_size: u32,
+}
 
 impl SshClient {
     pub fn channel(&mut self, session: &mut Session) -> Result<(), SshError> {
@@ -57,6 +69,26 @@ impl SshClient {
                 let sender_channel: u32 = payload.get();
                 let initial_window_size: u32 = payload.get();
                 let maximum_packet_size: u32 = payload.get();
+                match channel_type.as_str() {
+                    "session" => {}
+                    "x11" => {
+                        let originator_address: String = payload.get();
+                        let originator_port: u32 = payload.get();
+                    }
+                    "forwarded-tcpip" => {
+                        let address: String = payload.get();
+                        let old_port: u32 = payload.get();
+                        let originator_ip_address: String = payload.get();
+                        let originator_port: u32 = payload.get();
+                    }
+                    "direct-tcpip" => {
+                        let host: String = payload.get();
+                        let port: u32 = payload.get();
+                        let originator_ip_address: String = payload.get();
+                        let originator_port: u32 = payload.get();
+                    }
+                    _ => {}
+                }
             }
             message_code::SSH_MSG_CHANNEL_OPEN_FAILURE => {
                 let recipient_channel: u32 = payload.get();
