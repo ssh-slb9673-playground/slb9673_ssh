@@ -2,7 +2,7 @@ use rand::Rng;
 
 use super::client::SshClient;
 use super::data::{Data, NameList};
-use super::error::SshError;
+use super::error::SshResult;
 use super::session::Session;
 use super::ssh2::message_code;
 
@@ -23,8 +23,25 @@ pub struct KexAlgorithms {
     pub reserved: u32,
 }
 
+impl SshClient {
+    pub fn key_exchange_init(
+        &mut self,
+        session: &mut Session,
+    ) -> SshResult<(KexAlgorithms, KexAlgorithms)> {
+        // recv key algorithms
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let server_kex_algorithms = KexAlgorithms::unpack(&mut payload);
+
+        // send key algorithms
+        let client_kex_algorithms = KexAlgorithms::client_kex_algorithms();
+        self.send(&client_kex_algorithms.pack().pack(session).seal())?;
+
+        Ok((client_kex_algorithms, server_kex_algorithms))
+    }
+}
+
 impl KexAlgorithms {
-    pub fn parse_key_exchange_init(input: &mut Data) -> Self {
+    pub fn unpack(input: &mut Data) -> Self {
         let message_code: u8 = input.get();
         assert!(message_code == message_code::SSH_MSG_KEXINIT);
 
@@ -45,7 +62,7 @@ impl KexAlgorithms {
         }
     }
 
-    pub fn generate_key_exchange_init(&self) -> Data {
+    pub fn pack(&self) -> Data {
         let mut data = Data::new();
         data.put(&message_code::SSH_MSG_KEXINIT)
             .put(&self.cookie)
@@ -64,10 +81,10 @@ impl KexAlgorithms {
         data
     }
 
-    pub fn create_kex_from_kex(&self) -> Self {
+    pub fn client_kex_algorithms() -> KexAlgorithms {
         KexAlgorithms {
             cookie: rand::thread_rng().gen::<[u8; 16]>(),
-            kex_algorithms: self.kex_algorithms.clone(),
+            kex_algorithms: vec!["curve25519-sha256".to_string()],
             server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
             encryption_algorithms_client_to_server: vec![
                 "chacha20-poly1305@openssh.com".to_string()
@@ -77,39 +94,13 @@ impl KexAlgorithms {
             ],
             mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
             mac_algorithms_server_to_client: vec!["hmac-sha2-256".to_string()],
-            compression_algorithms_client_to_server: self
-                .compression_algorithms_client_to_server
-                .clone(),
-            compression_algorithms_server_to_client: self
-                .compression_algorithms_server_to_client
-                .clone(),
-            languages_client_to_server: self.languages_client_to_server.clone(),
-            languages_server_to_client: self.languages_server_to_client.clone(),
-            first_kex_packet_follows: self.first_kex_packet_follows.clone(),
+            compression_algorithms_client_to_server: vec!["none".to_string()],
+            compression_algorithms_server_to_client: vec!["none".to_string()],
+            languages_client_to_server: vec![],
+            languages_server_to_client: vec![],
+            first_kex_packet_follows: false,
             reserved: 0,
         }
-    }
-}
-
-impl SshClient {
-    pub fn key_exchange_init(
-        &mut self,
-        session: &mut Session,
-    ) -> Result<(KexAlgorithms, KexAlgorithms), SshError> {
-        // recv key algorithms
-        let mut payload = self.recv()?.pack(session).unseal()?;
-        let server_kex_algorithms = KexAlgorithms::parse_key_exchange_init(&mut payload);
-
-        // send key algorithms
-        let client_kex_algorithms = server_kex_algorithms.create_kex_from_kex();
-        self.send(
-            &client_kex_algorithms
-                .generate_key_exchange_init()
-                .pack(session)
-                .seal(),
-        )?;
-
-        Ok((client_kex_algorithms, server_kex_algorithms))
     }
 }
 
@@ -138,7 +129,7 @@ none,zlib@openssh.com,zlib\
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
     //\x00\x00\x00\x00";
     let mut payload = Data(packet.to_vec());
-    let algo = KexAlgorithms::parse_key_exchange_init(&mut payload);
-    let gen_packet = algo.generate_key_exchange_init();
+    let algo = KexAlgorithms::unpack(&mut payload);
+    let gen_packet = algo.pack();
     assert!(packet[..] == gen_packet.into_inner()[..]);
 }

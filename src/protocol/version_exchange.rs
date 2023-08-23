@@ -10,6 +10,7 @@ use crate::protocol::data::DataType;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Version {
     version: String,
+    crnl: bool,
 }
 
 impl Version {
@@ -19,7 +20,10 @@ impl Version {
             version += " ";
             version += comments;
         }
-        Version { version }
+        Version {
+            version,
+            crnl: true,
+        }
     }
 
     pub fn from_bytes(input: &[u8]) -> IResult<&[u8], Self> {
@@ -29,6 +33,7 @@ impl Version {
             input,
             Version {
                 version: String::from_utf8(version.to_vec()).unwrap(),
+                crnl: false,
             },
         ))
     }

@@ -24,3 +24,5 @@ impl fmt::Display for SshError {
 }
 
 impl Error for SshError {}
+
+pub type SshResult<T> = Result<T, SshError>;

@@ -28,7 +28,6 @@ impl Encryption for ChaCha20Poly1305 {
         64
     }
 
-    #[inline]
     fn encrypt(&mut self, buf: &mut Vec<u8>, sequence_number: u32) {
         let mut tag = [0_u8; 16];
         self.client_key
@@ -36,7 +35,6 @@ impl Encryption for ChaCha20Poly1305 {
         buf.append(&mut tag.to_vec());
     }
 
-    #[inline]
     fn decrypt(&mut self, buf: &mut [u8], sequence_number: u32) -> Result<Vec<u8>, SshError> {
         let mut packet_len_slice = [0_u8; 4];
         let len = &buf[..4];

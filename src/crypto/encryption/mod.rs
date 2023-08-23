@@ -12,6 +12,8 @@ pub mod chachapoly;
 // aes192 (cbc, ctr, gcm)	192 bits
 // aes256 (cbc, ctr, gcm)	256 bits
 pub trait Encryption {
+    // fn iv_size(&self) -> u32;
+    // fn block_size(&self) -> u32;
     fn group_size(&self) -> u32;
     fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32);
     fn decrypt(&mut self, buffer: &mut [u8], sequence_number: u32) -> Result<Vec<u8>, SshError>;
@@ -20,9 +22,19 @@ pub trait Encryption {
 #[derive(Debug, Clone)]
 pub struct NoneEncryption {}
 impl Encryption for NoneEncryption {
+    // fn iv_size(&self) -> u32 {
+    //     8
+    // }
+    // fn block_size(&self) -> u32 {
+    //     8
+    // }
     fn group_size(&self) -> u32 {
         8
     }
+    // fn data_len(&mut self, sequence_number: u32, buf: &[u8]) -> usize {
+    //     self.packet_len(sequence_number, buf) + 4
+    // }
+
     fn encrypt(&mut self, _buffer: &mut Vec<u8>, _sequence_number: u32) {}
     fn decrypt(&mut self, buffer: &mut [u8], _sequence_number: u32) -> Result<Vec<u8>, SshError> {
         Ok(buffer.to_vec())

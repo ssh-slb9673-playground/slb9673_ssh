@@ -1,34 +1,11 @@
-// Initial IV client to server: HASH(K || H || "A" || session_id)
-// Initial IV server to client: HASH(K || H || "B" || session_id)
-// Encryption key client to server: HASH(K || H || "C" || session_id)
-// Encryption key server to client: HASH(K || H || "D" || session_id)
-// Integrity key client to server: HASH(K || H || "E" || session_id)
-// Integrity key server to client: HASH(K || H || "F" || session_id)
-
-// string   V_C, client's identification string (CR and LF excluded)
-// string   V_S, server's identification string (CR and LF excluded)
-// string   I_C, payload of the client's SSH_MSG_KEXINIT
-// string   I_S, payload of the server's SSH_MSG_KEXINIT
-// string   K_S, server's public host key
-// string   Q_C, client's ephemeral public key octet string
-// string   Q_S, server's ephemeral public key octet string
-// mpint    K,   shared secret
-// K1 = HASH(K || H || X || session_id) (X is e.g., "A")
-// K2 = HASH(K || H || K1)
-// K3 = HASH(K || H || K1 || K2)
-// ...
-// key = K1 || K2 || K3 || ...
-
 use nom::AsBytes;
 
+use super::client::SshClient;
+use super::error::{SshError, SshResult};
+use super::session::Session;
 use crate::crypto::key_exchange::KexMethod;
 use crate::protocol::data::{ByteString, Data, Mpint};
 use crate::protocol::ssh2::message_code;
-use crate::protocol::{key_exchange_init::KexAlgorithms, version_exchange::Version};
-
-use super::client::SshClient;
-use super::error::SshError;
-use super::session::Session;
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -44,33 +21,79 @@ pub struct Kex<T: KexMethod> {
     pub integrity_key_server_to_client: Vec<u8>,
 }
 
-impl<T: KexMethod> Kex<T> {
-    pub fn new(
-        method: T,
-        client_version: &Version,
-        server_version: &Version,
-        client_kex: &KexAlgorithms,
-        server_kex: &KexAlgorithms,
-        server_public_host_key: &ByteString,
-        client_public_key: &ByteString,
-        server_public_key: &ByteString,
-        shared_secret_key: &Mpint,
-    ) -> Self {
-        let mut data = Data::new();
-        data.put(&ByteString(client_version.generate(false)))
-            .put(&ByteString(server_version.generate(false)))
-            .put(&ByteString(
-                client_kex.generate_key_exchange_init().into_inner(),
-            ))
-            .put(&ByteString(
-                server_kex.generate_key_exchange_init().into_inner(),
-            ))
-            .put(server_public_host_key)
-            .put(client_public_key)
-            .put(server_public_key)
-            .put(shared_secret_key);
-        let exchange_hash = method.hash(&data.into_inner());
+impl SshClient {
+    pub fn key_exchange<Method: KexMethod>(
+        &mut self,
+        session: &mut Session,
+    ) -> Result<Kex<Method>, SshError> {
+        let mut method = Method::new();
 
+        let client_public_key = ByteString(method.public_key());
+        self.send_pubkey(session, &client_public_key)?;
+
+        let (server_public_host_key, server_public_key) =
+            self.verify_signature_and_new_keys(session)?;
+
+        let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
+
+        // New Keys
+        self.new_keys(session)?;
+
+        let exchange_hash = Kex::<Method>::exchange_hash(
+            &method,
+            &ByteString(session.client_version.as_ref().unwrap().generate(false)),
+            &ByteString(session.server_version.as_ref().unwrap().generate(false)),
+            &ByteString(session.client_kex.as_ref().unwrap().pack().into_inner()),
+            &ByteString(session.server_kex.as_ref().unwrap().pack().into_inner()),
+            &server_public_host_key,
+            &client_public_key,
+            &server_public_key,
+            &shared_secret,
+        );
+        Ok(Kex::<Method>::new(method, exchange_hash, &shared_secret))
+    }
+
+    fn send_pubkey(&mut self, session: &mut Session, pubkey: &ByteString) -> SshResult<()> {
+        let mut payload = Data::new();
+        payload
+            .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
+            .put(pubkey);
+        self.send(&payload.pack(session).seal())
+    }
+
+    fn verify_signature_and_new_keys(
+        &mut self,
+        session: &mut Session,
+    ) -> SshResult<(ByteString, ByteString)> {
+        let mut payload = self.recv()?.pack(session).unseal()?;
+        let message_code: u8 = payload.get();
+        assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
+        let server_public_host_key: ByteString = payload.get();
+        let server_public_key: ByteString = payload.get();
+        Ok((server_public_host_key, server_public_key))
+    }
+
+    fn new_keys(&mut self, session: &mut Session) -> SshResult<()> {
+        let mut payload = Data::new();
+        payload.put(&message_code::SSH_MSG_NEWKEYS);
+        self.send(&payload.pack(session).seal())
+    }
+}
+
+impl<T: KexMethod> Kex<T> {
+    // Initial IV client to server: HASH(K || H || "A" || session_id)
+    // Initial IV server to client: HASH(K || H || "B" || session_id)
+    // Encryption key client to server: HASH(K || H || "C" || session_id)
+    // Encryption key server to client: HASH(K || H || "D" || session_id)
+    // Integrity key client to server: HASH(K || H || "E" || session_id)
+    // Integrity key server to client: HASH(K || H || "F" || session_id)
+
+    // K1 = HASH(K || H || X || session_id) (X is e.g., "A")
+    // K2 = HASH(K || H || K1)
+    // K3 = HASH(K || H || K1 || K2)
+    // ...
+    // key = K1 || K2 || K3 || ...
+    pub fn new(method: T, exchange_hash: Vec<u8>, shared_secret_key: &Mpint) -> Self {
         let alphabet = ['A', 'B', 'C', 'D', 'E', 'F'];
         let mut keys = Vec::new();
         for i in 0..6 {
@@ -105,45 +128,35 @@ impl<T: KexMethod> Kex<T> {
             integrity_key_server_to_client: keys[5].clone(),
         }
     }
-}
 
-impl SshClient {
-    pub fn key_exchange<Method: KexMethod>(
-        &mut self,
-        session: &mut Session,
-    ) -> Result<Kex<Method>, SshError> {
-        let mut method = Method::new();
-
-        let mut payload = Data::new();
-        payload
-            .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
-            .put(&ByteString(method.public_key()));
-        self.send(&payload.pack(session).seal())?;
-
-        let mut payload = self.recv()?.pack(session).unseal()?;
-        let message_code: u8 = payload.get();
-        assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
-        let server_public_host_key: ByteString = payload.get();
-        let server_public_key: ByteString = payload.get();
-
-        let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
-
-        // New Keys
-        let mut payload = Data::new();
-        payload.put(&message_code::SSH_MSG_NEWKEYS);
-        self.send(&payload.pack(session).seal())?;
-
-        let client_public_key = ByteString(method.public_key());
-        Ok(Kex::<Method>::new(
-            method,
-            session.client_version.as_ref().unwrap(),
-            session.server_version.as_ref().unwrap(),
-            session.client_kex.as_ref().unwrap(),
-            session.server_kex.as_ref().unwrap(),
-            &server_public_host_key,
-            &client_public_key,
-            &server_public_key,
-            &shared_secret,
-        ))
+    // string   V_C, client's identification string (CR and LF excluded)
+    // string   V_S, server's identification string (CR and LF excluded)
+    // string   I_C, payload of the client's SSH_MSG_KEXINIT
+    // string   I_S, payload of the server's SSH_MSG_KEXINIT
+    // string   K_S, server's public host key
+    // string   Q_C, client's ephemeral public key octet string
+    // string   Q_S, server's ephemeral public key octet string
+    // mpint    K,   shared secret
+    fn exchange_hash(
+        method: &T,
+        client_version: &ByteString,
+        server_version: &ByteString,
+        client_kex: &ByteString,
+        server_kex: &ByteString,
+        server_public_host_key: &ByteString,
+        client_public_key: &ByteString,
+        server_public_key: &ByteString,
+        shared_secret_key: &Mpint,
+    ) -> Vec<u8> {
+        let mut data = Data::new();
+        data.put(client_version)
+            .put(server_version)
+            .put(client_kex)
+            .put(server_kex)
+            .put(server_public_host_key)
+            .put(client_public_key)
+            .put(server_public_key)
+            .put(shared_secret_key);
+        method.hash(&data.into_inner())
     }
 }
