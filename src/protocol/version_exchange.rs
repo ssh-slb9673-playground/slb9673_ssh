@@ -1,6 +1,4 @@
-use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
-use nom::error::Error;
 use nom::AsBytes;
 use nom::IResult;
 
@@ -11,50 +9,32 @@ use crate::protocol::data::DataType;
 // SSH_protoversion_softwareversion SP comments CR LF
 #[derive(Debug, Clone, PartialEq)]
 pub struct Version {
-    ssh_protoversion_softwareversion: String,
-    comments: Option<String>,
+    version: String,
 }
 
 impl Version {
     pub fn new(ssh_protoversion_softwareversion: &str, comments: Option<&str>) -> Self {
-        Version {
-            ssh_protoversion_softwareversion: ssh_protoversion_softwareversion.to_string(),
-            comments: comments.map(|s| s.to_string()),
+        let mut version = ssh_protoversion_softwareversion.to_string();
+        if let Some(comments) = &comments {
+            version += " ";
+            version += comments;
         }
+        Version { version }
     }
 
     pub fn from_bytes(input: &[u8]) -> IResult<&[u8], Self> {
-        let (input, version) = alt((take_until(" "), take_until("\r\n")))(input)?;
-        let result = tag::<&str, &[u8], Error<&[u8]>>(" ")(input);
-        if result.is_err() {
-            let (input, _) = tag("\r\n")(input)?;
-            return Ok((
-                input,
-                Version {
-                    ssh_protoversion_softwareversion: String::from_utf8(version.to_vec()).unwrap(),
-                    comments: None,
-                },
-            ));
-        }
-
-        let (input, _) = tag(" ")(input)?;
-        let (input, comments) = take_until("\r\n")(input)?;
+        let (input, version) = take_until("\r\n")(input)?;
         let (input, _) = tag("\r\n")(input)?;
         Ok((
             input,
             Version {
-                ssh_protoversion_softwareversion: String::from_utf8(version.to_vec()).unwrap(),
-                comments: Some(String::from_utf8(comments.to_vec()).unwrap()),
+                version: String::from_utf8(version.to_vec()).unwrap(),
             },
         ))
     }
 
     pub fn generate(&self, crnl: bool) -> Vec<u8> {
-        let mut payload = self.ssh_protoversion_softwareversion.clone();
-        if let Some(comments) = &self.comments {
-            payload += " ";
-            payload += comments;
-        }
+        let mut payload = self.version.clone();
         if crnl {
             payload += "\r\n";
         }

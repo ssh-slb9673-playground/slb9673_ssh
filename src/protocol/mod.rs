@@ -6,7 +6,7 @@ pub mod error;
 mod key_exchange;
 mod key_exchange_init;
 mod packet;
-pub mod server;
+pub mod saiko;
 pub mod session;
 pub mod ssh2;
 pub mod version_exchange;

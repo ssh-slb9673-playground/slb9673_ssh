@@ -19,5 +19,5 @@ fn main() {
     //     .connect("127.0.0.1:2222")
     //     .unwrap();
     let mut client = SshClient::new(config.remote_address, config.username).unwrap();
-    client.connection_setup();
+    let _ = client.connection_setup().unwrap();
 }

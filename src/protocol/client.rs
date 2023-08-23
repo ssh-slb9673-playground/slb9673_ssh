@@ -14,22 +14,27 @@ use crate::protocol::{
 use crate::utils::hexdump;
 
 pub struct SshClient {
+    client: TcpClient,
+}
+
+struct Config {
     address: SocketAddr,
     username: String,
-    client: TcpClient,
+}
+enum SessionState {
+    Version,
+    KexInit,
+    Kex,
+    Auth,
 }
 
 impl SshClient {
     pub fn new(address: SocketAddr, username: String) -> io::Result<Self> {
         let client = TcpClient::new(address)?;
-        Ok(SshClient {
-            address,
-            username,
-            client,
-        })
+        Ok(SshClient { client })
     }
 
-    pub fn connection_setup(&mut self) -> Result<&[u8], SshError> {
+    pub fn connection_setup(&mut self) -> Result<(), SshError> {
         let (client_version, server_version) = self.version_exchange().unwrap();
         let mut session = Session::init_state();
         session.set_version(&client_version, &server_version);
@@ -62,7 +67,7 @@ impl SshClient {
         session.server_sequence_number = 3;
 
         let user_auth = self.user_auth(&mut session)?;
-        Ok(user_auth)
+        Ok(())
     }
 
     pub fn send(&self, packet: &[u8]) -> Result<(), SshError> {
