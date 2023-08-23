@@ -1,11 +1,11 @@
 use nom::AsBytes;
 
 use super::client::SshClient;
-use super::error::{SshError, SshResult};
+use super::data::{ByteString, Data, Mpint};
+use super::error::SshResult;
 use super::session::Session;
+use super::ssh2::message_code;
 use crate::crypto::key_exchange::KexMethod;
-use crate::protocol::data::{ByteString, Data, Mpint};
-use crate::protocol::ssh2::message_code;
 
 #[derive(Debug)]
 pub struct Kex<T: KexMethod> {
@@ -25,7 +25,7 @@ impl SshClient {
     pub fn key_exchange<Method: KexMethod>(
         &mut self,
         session: &mut Session,
-    ) -> Result<Kex<Method>, SshError> {
+    ) -> SshResult<Kex<Method>> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
@@ -108,15 +108,14 @@ impl<T: KexMethod> Kex<T> {
     // ...
     // key = K1 || K2 || K3 || ...
     pub fn new(method: T, exchange_hash: Vec<u8>, shared_secret_key: &Mpint) -> Self {
-        let alphabet = ['A', 'B', 'C', 'D', 'E', 'F'];
         let mut keys = Vec::new();
-        for i in 0..6 {
+        for alphabet in ['A', 'B', 'C', 'D', 'E', 'F'] {
             let mut key = Data::new();
 
             let mut seed = Data::new();
             seed.put(shared_secret_key)
                 .put(&exchange_hash.as_bytes())
-                .put(&(alphabet[i] as u8))
+                .put(&(alphabet as u8))
                 .put(&exchange_hash.as_bytes());
             key.put(&method.hash(&seed.into_inner()).as_bytes());
 

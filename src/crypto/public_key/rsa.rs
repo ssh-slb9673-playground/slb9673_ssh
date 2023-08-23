@@ -8,7 +8,7 @@ use super::PublicKey;
 //     fn identifier(&self) -> Vec<u8> {
 //         "rsa-sha256".as_bytes().to_vec()
 //     }
-//     fn signature(&self, ks: &[u8], message: &[u8], sig: &[u8]) -> Result<bool, SshError> {
+//     fn signature(&self, ks: &[u8], message: &[u8], sig: &[u8]) -> SshResult<bool> {
 //         let mut data = Data(ks[4..].to_vec());
 //         let _: ByteString = data.get();
 

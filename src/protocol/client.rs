@@ -1,16 +1,16 @@
 use std::io;
 use std::net::SocketAddr;
 
+use super::{
+    data::Data,
+    error::{SshError, SshResult},
+    session::{NewKeys, Session},
+};
 use crate::crypto::{
     compression::NoneCompress, encryption::chachapoly::ChaCha20Poly1305,
     key_exchange::curve::Curve25519Sha256, mac::NoneMac,
 };
 use crate::network::tcp_client::TcpClient;
-use crate::protocol::{
-    data::Data,
-    error::SshError,
-    session::{NewKeys, Session},
-};
 use crate::utils::hexdump;
 
 pub struct SshClient {
@@ -34,7 +34,7 @@ impl SshClient {
         Ok(SshClient { client })
     }
 
-    pub fn connection_setup(&mut self) -> Result<(), SshError> {
+    pub fn connection_setup(&mut self) -> SshResult<()> {
         let (client_version, server_version) = self.version_exchange().unwrap();
         let mut session = Session::init_state();
         session.set_version(&client_version, &server_version);
@@ -70,7 +70,7 @@ impl SshClient {
         Ok(())
     }
 
-    pub fn send(&self, packet: &[u8]) -> Result<(), SshError> {
+    pub fn send(&self, packet: &[u8]) -> SshResult<()> {
         println!("client -> server");
         hexdump(packet);
         self.client
@@ -78,7 +78,7 @@ impl SshClient {
             .map_err(|_| SshError::SendError("io".to_string()))
     }
 
-    pub fn recv(&mut self) -> Result<Data, SshError> {
+    pub fn recv(&mut self) -> SshResult<Data> {
         let packet = self
             .client
             .recv()

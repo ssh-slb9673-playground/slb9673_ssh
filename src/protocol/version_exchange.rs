@@ -14,7 +14,7 @@ pub struct Version {
 }
 
 impl SshClient {
-    pub fn version_exchange(&mut self) -> Result<(Version, Version), SshError> {
+    pub fn version_exchange(&mut self) -> SshResult<(Version, Version)> {
         // send version
         let client_version = Version::client_version();
         self.send_version(&client_version)?;
