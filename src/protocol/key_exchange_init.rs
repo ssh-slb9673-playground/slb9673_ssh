@@ -70,14 +70,10 @@ impl KexAlgorithms {
             kex_algorithms: self.kex_algorithms.clone(),
             server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
             encryption_algorithms_client_to_server: vec![
-                "chacha20-poly1305@openssh.com".to_string(),
-                // "aes128-ctr".to_string(),
-                // "aes256-gcm@openssh.com".to_string(),
+                "chacha20-poly1305@openssh.com".to_string()
             ],
             encryption_algorithms_server_to_client: vec![
-                "chacha20-poly1305@openssh.com".to_string(),
-                // "aes128-ctr".to_string(),
-                // "aes256-gcm@openssh.com".to_string(),
+                "chacha20-poly1305@openssh.com".to_string()
             ],
             mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
             mac_algorithms_server_to_client: vec!["hmac-sha2-256".to_string()],

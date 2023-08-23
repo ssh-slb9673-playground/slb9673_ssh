@@ -60,10 +60,10 @@ impl<'a> SshPacket<'a> {
 
         let payload_length = (payload.len() + 1) as u32;
         let group_size = self.session.client_method.enc_method.group_size();
-        let packet_length = if let None = self.session.client_kex {
-            (payload_length + group_size - 1) / group_size * group_size + 4
-        } else {
+        let packet_length = if self.session.first_newkey {
             (payload_length + group_size - 1) / group_size * group_size
+        } else {
+            (payload_length + group_size - 1) / group_size * group_size + 4
         };
         let padding_length = (packet_length - payload_length) as u8;
 

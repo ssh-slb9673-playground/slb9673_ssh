@@ -27,7 +27,6 @@ impl SshClient {
             .put(&true)
             .put(&"rsa-sha2-256".to_string())
             .put(&ByteString::from_str("signature"));
-
         self.send(&payload.pack(session).seal())?;
 
         let mut payload = self.recv()?.pack(session).unseal()?;

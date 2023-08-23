@@ -45,6 +45,8 @@ pub struct Session {
 
     pub client_kex: Option<KexAlgorithms>,
     pub server_kex: Option<KexAlgorithms>,
+
+    pub first_newkey: bool,
 }
 
 impl Session {
@@ -58,6 +60,7 @@ impl Session {
             server_version: None,
             client_kex: None,
             server_kex: None,
+            first_newkey: false,
         }
     }
 
@@ -78,6 +81,27 @@ impl Session {
             server_version: Some(server_version),
             client_kex: Some(client_kex),
             server_kex: Some(server_kex),
+            first_newkey: true,
         }
+    }
+
+    pub fn set_version(&mut self, client_version: &Version, server_version: &Version) {
+        self.client_version = Some(client_version.clone());
+        self.server_version = Some(server_version.clone());
+    }
+
+    pub fn set_kex_algorithms(
+        &mut self,
+        client_kex_algorithms: &KexAlgorithms,
+        server_kex_algorithms: &KexAlgorithms,
+    ) {
+        self.client_kex = Some(client_kex_algorithms.clone());
+        self.server_kex = Some(server_kex_algorithms.clone());
+    }
+
+    pub fn set_method(&mut self, client_method: NewKeys, server_method: NewKeys) {
+        self.client_method = client_method;
+        self.server_method = server_method;
+        self.first_newkey = true;
     }
 }

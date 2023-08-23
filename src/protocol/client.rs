@@ -1,12 +1,9 @@
-use nom::AsBytes;
 use std::io;
 use std::net::SocketAddr;
 
 use crate::crypto::{
-    compression::NoneCompress,
-    encryption::chachapoly::ChaCha20Poly1305,
-    key_exchange::{curve::Curve25519Sha256, KexMethod},
-    mac::{HmacSha2_256, NoneMac, MAC},
+    compression::NoneCompress, encryption::chachapoly::ChaCha20Poly1305,
+    key_exchange::curve::Curve25519Sha256, mac::NoneMac,
 };
 use crate::network::tcp_client::TcpClient;
 use crate::protocol::{
@@ -14,13 +11,12 @@ use crate::protocol::{
     error::SshError,
     session::{NewKeys, Session},
 };
-use crate::utils::{hex, hexdump};
+use crate::utils::hexdump;
 
 pub struct SshClient {
     address: SocketAddr,
     username: String,
     client: TcpClient,
-    // dispatch: [Box<dyn Fn()>; 256],
 }
 
 impl SshClient {
@@ -34,19 +30,14 @@ impl SshClient {
     }
 
     pub fn connection_setup(&mut self) -> Result<&[u8], SshError> {
-        let mut session = Session::init_state();
         let (client_version, server_version) = self.version_exchange().unwrap();
+        let mut session = Session::init_state();
+        session.set_version(&client_version, &server_version);
         let (client_kex_algorithms, server_kex_algorithms) =
             self.key_exchange_init(&mut session).unwrap();
-        let kex = self.key_exchange::<Curve25519Sha256>(
-            &client_version,
-            &server_version,
-            &client_kex_algorithms,
-            &server_kex_algorithms,
-            &mut session,
-        )?;
-
-        let mut session = Session::new(
+        session.set_kex_algorithms(&client_kex_algorithms, &server_kex_algorithms);
+        let kex = self.key_exchange::<Curve25519Sha256>(&mut session)?;
+        session.set_method(
             NewKeys::new(
                 Box::new(ChaCha20Poly1305::new(
                     &kex.encryption_key_client_to_server,
@@ -63,13 +54,12 @@ impl SshClient {
                 Box::new(NoneMac {}),
                 Box::new(NoneCompress {}),
             ),
-            client_version,
-            server_version,
-            client_kex_algorithms,
-            server_kex_algorithms,
         );
-        session.client_sequence_number += 3;
-        session.server_sequence_number += 3;
+        println!(
+            "{} {}",
+            session.client_sequence_number, session.server_sequence_number
+        );
+        session.server_sequence_number = 3;
 
         let user_auth = self.user_auth(&mut session)?;
         Ok(user_auth)
