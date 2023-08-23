@@ -17,19 +17,19 @@ pub struct SshClient {
     client: TcpClient,
 }
 
-struct Config {
-    address: SocketAddr,
-    username: String,
-}
-enum SessionState {
-    Version,
-    KexInit,
-    Kex,
-    Auth,
-}
+// struct Config {
+//     address: SocketAddr,
+//     username: String,
+// }
+// enum SessionState {
+//     Version,
+//     KexInit,
+//     Kex,
+//     Auth,
+// }
 
 impl SshClient {
-    pub fn new(address: SocketAddr, username: String) -> io::Result<Self> {
+    pub fn new(address: SocketAddr, _username: String) -> io::Result<Self> {
         let client = TcpClient::new(address)?;
         Ok(SshClient { client })
     }
@@ -66,7 +66,7 @@ impl SshClient {
         );
         session.server_sequence_number = 3;
 
-        let user_auth = self.user_auth(&mut session)?;
+        let _user_auth = self.user_auth(&mut session)?;
         Ok(())
     }
 

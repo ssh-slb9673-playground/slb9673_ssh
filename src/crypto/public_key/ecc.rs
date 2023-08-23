@@ -2,7 +2,6 @@ use super::PublicKey;
 
 struct SshEd25519 {
     px: u64,
-    py: u64,
 }
 impl PublicKey for SshEd25519 {
     fn identifier(&self) -> Vec<u8> {

@@ -3,7 +3,7 @@ use nom::error::Error;
 use nom::AsBytes;
 
 use super::client::SshClient;
-use super::data::{Data, DataType};
+use super::data::Data;
 use super::error::{SshError, SshResult};
 
 // SSH_protoversion_softwareversion SP comments CR LF

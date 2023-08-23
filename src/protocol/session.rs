@@ -61,26 +61,6 @@ impl Session {
         }
     }
 
-    pub fn new(
-        client_method: NewKeys,
-        server_method: NewKeys,
-        client_version: Version,
-        server_version: Version,
-        client_kex: KexAlgorithms,
-        server_kex: KexAlgorithms,
-    ) -> Self {
-        Session {
-            client_method,
-            server_method,
-            client_sequence_number: 0,
-            server_sequence_number: 0,
-            client_version: Some(client_version),
-            server_version: Some(server_version),
-            client_kex: Some(client_kex),
-            server_kex: Some(server_kex),
-        }
-    }
-
     pub fn set_version(&mut self, client_version: &Version, server_version: &Version) {
         self.client_version = Some(client_version.clone());
         self.server_version = Some(server_version.clone());

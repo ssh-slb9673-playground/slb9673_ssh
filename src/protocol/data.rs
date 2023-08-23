@@ -168,7 +168,7 @@ impl DataType for &[u8] {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(*self)
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode<'a>(_input: &'a [u8]) -> IResult<&[u8], Self> {
         todo!();
     }
     fn to_bytes(&self) -> Vec<u8> {
@@ -313,7 +313,7 @@ impl DataType for Data {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.clone().into_inner());
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode<'a>(_input: &'a [u8]) -> IResult<&[u8], Self> {
         todo!();
     }
     fn to_bytes(&self) -> Vec<u8> {

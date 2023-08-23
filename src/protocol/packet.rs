@@ -1,9 +1,8 @@
 use nom::AsBytes;
 
 use super::error::{SshError, SshResult};
-use crate::protocol::data::{Data, DataType};
+use crate::protocol::data::Data;
 use crate::protocol::session::Session;
-use crate::utils::hexdump;
 
 //   uint32    packet_length
 //   byte      padding_length
