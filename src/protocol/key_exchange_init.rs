@@ -41,24 +41,24 @@ impl SshClient {
 }
 
 impl KexAlgorithms {
-    pub fn unpack(input: &mut Data) -> Self {
-        let message_code: u8 = input.get();
+    pub fn unpack(payload: &mut Data) -> Self {
+        let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH_MSG_KEXINIT);
 
         KexAlgorithms {
-            cookie: input.get(),
-            kex_algorithms: input.get(),
-            server_host_key_algorithms: input.get(),
-            encryption_algorithms_client_to_server: input.get(),
-            encryption_algorithms_server_to_client: input.get(),
-            mac_algorithms_client_to_server: input.get(),
-            mac_algorithms_server_to_client: input.get(),
-            compression_algorithms_client_to_server: input.get(),
-            compression_algorithms_server_to_client: input.get(),
-            languages_client_to_server: input.get(),
-            languages_server_to_client: input.get(),
-            first_kex_packet_follows: input.get(),
-            reserved: input.get(),
+            cookie: payload.get(),
+            kex_algorithms: payload.get(),
+            server_host_key_algorithms: payload.get(),
+            encryption_algorithms_client_to_server: payload.get(),
+            encryption_algorithms_server_to_client: payload.get(),
+            mac_algorithms_client_to_server: payload.get(),
+            mac_algorithms_server_to_client: payload.get(),
+            compression_algorithms_client_to_server: payload.get(),
+            compression_algorithms_server_to_client: payload.get(),
+            languages_client_to_server: payload.get(),
+            languages_server_to_client: payload.get(),
+            first_kex_packet_follows: payload.get(),
+            reserved: payload.get(),
         }
     }
 
