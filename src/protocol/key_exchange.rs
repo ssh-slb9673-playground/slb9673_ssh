@@ -41,8 +41,22 @@ impl SshClient {
 
         let exchange_hash = Kex::<Method>::exchange_hash(
             &method,
-            &ByteString(session.client_version.as_ref().unwrap().generate(false)),
-            &ByteString(session.server_version.as_ref().unwrap().generate(false)),
+            &ByteString(
+                session
+                    .client_version
+                    .as_mut()
+                    .unwrap()
+                    .set_crnl(false)
+                    .pack(),
+            ),
+            &ByteString(
+                session
+                    .server_version
+                    .as_mut()
+                    .unwrap()
+                    .set_crnl(false)
+                    .pack(),
+            ),
             &ByteString(session.client_kex.as_ref().unwrap().pack().into_inner()),
             &ByteString(session.server_kex.as_ref().unwrap().pack().into_inner()),
             &server_public_host_key,
