@@ -1,4 +1,4 @@
-use crate::protocol::error::SshError;
+use crate::protocol::{data::Data, error::SshError};
 
 pub mod aes_ctr;
 pub mod aes_gcm;
@@ -15,7 +15,8 @@ pub trait Encryption {
     // fn iv_size(&self) -> u32;
     // fn block_size(&self) -> u32;
     fn group_size(&self) -> u32;
-    fn encrypt(&mut self, buffer: &mut Vec<u8>, sequence_number: u32);
+    fn packet_length(&mut self, payload_length: u32) -> u32;
+    fn encrypt(&mut self, buffer: &mut Data, sequence_number: u32);
     fn decrypt(&mut self, buffer: &mut [u8], sequence_number: u32) -> Result<Vec<u8>, SshError>;
 }
 
@@ -31,11 +32,12 @@ impl Encryption for NoneEncryption {
     fn group_size(&self) -> u32 {
         8
     }
-    // fn data_len(&mut self, sequence_number: u32, buf: &[u8]) -> usize {
-    //     self.packet_len(sequence_number, buf) + 4
-    // }
+    fn packet_length(&mut self, payload_length: u32) -> u32 {
+        let group_size = self.group_size();
+        (payload_length + group_size - 1) / group_size * group_size + 4
+    }
 
-    fn encrypt(&mut self, _buffer: &mut Vec<u8>, _sequence_number: u32) {}
+    fn encrypt(&mut self, _buffer: &mut Data, _sequence_number: u32) {}
     fn decrypt(&mut self, buffer: &mut [u8], _sequence_number: u32) -> Result<Vec<u8>, SshError> {
         Ok(buffer.to_vec())
     }

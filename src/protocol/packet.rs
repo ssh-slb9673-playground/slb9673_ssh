@@ -1,6 +1,6 @@
 use nom::AsBytes;
 
-use super::error::SshError;
+use super::error::{SshError, SshResult};
 use crate::protocol::data::{Data, DataType};
 use crate::protocol::session::Session;
 use crate::utils::hexdump;
@@ -17,7 +17,7 @@ pub struct SshPacket<'a> {
 }
 
 impl<'a> SshPacket<'a> {
-    pub fn unseal(&mut self) -> Result<Data, SshError> {
+    pub fn unseal(&mut self) -> SshResult<Data> {
         let mut input = self.payload.clone().into_inner();
         let packet = self
             .session
@@ -27,31 +27,20 @@ impl<'a> SshPacket<'a> {
         let mut packet = Data(packet);
         println!("plaintext");
         packet.hexdump();
-        self.session.server_sequence_number += 1;
 
         let packet_length: u32 = packet.get();
         let padding_length: u8 = packet.get();
         let payload_length = packet_length - padding_length as u32 - 1;
         let mac_length = self.session.server_method.mac_method.size();
         let payload: Vec<u8> = packet.get_bytes(payload_length as usize);
-        let padding: Vec<u8> = packet.get_bytes(padding_length as usize);
+        let _padding: Vec<u8> = packet.get_bytes(padding_length as usize);
         let mac: Vec<u8> = packet.get_bytes(mac_length);
 
-        let mut data = Data::new();
-        data.put(&self.session.client_sequence_number)
-            .put(&packet_length)
-            .put(&padding_length)
-            .put(&payload.as_bytes())
-            .put(&padding.as_bytes());
-        if self
-            .session
-            .server_method
-            .mac_method
-            .sign(&data.into_inner())
-            != mac
-        {
+        if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
             return Err(SshError::ParseError);
         }
+        self.session.server_sequence_number += 1;
+
         Ok(Data(payload))
     }
 
@@ -59,12 +48,11 @@ impl<'a> SshPacket<'a> {
         let payload = self.payload.clone().into_inner();
 
         let payload_length = (payload.len() + 1) as u32;
-        let group_size = self.session.client_method.enc_method.group_size();
-        let packet_length = if self.session.first_newkey {
-            (payload_length + group_size - 1) / group_size * group_size
-        } else {
-            (payload_length + group_size - 1) / group_size * group_size + 4
-        };
+        let packet_length = self
+            .session
+            .client_method
+            .enc_method
+            .packet_length(payload_length);
         let padding_length = (packet_length - payload_length) as u8;
 
         let mut data = Data::new();
@@ -72,26 +60,34 @@ impl<'a> SshPacket<'a> {
             .put(&padding_length)
             .put(&payload.as_bytes())
             .put(&vec![0; padding_length as usize].as_bytes());
-        let mut mac = Data::new();
-        mac.put(&self.session.client_sequence_number).put(&data);
-        let mac = self
-            .session
-            .client_method
-            .mac_method
-            .sign(&mac.into_inner());
 
         println!("plaintext");
-        let packet = data.into_inner();
-        hexdump(&packet);
-        let mut encrypted_packet = packet.clone();
+        data.hexdump();
+
         self.session
             .client_method
             .enc_method
-            .encrypt(&mut encrypted_packet, self.session.client_sequence_number);
+            .encrypt(&mut data, self.session.client_sequence_number);
+        data.put(
+            &self
+                .calc_mac(packet_length, padding_length, payload.as_bytes())
+                .as_bytes(),
+        );
+
         self.session.client_sequence_number += 1;
+        data.into_inner()
+    }
 
-        mac.as_bytes().encode(&mut encrypted_packet);
-
-        encrypted_packet
+    fn calc_mac(&self, packet_length: u32, padding_length: u8, payload: &[u8]) -> Vec<u8> {
+        let mut data = Data::new();
+        data.put(&self.session.client_sequence_number)
+            .put(&packet_length)
+            .put(&padding_length)
+            .put(&payload.as_bytes())
+            .put(&vec![0; padding_length as usize].as_bytes());
+        self.session
+            .server_method
+            .mac_method
+            .sign(&data.into_inner())
     }
 }

@@ -45,8 +45,6 @@ pub struct Session {
 
     pub client_kex: Option<KexAlgorithms>,
     pub server_kex: Option<KexAlgorithms>,
-
-    pub first_newkey: bool,
 }
 
 impl Session {
@@ -60,7 +58,6 @@ impl Session {
             server_version: None,
             client_kex: None,
             server_kex: None,
-            first_newkey: false,
         }
     }
 
@@ -81,7 +78,6 @@ impl Session {
             server_version: Some(server_version),
             client_kex: Some(client_kex),
             server_kex: Some(server_kex),
-            first_newkey: true,
         }
     }
 
@@ -102,6 +98,5 @@ impl Session {
     pub fn set_method(&mut self, client_method: NewKeys, server_method: NewKeys) {
         self.client_method = client_method;
         self.server_method = server_method;
-        self.first_newkey = true;
     }
 }

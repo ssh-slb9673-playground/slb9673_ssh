@@ -1,5 +1,5 @@
 use super::Encryption;
-use crate::protocol::error::SshError;
+use crate::protocol::{data::Data, error::SshError};
 use ring::aead::chacha20_poly1305_openssh::{OpeningKey, SealingKey};
 
 const BSIZE: usize = 64;
@@ -27,12 +27,16 @@ impl Encryption for ChaCha20Poly1305 {
     fn group_size(&self) -> u32 {
         64
     }
+    fn packet_length(&mut self, payload_length: u32) -> u32 {
+        let group_size = self.group_size();
+        (payload_length + group_size - 1) / group_size * group_size
+    }
 
-    fn encrypt(&mut self, buf: &mut Vec<u8>, sequence_number: u32) {
+    fn encrypt(&mut self, buf: &mut Data, sequence_number: u32) {
         let mut tag = [0_u8; 16];
         self.client_key
-            .seal_in_place(sequence_number, buf, &mut tag);
-        buf.append(&mut tag.to_vec());
+            .seal_in_place(sequence_number, &mut buf.0, &mut tag);
+        buf.0.append(&mut tag.to_vec());
     }
 
     fn decrypt(&mut self, buf: &mut [u8], sequence_number: u32) -> Result<Vec<u8>, SshError> {
