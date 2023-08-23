@@ -110,10 +110,6 @@ impl<T: KexMethod> Kex<T> {
 impl SshClient {
     pub fn key_exchange<Method: KexMethod>(
         &mut self,
-        client_version: &Version,
-        server_version: &Version,
-        client_kex: &KexAlgorithms,
-        server_kex: &KexAlgorithms,
         session: &mut Session,
     ) -> Result<Kex<Method>, SshError> {
         let mut method = Method::new();
@@ -140,10 +136,10 @@ impl SshClient {
         let client_public_key = ByteString(method.public_key());
         Ok(Kex::<Method>::new(
             method,
-            client_version,
-            server_version,
-            client_kex,
-            server_kex,
+            session.client_version.as_ref().unwrap(),
+            session.server_version.as_ref().unwrap(),
+            session.client_kex.as_ref().unwrap(),
+            session.server_kex.as_ref().unwrap(),
             &server_public_host_key,
             &client_public_key,
             &server_public_key,
