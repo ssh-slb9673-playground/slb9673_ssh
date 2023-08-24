@@ -20,7 +20,7 @@ aes-gcm = "0.10.2"
 typenum = "1.16.0"
 chacha20poly1305 = "0.10.1"
 ctr = "0.9.2"
-aes = "0.8.3"
+aes = { version = "0.7", feature = ["ctr"] }
 rsa = "0.9.2"
 cipher = "0.4"
 chacha20 = { version = "0.9", default-features = false }

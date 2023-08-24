@@ -43,7 +43,12 @@ impl SshClient {
 impl KexAlgorithms {
     pub fn unpack(payload: &mut Data) -> Self {
         let message_code: u8 = payload.get();
-        assert!(message_code == message_code::SSH_MSG_KEXINIT);
+        match message_code {
+            message_code::SSH_MSG_KEXINIT => {}
+            _ => {
+                panic!("unexpected message code")
+            }
+        }
 
         KexAlgorithms {
             cookie: payload.get(),
