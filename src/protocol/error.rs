@@ -10,6 +10,12 @@ pub enum SshError {
     Timeout,
 }
 
+impl SshError {
+    pub fn from(e: String) -> SshError {
+        SshError::SshError(e)
+    }
+}
+
 impl fmt::Display for SshError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

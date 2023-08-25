@@ -28,5 +28,6 @@ poly1305 = { version = "0.8", default-features = false }
 subtle = { version = "2", default-features = false }
 ring = "0.16.20"
 ssh-rs = "0.3.2"
+ssh-key = { version = "0.5.1", features = ["rsa", "ed25519"]}
 strum = "0.25"
 strum_macros = "0.25"

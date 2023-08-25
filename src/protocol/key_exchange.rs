@@ -7,9 +7,8 @@ use super::session::Session;
 use super::ssh2::message_code;
 use crate::crypto::key_exchange::KexMethod;
 
-#[derive(Debug)]
-pub struct Kex<T: KexMethod> {
-    pub method: T,
+#[derive(Debug, Clone)]
+pub struct Kex {
     pub shared_secret_key: Mpint,
     pub exchange_hash: Vec<u8>,
     pub session_id: Vec<u8>,
@@ -22,10 +21,7 @@ pub struct Kex<T: KexMethod> {
 }
 
 impl SshClient {
-    pub fn key_exchange<Method: KexMethod>(
-        &mut self,
-        session: &mut Session,
-    ) -> SshResult<Kex<Method>> {
+    pub fn key_exchange<Method: KexMethod>(&mut self, session: &mut Session) -> SshResult<Kex> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
@@ -39,7 +35,7 @@ impl SshClient {
         // New Keys
         self.new_keys(session)?;
 
-        let exchange_hash = Kex::<Method>::exchange_hash(
+        let exchange_hash = Kex::exchange_hash::<Method>(
             &method,
             &ByteString(
                 session
@@ -64,7 +60,7 @@ impl SshClient {
             &server_public_key,
             &shared_secret,
         );
-        Ok(Kex::<Method>::new(method, exchange_hash, &shared_secret))
+        Ok(Kex::new::<Method>(method, exchange_hash, &shared_secret))
     }
 
     fn send_pubkey(&mut self, session: &mut Session, pubkey: &ByteString) -> SshResult<()> {
@@ -94,7 +90,7 @@ impl SshClient {
     }
 }
 
-impl<T: KexMethod> Kex<T> {
+impl Kex {
     // Initial IV client to server: HASH(K || H || "A" || session_id)
     // Initial IV server to client: HASH(K || H || "B" || session_id)
     // Encryption key client to server: HASH(K || H || "C" || session_id)
@@ -107,7 +103,7 @@ impl<T: KexMethod> Kex<T> {
     // K3 = HASH(K || H || K1 || K2)
     // ...
     // key = K1 || K2 || K3 || ...
-    pub fn new(method: T, exchange_hash: Vec<u8>, shared_secret_key: &Mpint) -> Self {
+    pub fn new<T: KexMethod>(method: T, exchange_hash: Vec<u8>, shared_secret_key: &Mpint) -> Self {
         let mut keys = Vec::new();
         for alphabet in ['A', 'B', 'C', 'D', 'E', 'F'] {
             let mut key = Data::new();
@@ -128,8 +124,7 @@ impl<T: KexMethod> Kex<T> {
             keys.push(key.into_inner());
         }
 
-        Kex::<T> {
-            method,
+        Kex {
             shared_secret_key: shared_secret_key.clone(),
             exchange_hash: exchange_hash.clone(),
             session_id: exchange_hash,
@@ -150,7 +145,7 @@ impl<T: KexMethod> Kex<T> {
     // string   Q_C, client's ephemeral public key octet string
     // string   Q_S, server's ephemeral public key octet string
     // mpint    K,   shared secret
-    fn exchange_hash(
+    fn exchange_hash<T: KexMethod>(
         method: &T,
         client_version: &ByteString,
         server_version: &ByteString,

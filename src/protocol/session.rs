@@ -1,3 +1,4 @@
+use super::key_exchange::Kex;
 use super::key_exchange_init::KexAlgorithms;
 use super::version_exchange::Version;
 use crate::crypto::compression::NoneCompress;
@@ -45,6 +46,8 @@ pub struct Session {
 
     pub client_kex: Option<KexAlgorithms>,
     pub server_kex: Option<KexAlgorithms>,
+
+    pub keys: Option<Kex>,
 }
 
 impl Session {
@@ -58,6 +61,7 @@ impl Session {
             server_version: None,
             client_kex: None,
             server_kex: None,
+            keys: None,
         }
     }
 
@@ -78,5 +82,13 @@ impl Session {
     pub fn set_method(&mut self, client_method: NewKeys, server_method: NewKeys) {
         self.client_method = client_method;
         self.server_method = server_method;
+    }
+
+    pub fn set_keys(&mut self, keys: Kex) {
+        self.keys = Some(keys);
+    }
+
+    pub fn get_keys(&self) -> Kex {
+        self.keys.clone().unwrap()
     }
 }

@@ -15,20 +15,22 @@ pub struct Version {
 
 impl SshClient {
     pub fn version_exchange(&mut self) -> SshResult<(Version, Version)> {
-        // send version
         let client_version = Version::client_version();
         self.send_version(&client_version)?;
-
-        // recv version
-        let server_version = Version::unpack(&self.recv()?.into_inner())?;
+        let server_version = self.recv_version()?;
 
         Ok((client_version, server_version))
     }
 
-    pub fn send_version(&mut self, client_version: &Version) -> SshResult<()> {
+    fn send_version(&mut self, client_version: &Version) -> SshResult<()> {
         let mut packet = Data::new();
         packet.put(&client_version.pack().as_bytes());
         self.send(&packet.into_inner())
+    }
+
+    fn recv_version(&mut self) -> SshResult<Version> {
+        let packet = &self.recv()?.into_inner();
+        Ok(Version::unpack(packet)?)
     }
 }
 

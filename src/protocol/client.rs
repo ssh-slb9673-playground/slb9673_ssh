@@ -65,6 +65,7 @@ impl SshClient {
             session.client_sequence_number, session.server_sequence_number
         );
         session.server_sequence_number = 3;
+        session.set_keys(kex);
 
         let _user_auth = self.user_auth(&mut session)?;
         Ok(())

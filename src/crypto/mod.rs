@@ -5,7 +5,7 @@ pub mod compression;
 pub mod encryption;
 pub mod key_exchange;
 pub mod mac;
-mod public_key;
+pub mod public_key;
 
 #[derive(Copy, Clone, PartialEq, Eq, AsRefStr, EnumString)]
 pub enum Enc {
