@@ -3,8 +3,12 @@ use nom::AsBytes;
 use super::client::SshClient;
 use super::data::{ByteString, Data, Mpint};
 use super::error::SshResult;
+use super::session::NewKeys;
 use super::ssh2::message_code;
+use crate::crypto::compression::NoneCompress;
+use crate::crypto::encryption::chachapoly::ChaCha20Poly1305;
 use crate::crypto::key_exchange::KexMethod;
+use crate::crypto::mac::NoneMac;
 
 #[derive(Debug, Clone)]
 pub struct Kex {
@@ -20,7 +24,7 @@ pub struct Kex {
 }
 
 impl SshClient {
-    pub fn key_exchange<Method: KexMethod>(&mut self) -> SshResult<Kex> {
+    pub fn key_exchange<Method: KexMethod>(&mut self) -> SshResult<()> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
@@ -29,10 +33,6 @@ impl SshClient {
         let (server_public_host_key, server_public_key) = self.verify_signature_and_new_keys()?;
 
         let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
-
-        // New Keys
-        self.new_keys()?;
-
         let exchange_hash = Kex::exchange_hash::<Method>(
             &method,
             &ByteString(
@@ -72,7 +72,36 @@ impl SshClient {
             &server_public_key,
             &shared_secret,
         );
-        Ok(Kex::new::<Method>(method, exchange_hash, &shared_secret))
+        let kex = Kex::new::<Method>(method, exchange_hash, &shared_secret);
+
+        // New Keys
+        self.new_keys()?;
+
+        self.session.set_method(
+            NewKeys::new(
+                Box::new(ChaCha20Poly1305::new(
+                    &kex.encryption_key_client_to_server,
+                    &kex.encryption_key_server_to_client,
+                )),
+                Box::new(NoneMac {}),
+                Box::new(NoneCompress {}),
+            ),
+            NewKeys::new(
+                Box::new(ChaCha20Poly1305::new(
+                    &kex.encryption_key_client_to_server,
+                    &kex.encryption_key_server_to_client,
+                )),
+                Box::new(NoneMac {}),
+                Box::new(NoneCompress {}),
+            ),
+        );
+        self.session.set_keys(kex);
+        println!(
+            "{} {}",
+            self.session.client_sequence_number, self.session.server_sequence_number
+        );
+        self.session.server_sequence_number = 3;
+        Ok(())
     }
 
     fn send_pubkey(&mut self, pubkey: &ByteString) -> SshResult<()> {

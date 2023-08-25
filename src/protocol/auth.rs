@@ -1,4 +1,4 @@
-use super::{client::SshClient, error::SshResult, session::Session};
+use super::{client::SshClient, error::SshResult};
 use crate::{
     crypto::public_key::rsa::RsaSha256,
     protocol::{
@@ -8,14 +8,14 @@ use crate::{
 };
 
 impl SshClient {
-    pub fn user_auth(&mut self) -> SshResult<&[u8]> {
+    pub fn user_auth(&mut self) -> SshResult<()> {
         self.service_request()?;
         let service_name: String = self.service_accept()?;
         println!("{:?}", service_name);
         self.userauth_request()?;
         self.userauth_accept()?;
 
-        Ok(&[])
+        Ok(())
     }
 
     fn service_request(&mut self) -> SshResult<()> {
@@ -30,7 +30,6 @@ impl SshClient {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH_MSG_SERVICE_ACCEPT);
-
         let service_name: String = payload.get();
         Ok(service_name)
     }
@@ -91,7 +90,7 @@ impl SshClient {
         Ok(())
     }
 
-    fn user_request_recv(&mut self, session: &mut Session) -> SshResult<()> {
+    fn user_request_recv(&mut self) -> SshResult<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {

@@ -3,19 +3,10 @@ use rand::Rng;
 use std::net::SocketAddr;
 
 use super::{
-    data::Data,
-    error::SshResult,
-    key_exchange_init::KexAlgorithms,
-    session::{NewKeys, Session},
+    data::Data, error::SshResult, key_exchange_init::KexAlgorithms, session::Session,
     version_exchange::Version,
 };
-use crate::{
-    crypto::{
-        compression::NoneCompress, encryption::chachapoly::ChaCha20Poly1305,
-        key_exchange::curve::Curve25519Sha256, mac::NoneMac,
-    },
-    utils::hexdump,
-};
+use crate::{crypto::key_exchange::curve::Curve25519Sha256, utils::hexdump};
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
 
 pub struct SshClient {
@@ -73,34 +64,8 @@ impl SshClient {
     pub fn connection_setup(&mut self) -> SshResult<()> {
         self.version_exchange()?;
         self.key_exchange_init()?;
-
-        let kex = self.key_exchange::<Curve25519Sha256>()?;
-        self.session.set_method(
-            NewKeys::new(
-                Box::new(ChaCha20Poly1305::new(
-                    &kex.encryption_key_client_to_server,
-                    &kex.encryption_key_server_to_client,
-                )),
-                Box::new(NoneMac {}),
-                Box::new(NoneCompress {}),
-            ),
-            NewKeys::new(
-                Box::new(ChaCha20Poly1305::new(
-                    &kex.encryption_key_client_to_server,
-                    &kex.encryption_key_server_to_client,
-                )),
-                Box::new(NoneMac {}),
-                Box::new(NoneCompress {}),
-            ),
-        );
-        println!(
-            "{} {}",
-            self.session.client_sequence_number, self.session.server_sequence_number
-        );
-        self.session.server_sequence_number = 3;
-        self.session.set_keys(kex);
-
-        let _user_auth = self.user_auth()?;
+        self.key_exchange::<Curve25519Sha256>()?;
+        self.user_auth()?;
         Ok(())
     }
 
