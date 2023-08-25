@@ -24,8 +24,9 @@ pub struct SshClient {
     pub config: Config,
 }
 pub struct Config {
-    address: SocketAddr,
-    username: String,
+    pub address: SocketAddr,
+    pub username: String,
+    pub service_name: String,
     pub version: Version,
     pub kex: KexAlgorithms,
 }
@@ -33,9 +34,11 @@ impl SshClient {
     pub fn new(address: SocketAddr, username: String) -> SshResult<Self> {
         let client = TcpClient::new(address)?;
         let session = Session::init_state();
+        let service_name = "ssh-connection".to_string();
         let config = Config {
             address,
             username,
+            service_name,
             version: Version {
                 version: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1".to_string(),
                 crnl: true,

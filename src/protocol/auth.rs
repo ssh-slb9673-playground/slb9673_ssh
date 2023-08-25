@@ -29,12 +29,8 @@ impl SshClient {
     fn service_accept(&mut self) -> SshResult<String> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
-        match message_code {
-            message_code::SSH_MSG_SERVICE_ACCEPT => {}
-            _ => {
-                panic!("unexpected message code")
-            }
-        }
+        assert!(message_code == message_code::SSH_MSG_SERVICE_ACCEPT);
+
         let service_name: String = payload.get();
         Ok(service_name)
     }
@@ -45,8 +41,8 @@ impl SshClient {
         let mut data = Data::new();
         data.put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
-            .put(&"anko".to_string())
-            .put(&"ssh-connection".to_string())
+            .put(&self.config.username)
+            .put(&self.config.service_name)
             .put(&"publickey".to_string())
             .put(&true)
             .put(&"rsa-sha2-256".to_string())
@@ -54,8 +50,8 @@ impl SshClient {
 
         payload
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
-            .put(&"anko".to_string())
-            .put(&"ssh-connection".to_string())
+            .put(&self.config.username)
+            .put(&self.config.service_name)
             .put(&"publickey".to_string())
             .put(&true)
             .put(&"rsa-sha2-256".to_string())
