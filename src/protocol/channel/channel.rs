@@ -16,7 +16,7 @@ pub struct Channel {
 
 impl SshClient {
     pub fn channel(&mut self, session: &mut Session) -> SshResult<()> {
-        let mut payload = self.recv()?.pack(session).unseal()?;
+        let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {
             message_code::SSH_MSG_GLOBAL_REQUEST => {

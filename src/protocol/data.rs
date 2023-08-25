@@ -2,7 +2,6 @@ use nom::bytes::complete::take;
 use nom::number::complete::{be_u32, be_u64, be_u8};
 use nom::{AsBytes, IResult};
 
-use super::packet::SshPacket;
 use super::session::Session;
 use crate::utils::hexdump;
 
@@ -40,13 +39,6 @@ impl Data {
 
     pub fn hexdump(&self) {
         hexdump(&self.clone().into_inner());
-    }
-
-    pub fn pack<'a>(&self, session: &'a mut Session) -> SshPacket<'a> {
-        SshPacket {
-            payload: self.clone(),
-            session,
-        }
     }
 }
 

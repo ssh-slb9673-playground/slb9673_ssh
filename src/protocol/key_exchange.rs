@@ -3,7 +3,6 @@ use nom::AsBytes;
 use super::client::SshClient;
 use super::data::{ByteString, Data, Mpint};
 use super::error::SshResult;
-use super::session::Session;
 use super::ssh2::message_code;
 use crate::crypto::key_exchange::KexMethod;
 
@@ -21,24 +20,23 @@ pub struct Kex {
 }
 
 impl SshClient {
-    pub fn key_exchange<Method: KexMethod>(&mut self, session: &mut Session) -> SshResult<Kex> {
+    pub fn key_exchange<Method: KexMethod>(&mut self) -> SshResult<Kex> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
-        self.send_pubkey(session, &client_public_key)?;
+        self.send_pubkey(&client_public_key)?;
 
-        let (server_public_host_key, server_public_key) =
-            self.verify_signature_and_new_keys(session)?;
+        let (server_public_host_key, server_public_key) = self.verify_signature_and_new_keys()?;
 
         let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
 
         // New Keys
-        self.new_keys(session)?;
+        self.new_keys()?;
 
         let exchange_hash = Kex::exchange_hash::<Method>(
             &method,
             &ByteString(
-                session
+                self.session
                     .client_version
                     .as_mut()
                     .unwrap()
@@ -46,15 +44,29 @@ impl SshClient {
                     .pack(),
             ),
             &ByteString(
-                session
+                self.session
                     .server_version
                     .as_mut()
                     .unwrap()
                     .set_crnl(false)
                     .pack(),
             ),
-            &ByteString(session.client_kex.as_ref().unwrap().pack().into_inner()),
-            &ByteString(session.server_kex.as_ref().unwrap().pack().into_inner()),
+            &ByteString(
+                self.session
+                    .client_kex
+                    .as_ref()
+                    .unwrap()
+                    .pack()
+                    .into_inner(),
+            ),
+            &ByteString(
+                self.session
+                    .server_kex
+                    .as_ref()
+                    .unwrap()
+                    .pack()
+                    .into_inner(),
+            ),
             &server_public_host_key,
             &client_public_key,
             &server_public_key,
@@ -63,19 +75,16 @@ impl SshClient {
         Ok(Kex::new::<Method>(method, exchange_hash, &shared_secret))
     }
 
-    fn send_pubkey(&mut self, session: &mut Session, pubkey: &ByteString) -> SshResult<()> {
+    fn send_pubkey(&mut self, pubkey: &ByteString) -> SshResult<()> {
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
             .put(pubkey);
-        self.send(&payload.pack(session).seal())
+        self.send(&payload)
     }
 
-    fn verify_signature_and_new_keys(
-        &mut self,
-        session: &mut Session,
-    ) -> SshResult<(ByteString, ByteString)> {
-        let mut payload = self.recv()?.pack(session).unseal()?;
+    fn verify_signature_and_new_keys(&mut self) -> SshResult<(ByteString, ByteString)> {
+        let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
         let server_public_host_key: ByteString = payload.get();
@@ -83,10 +92,10 @@ impl SshClient {
         Ok((server_public_host_key, server_public_key))
     }
 
-    fn new_keys(&mut self, session: &mut Session) -> SshResult<()> {
+    fn new_keys(&mut self) -> SshResult<()> {
         let mut payload = Data::new();
         payload.put(&message_code::SSH_MSG_NEWKEYS);
-        self.send(&payload.pack(session).seal())
+        self.send(&payload)
     }
 }
 

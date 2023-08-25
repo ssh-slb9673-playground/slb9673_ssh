@@ -7,17 +7,17 @@ use crate::crypto::mac::NoneMac;
 use crate::crypto::{compression::Compress, encryption::Encryption, mac::MAC};
 
 pub struct NewKeys {
-    pub enc_method: Box<dyn Encryption>,
-    pub mac_method: Box<dyn MAC>,
-    pub comp_method: Box<dyn Compress>,
+    pub enc: Box<dyn Encryption>,
+    pub mac: Box<dyn MAC>,
+    pub comp: Box<dyn Compress>,
 }
 
 impl NewKeys {
     pub fn init_state() -> Self {
         NewKeys {
-            enc_method: Box::new(NoneEncryption {}),
-            mac_method: Box::new(NoneMac {}),
-            comp_method: Box::new(NoneCompress {}),
+            enc: Box::new(NoneEncryption {}),
+            mac: Box::new(NoneMac {}),
+            comp: Box::new(NoneCompress {}),
         }
     }
 
@@ -27,9 +27,9 @@ impl NewKeys {
         comp_method: Box<dyn Compress>,
     ) -> Self {
         NewKeys {
-            enc_method,
-            mac_method,
-            comp_method,
+            enc: enc_method,
+            mac: mac_method,
+            comp: comp_method,
         }
     }
 }

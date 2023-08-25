@@ -50,6 +50,8 @@ impl Encryption for ChaCha20Poly1305 {
             .server_key
             .decrypt_packet_length(sequence_number, packet_len_slice);
         let packet_len = u32::from_be_bytes(packet_len_slice);
+
+        // let (buf, next_buf) = buf.split_at_mut((packet_len + 4 + 0x20) as usize);
         let (buf, tag_) = buf.split_at_mut((packet_len + 4) as usize);
         let mut tag = [0_u8; 16];
         tag.copy_from_slice(tag_);

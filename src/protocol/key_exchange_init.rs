@@ -24,19 +24,18 @@ pub struct KexAlgorithms {
 }
 
 impl SshClient {
-    pub fn key_exchange_init(
-        &mut self,
-        session: &mut Session,
-    ) -> SshResult<(KexAlgorithms, KexAlgorithms)> {
+    pub fn key_exchange_init(&mut self) -> SshResult<()> {
         // recv key algorithms
-        let mut payload = self.recv()?.pack(session).unseal()?;
+        let mut payload = self.recv()?;
         let server_kex_algorithms = KexAlgorithms::unpack(&mut payload);
 
         // send key algorithms
-        let client_kex_algorithms = KexAlgorithms::client_kex_algorithms();
-        self.send(&client_kex_algorithms.pack().pack(session).seal())?;
+        let client_kex_algorithms = self.config.kex.clone();
+        self.send(&client_kex_algorithms.pack())?;
 
-        Ok((client_kex_algorithms, server_kex_algorithms))
+        self.session
+            .set_kex_algorithms(&client_kex_algorithms, &server_kex_algorithms);
+        Ok(())
     }
 }
 
@@ -84,28 +83,6 @@ impl KexAlgorithms {
             .put(&self.languages_server_to_client)
             .put(&self.first_kex_packet_follows);
         data
-    }
-
-    pub fn client_kex_algorithms() -> KexAlgorithms {
-        KexAlgorithms {
-            cookie: rand::thread_rng().gen::<[u8; 16]>(),
-            kex_algorithms: vec!["curve25519-sha256".to_string()],
-            server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
-            encryption_algorithms_client_to_server: vec![
-                "chacha20-poly1305@openssh.com".to_string()
-            ],
-            encryption_algorithms_server_to_client: vec![
-                "chacha20-poly1305@openssh.com".to_string()
-            ],
-            mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
-            mac_algorithms_server_to_client: vec!["hmac-sha2-256".to_string()],
-            compression_algorithms_client_to_server: vec!["none".to_string()],
-            compression_algorithms_server_to_client: vec!["none".to_string()],
-            languages_client_to_server: vec![],
-            languages_server_to_client: vec![],
-            first_kex_packet_follows: false,
-            reserved: 0,
-        }
     }
 }
 

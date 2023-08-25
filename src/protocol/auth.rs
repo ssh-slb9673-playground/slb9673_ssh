@@ -1,4 +1,4 @@
-use super::{client::SshClient, data::Mpint, error::SshResult, session::Session};
+use super::{client::SshClient, error::SshResult, session::Session};
 use crate::{
     crypto::public_key::rsa::RsaSha256,
     protocol::{
@@ -8,26 +8,26 @@ use crate::{
 };
 
 impl SshClient {
-    pub fn user_auth(&mut self, session: &mut Session) -> SshResult<&[u8]> {
-        self.service_request(session)?;
-        let service_name: String = self.service_accept(session)?;
+    pub fn user_auth(&mut self) -> SshResult<&[u8]> {
+        self.service_request()?;
+        let service_name: String = self.service_accept()?;
         println!("{:?}", service_name);
-        self.userauth_request(session)?;
-        self.userauth_accept(session)?;
+        self.userauth_request()?;
+        self.userauth_accept()?;
 
         Ok(&[])
     }
 
-    fn service_request(&mut self, session: &mut Session) -> SshResult<()> {
+    fn service_request(&mut self) -> SshResult<()> {
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
             .put(&ByteString::from_str("ssh-userauth"));
-        self.send(&payload.pack(session).seal())
+        self.send(&payload)
     }
 
-    fn service_accept(&mut self, session: &mut Session) -> SshResult<String> {
-        let mut payload = self.recv()?.pack(session).unseal()?;
+    fn service_accept(&mut self) -> SshResult<String> {
+        let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {
             message_code::SSH_MSG_SERVICE_ACCEPT => {}
@@ -39,11 +39,11 @@ impl SshClient {
         Ok(service_name)
     }
 
-    fn userauth_request(&mut self, session: &mut Session) -> SshResult<()> {
+    fn userauth_request(&mut self) -> SshResult<()> {
         let mut payload = Data::new();
         let rsa = RsaSha256::read_from_file()?;
         let mut data = Data::new();
-        data.put(&ByteString(session.get_keys().exchange_hash)) // session identifier
+        data.put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&"anko".to_string())
             .put(&"ssh-connection".to_string())
@@ -62,11 +62,11 @@ impl SshClient {
             .put(&rsa.public_key_blob())
             .put(&rsa.signature_blob(data));
 
-        self.send(&payload.pack(session).seal())
+        self.send(&payload)
     }
 
-    pub fn userauth_accept(&mut self, session: &mut Session) -> SshResult<()> {
-        let mut payload = self.recv()?.pack(session).unseal()?;
+    pub fn userauth_accept(&mut self) -> SshResult<()> {
+        let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {
             message_code::SSH_MSG_SERVICE_ACCEPT => {
@@ -96,7 +96,7 @@ impl SshClient {
     }
 
     fn user_request_recv(&mut self, session: &mut Session) -> SshResult<()> {
-        let mut payload = self.recv()?.pack(session).unseal()?;
+        let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {
             message_code::SSH_MSG_SERVICE_REQUEST => {
