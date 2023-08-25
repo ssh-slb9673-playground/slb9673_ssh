@@ -9,7 +9,6 @@ use super::{
     session::{NewKeys, Session},
     version_exchange::Version,
 };
-use crate::network::tcp_client::TcpClient;
 use crate::{
     crypto::{
         compression::NoneCompress, encryption::chachapoly::ChaCha20Poly1305,
@@ -17,6 +16,7 @@ use crate::{
     },
     utils::hexdump,
 };
+use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
 
 pub struct SshClient {
     pub client: TcpClient,
@@ -101,6 +101,12 @@ impl SshClient {
         Ok(())
     }
 
+    //   uint32    packet_length
+    //   byte      padding_length
+    //   byte[n1]  payload; n1 = packet_length - padding_length - 1 Initially, compression MUST be "none".
+    //   byte[n2]  random padding; n2 = padding_length
+    //   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
+    // mac = MAC(key, sequence_number || unencrypted_packet)
     pub fn send(&mut self, payload: &Data) -> SshResult<()> {
         let payload = payload.clone().into_inner();
         let payload_length = (payload.len() + 1) as u32;
@@ -151,9 +157,9 @@ impl SshClient {
         let _padding: Vec<u8> = packet.get_bytes(padding_length as usize);
         let mac: Vec<u8> = packet.get_bytes(mac_length);
 
-        // if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
-        //     return Err(SshError::ParseError);
-        // }
+        if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
+            return Err(SshError::ParseError);
+        }
         self.session.server_sequence_number += 1;
 
         Ok(Data(payload))

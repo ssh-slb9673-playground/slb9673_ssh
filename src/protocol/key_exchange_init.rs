@@ -1,9 +1,6 @@
-use rand::Rng;
-
 use super::client::SshClient;
 use super::data::{Data, NameList};
 use super::error::SshResult;
-use super::session::Session;
 use super::ssh2::message_code;
 
 #[derive(Debug, Clone)]

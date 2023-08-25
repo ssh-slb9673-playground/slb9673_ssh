@@ -21,7 +21,8 @@ impl RsaSha256 {
             Err(e) => return Err(SshError::from(e.to_string())),
         };
         let mut prks = String::new();
-        file.read_to_string(&mut prks);
+        file.read_to_string(&mut prks)
+            .map_err(|_| SshError::RecvError("file".to_string()))?;
 
         let prk = ssh_key::PrivateKey::from_openssh(prks).unwrap();
         let rsa = prk.key_data().rsa().unwrap();
