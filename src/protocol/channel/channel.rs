@@ -45,36 +45,32 @@ impl<'a> Channel<'a> {
     pub fn channel_open_confirmation(&mut self) -> SshResult<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
-        match message_code {
-            message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION => {
-                let recipient_channel: u32 = payload.get();
-                let sender_channel: u32 = payload.get();
-                let initial_window_size: u32 = payload.get();
-                let maximum_packet_size: u32 = payload.get();
-                println!(
-                    "{} {} {} {}",
-                    recipient_channel, sender_channel, initial_window_size, maximum_packet_size
-                );
-                match self.channel_type.as_str() {
-                    "session" => {}
-                    "x11" => {
-                        let originator_address: String = payload.get();
-                        let originator_port: u32 = payload.get();
-                    }
-                    "forwarded-tcpip" => {
-                        let address: String = payload.get();
-                        let old_port: u32 = payload.get();
-                        let originator_ip_address: String = payload.get();
-                        let originator_port: u32 = payload.get();
-                    }
-                    "direct-tcpip" => {
-                        let host: String = payload.get();
-                        let port: u32 = payload.get();
-                        let originator_ip_address: String = payload.get();
-                        let originator_port: u32 = payload.get();
-                    }
-                    _ => {}
-                }
+        assert!(message_code == message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+        let recipient_channel: u32 = payload.get();
+        let sender_channel: u32 = payload.get();
+        let initial_window_size: u32 = payload.get();
+        let maximum_packet_size: u32 = payload.get();
+        println!(
+            "{} {} {} {}",
+            recipient_channel, sender_channel, initial_window_size, maximum_packet_size
+        );
+        match self.channel_type.as_str() {
+            "session" => {}
+            "x11" => {
+                let originator_address: String = payload.get();
+                let originator_port: u32 = payload.get();
+            }
+            "forwarded-tcpip" => {
+                let address: String = payload.get();
+                let old_port: u32 = payload.get();
+                let originator_ip_address: String = payload.get();
+                let originator_port: u32 = payload.get();
+            }
+            "direct-tcpip" => {
+                let host: String = payload.get();
+                let port: u32 = payload.get();
+                let originator_ip_address: String = payload.get();
+                let originator_port: u32 = payload.get();
             }
             _ => {}
         }
