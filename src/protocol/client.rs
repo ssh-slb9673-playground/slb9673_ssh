@@ -13,6 +13,7 @@ pub struct SshClient {
     pub client: TcpClient,
     pub session: Session,
     pub config: Config,
+    pub buffer: Vec<u8>,
 }
 pub struct Config {
     pub address: SocketAddr,
@@ -58,6 +59,7 @@ impl SshClient {
             client,
             session,
             config,
+            buffer: Vec::new(),
         })
     }
 
@@ -105,13 +107,26 @@ impl SshClient {
     }
 
     pub fn recv(&mut self) -> SshResult<Data> {
-        let mut packet = self.client.recv()?;
-        hexdump(&packet);
-        let packet = self
-            .session
-            .client_method
-            .enc
-            .decrypt(&mut packet, self.session.server_sequence_number)?;
+        let packet = if self.buffer.len() == 0 {
+            let mut packet = self.client.recv()?;
+            let (next, packet) = self
+                .session
+                .client_method
+                .enc
+                .decrypt(&mut packet, self.session.server_sequence_number)?;
+            self.buffer.extend_from_slice(&next);
+            packet
+        } else {
+            let mut packet = self.buffer.clone();
+            let (next, packet) = self
+                .session
+                .client_method
+                .enc
+                .decrypt(&mut packet, self.session.server_sequence_number)?;
+            self.buffer.drain(..packet.len());
+            self.buffer.extend_from_slice(&next);
+            packet
+        };
 
         let mut packet = Data(packet);
         println!("server -> client");
@@ -132,6 +147,7 @@ impl SshClient {
 
         Ok(Data(payload))
     }
+
     fn calc_mac(&self, packet_length: u32, padding_length: u8, payload: &[u8]) -> Vec<u8> {
         let mut data = Data::new();
         data.put(&self.session.client_sequence_number)

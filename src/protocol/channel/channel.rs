@@ -1,8 +1,6 @@
 use std::net::SocketAddr;
 
-use crate::protocol::{
-    client::SshClient, data::ByteString, error::SshResult, session::Session, ssh2::message_code,
-};
+use crate::protocol::{client::SshClient, data::ByteString, error::SshResult, ssh2::message_code};
 
 pub struct Channel {
     client: SshClient,
@@ -15,9 +13,10 @@ pub struct Channel {
 }
 
 impl SshClient {
-    pub fn channel(&mut self, session: &mut Session) -> SshResult<()> {
+    pub fn channel(&mut self) -> SshResult<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
+        println!("{}", message_code);
         match message_code {
             message_code::SSH_MSG_GLOBAL_REQUEST => {
                 let request_name: String = payload.get();

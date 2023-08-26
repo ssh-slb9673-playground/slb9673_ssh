@@ -42,22 +42,25 @@ impl Encryption for ChaCha20Poly1305 {
         buf.0.append(&mut tag.to_vec());
     }
 
-    fn decrypt(&mut self, buf: &mut [u8], sequence_number: u32) -> SshResult<Vec<u8>> {
-        let mut packet_len_slice = [0_u8; 4];
-        let len = &buf[..4];
-        packet_len_slice.copy_from_slice(len);
+    fn decrypt<'a>(
+        &mut self,
+        buf: &'a mut [u8],
+        sequence_number: u32,
+    ) -> SshResult<(&'a mut [u8], Vec<u8>)> {
+        let mut packet_len_slice: [u8; 4] = [0; 4];
+        packet_len_slice.copy_from_slice(&buf[..4]);
         let packet_len_slice = self
             .server_key
             .decrypt_packet_length(sequence_number, packet_len_slice);
         let packet_len = u32::from_be_bytes(packet_len_slice);
 
-        // let (buf, next_buf) = buf.split_at_mut((packet_len + 4 + 0x20) as usize);
-        let (buf, tag_) = buf.split_at_mut((packet_len + 4) as usize);
-        let mut tag = [0_u8; 16];
-        tag.copy_from_slice(tag_);
-        match self.server_key.open_in_place(sequence_number, buf, &tag) {
-            Ok(result) => Ok([&packet_len_slice[..], result].concat()),
-            Err(_) => Err(SshError::ParseError),
+        println!("packet_len: {}", packet_len);
+        let (packet, buf) = buf.split_at_mut((packet_len + 4) as usize);
+        let (tag, buf) = buf.split_at_mut(16 as usize);
+        let tag: [u8; 16] = tag.try_into().unwrap();
+        match self.server_key.open_in_place(sequence_number, packet, &tag) {
+            Ok(result) => Ok((buf, [&packet_len_slice[..], result].concat())),
+            Err(_) => Err(SshError::RecvError("decrypt".to_string())),
         }
     }
 }

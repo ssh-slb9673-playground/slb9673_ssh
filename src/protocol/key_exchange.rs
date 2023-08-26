@@ -74,6 +74,7 @@ impl SshClient {
         );
         let kex = Kex::new::<Method>(method, exchange_hash, &shared_secret);
 
+        self.recv_new_keys()?;
         // New Keys
         self.new_keys()?;
 
@@ -96,11 +97,6 @@ impl SshClient {
             ),
         );
         self.session.set_keys(kex);
-        println!(
-            "{} {}",
-            self.session.client_sequence_number, self.session.server_sequence_number
-        );
-        self.session.server_sequence_number = 3;
         Ok(())
     }
 
@@ -125,6 +121,13 @@ impl SshClient {
         let mut payload = Data::new();
         payload.put(&message_code::SSH_MSG_NEWKEYS);
         self.send(&payload)
+    }
+
+    fn recv_new_keys(&mut self) -> SshResult<()> {
+        let mut payload = self.recv()?;
+        let message_code: u8 = payload.get();
+        assert!(message_code == message_code::SSH_MSG_NEWKEYS);
+        Ok(())
     }
 }
 
