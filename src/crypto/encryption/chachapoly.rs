@@ -46,7 +46,7 @@ impl Encryption for ChaCha20Poly1305 {
         &mut self,
         buf: &'a mut [u8],
         sequence_number: u32,
-    ) -> SshResult<(&'a mut [u8], Vec<u8>)> {
+    ) -> SshResult<(&'a mut [u8], Vec<u8>, usize)> {
         let mut packet_len_slice: [u8; 4] = [0; 4];
         packet_len_slice.copy_from_slice(&buf[..4]);
         let packet_len_slice = self
@@ -54,12 +54,15 @@ impl Encryption for ChaCha20Poly1305 {
             .decrypt_packet_length(sequence_number, packet_len_slice);
         let packet_len = u32::from_be_bytes(packet_len_slice);
 
-        println!("packet_len: {}", packet_len);
         let (packet, buf) = buf.split_at_mut((packet_len + 4) as usize);
         let (tag, buf) = buf.split_at_mut(16 as usize);
         let tag: [u8; 16] = tag.try_into().unwrap();
         match self.server_key.open_in_place(sequence_number, packet, &tag) {
-            Ok(result) => Ok((buf, [&packet_len_slice[..], result].concat())),
+            Ok(result) => Ok((
+                buf,
+                [&packet_len_slice[..], result].concat(),
+                (packet_len + 0x14) as usize,
+            )),
             Err(_) => Err(SshError::RecvError("decrypt".to_string())),
         }
     }

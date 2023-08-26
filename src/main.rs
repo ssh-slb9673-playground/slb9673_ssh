@@ -25,4 +25,6 @@ fn main() {
     };
 
     client.channel().unwrap();
+    client.channel().unwrap();
+    client.channel().unwrap();
 }

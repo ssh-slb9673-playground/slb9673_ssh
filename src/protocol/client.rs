@@ -109,7 +109,7 @@ impl SshClient {
     pub fn recv(&mut self) -> SshResult<Data> {
         let packet = if self.buffer.len() == 0 {
             let mut packet = self.client.recv()?;
-            let (next, packet) = self
+            let (next, packet, _length) = self
                 .session
                 .client_method
                 .enc
@@ -118,12 +118,12 @@ impl SshClient {
             packet
         } else {
             let mut packet = self.buffer.clone();
-            let (next, packet) = self
+            let (next, packet, length) = self
                 .session
                 .client_method
                 .enc
                 .decrypt(&mut packet, self.session.server_sequence_number)?;
-            self.buffer.drain(..packet.len());
+            self.buffer.drain(..length);
             self.buffer.extend_from_slice(&next);
             packet
         };
@@ -141,7 +141,7 @@ impl SshClient {
         let mac: Vec<u8> = packet.get_bytes(mac_length);
 
         if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
-            return Err(SshError::ParseError);
+            return Err(SshError::RecvError("".to_string()));
         }
         self.session.server_sequence_number += 1;
 

@@ -21,7 +21,7 @@ pub trait Encryption {
         &mut self,
         buffer: &'a mut [u8],
         sequence_number: u32,
-    ) -> SshResult<(&'a mut [u8], Vec<u8>)>;
+    ) -> SshResult<(&'a mut [u8], Vec<u8>, usize)>;
 }
 
 #[derive(Debug, Clone)]
@@ -46,11 +46,11 @@ impl Encryption for NoneEncryption {
         &mut self,
         buffer: &'a mut [u8],
         _sequence_number: u32,
-    ) -> SshResult<(&'a mut [u8], Vec<u8>)> {
+    ) -> SshResult<(&'a mut [u8], Vec<u8>, usize)> {
         let mut packet_len_slice: [u8; 4] = [0; 4];
         packet_len_slice.copy_from_slice(&buffer[..4]);
         let packet_len = u32::from_be_bytes(packet_len_slice);
         let (packet, buffer) = buffer.split_at_mut((packet_len + 4) as usize);
-        Ok((buffer, packet.to_vec()))
+        Ok((buffer, packet.to_vec(), (packet_len + 4) as usize))
     }
 }

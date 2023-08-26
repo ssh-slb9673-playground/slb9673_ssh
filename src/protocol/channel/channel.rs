@@ -16,11 +16,16 @@ impl SshClient {
     pub fn channel(&mut self) -> SshResult<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
-        println!("{}", message_code);
         match message_code {
+            message_code::SSH_MSG_DEBUG => {
+                let want_reply: bool = payload.get();
+                let debug: String = payload.get();
+                println!("debug: {}", debug);
+            }
             message_code::SSH_MSG_GLOBAL_REQUEST => {
                 let request_name: String = payload.get();
                 let want_reply: bool = payload.get();
+                println!("request: {}, reply: {}", request_name, want_reply);
                 match request_name.as_str() {
                     "tcpip-forward" => {
                         let address: String = payload.get();
@@ -29,6 +34,10 @@ impl SshClient {
                     "cancel-tcpip-forward" => {
                         let address: String = payload.get();
                         let port_number: u32 = payload.get();
+                    }
+                    "hostkeys-00@openssh.com" => {
+                        println!("{:?}, {}", payload.0.len(), 0x197);
+                        // let blob: ByteString = payload.get();
                     }
                     _ => {}
                 }
