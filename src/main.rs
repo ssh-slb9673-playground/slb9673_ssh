@@ -24,7 +24,10 @@ fn main() {
         Err(e) => println!("error: {}", e),
     };
 
+    let mut client = client.pack_channel();
     client.channel().unwrap();
     client.channel().unwrap();
-    client.channel().unwrap();
+    client.client_setup();
+    // client.shell();
+    client.exec("ls -lah".to_string());
 }

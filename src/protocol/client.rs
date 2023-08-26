@@ -6,7 +6,7 @@ use super::{
     data::Data, error::SshResult, key_exchange_init::KexAlgorithms, session::Session,
     version_exchange::Version,
 };
-use crate::{crypto::key_exchange::curve::Curve25519Sha256, utils::hexdump};
+use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
 
 pub struct SshClient {
