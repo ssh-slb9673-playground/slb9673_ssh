@@ -25,8 +25,6 @@ fn main() {
     };
 
     let mut client = client.pack_channel();
-    let _ = client.channel().unwrap();
-    let _ = client.channel().unwrap();
     let _ = client.client_setup();
     // client.shell();
     let _ = client.exec("ls -lah".to_string());

@@ -25,6 +25,8 @@ impl<'a> Channel<'a> {
     }
 
     pub fn client_setup(&mut self) -> SshResult<()> {
+        self.channel()?;
+        self.channel()?;
         self.send_channel_open()?;
         self.channel_open_confirmation()?;
         Ok(())
