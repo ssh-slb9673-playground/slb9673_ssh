@@ -10,7 +10,6 @@ pub struct Channel<'a> {
     client_channel: u32,
     server_channel: u32,
     channel_type: String,
-    want_reply: Option<u32>,
     initial_window_size: u32,
     maximum_packet_size: u32,
 }
@@ -399,7 +398,6 @@ impl SshClient {
             client_channel: 1,
             server_channel: 0,
             channel_type: "session".to_string(),
-            want_reply: None,
             initial_window_size: LOCAL_WINDOW_SIZE,
             maximum_packet_size: BUF_SIZE,
         }
