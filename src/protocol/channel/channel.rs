@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use crate::protocol::{
     client::SshClient,
     data::{ByteString, Data},
@@ -59,18 +57,23 @@ impl<'a> Channel<'a> {
             "x11" => {
                 let originator_address: String = payload.get();
                 let originator_port: u32 = payload.get();
+                println!("{}:{}", originator_address, originator_port);
             }
             "forwarded-tcpip" => {
                 let address: String = payload.get();
-                let old_port: u32 = payload.get();
-                let originator_ip_address: String = payload.get();
+                let port: u32 = payload.get();
+                let originator_address: String = payload.get();
                 let originator_port: u32 = payload.get();
+                println!("old: {}:{}", address, port);
+                println!("new: {}:{}", originator_address, originator_port);
             }
             "direct-tcpip" => {
                 let host: String = payload.get();
                 let port: u32 = payload.get();
-                let originator_ip_address: String = payload.get();
+                let originator_address: String = payload.get();
                 let originator_port: u32 = payload.get();
+                println!("old: {}:{}", host, port);
+                println!("new: {}:{}", originator_address, originator_port);
             }
             _ => {}
         }
@@ -149,49 +152,31 @@ impl<'a> Channel<'a> {
                 let sender_channel: u32 = payload.get();
                 let initial_window_size: u32 = payload.get();
                 let maximum_packet_size: u32 = payload.get();
+                println!("client channel num: {}", sender_channel);
+                println!("initial window size: {}", initial_window_size);
+                println!("maximum packet size: {}", maximum_packet_size);
                 match channel_type.as_str() {
                     "session" => {}
                     "x11" => {
                         let originator_address: String = payload.get();
                         let originator_port: u32 = payload.get();
+                        println!("{}:{}", originator_address, originator_port);
                     }
                     "forwarded-tcpip" => {
                         let address: String = payload.get();
-                        let old_port: u32 = payload.get();
-                        let originator_ip_address: String = payload.get();
-                        let originator_port: u32 = payload.get();
-                    }
-                    "direct-tcpip" => {
-                        let host: String = payload.get();
                         let port: u32 = payload.get();
-                        let originator_ip_address: String = payload.get();
-                        let originator_port: u32 = payload.get();
-                    }
-                    _ => {}
-                }
-            }
-            message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION => {
-                let recipient_channel: u32 = payload.get();
-                let sender_channel: u32 = payload.get();
-                let initial_window_size: u32 = payload.get();
-                let maximum_packet_size: u32 = payload.get();
-                match self.channel_type.as_str() {
-                    "session" => {}
-                    "x11" => {
                         let originator_address: String = payload.get();
                         let originator_port: u32 = payload.get();
-                    }
-                    "forwarded-tcpip" => {
-                        let address: String = payload.get();
-                        let old_port: u32 = payload.get();
-                        let originator_ip_address: String = payload.get();
-                        let originator_port: u32 = payload.get();
+                        println!("old: {}:{}", address, port);
+                        println!("new: {}:{}", originator_address, originator_port);
                     }
                     "direct-tcpip" => {
                         let host: String = payload.get();
                         let port: u32 = payload.get();
-                        let originator_ip_address: String = payload.get();
+                        let originator_address: String = payload.get();
                         let originator_port: u32 = payload.get();
+                        println!("old: {}:{}", host, port);
+                        println!("new: {}:{}", originator_address, originator_port);
                     }
                     _ => {}
                 }
@@ -201,31 +186,42 @@ impl<'a> Channel<'a> {
                 let reason_code: u32 = payload.get();
                 let description: String = payload.get();
                 let language_tag: String = payload.get();
+                println!("server channel: {}", recipient_channel);
+                println!("{} {} {}", reason_code, description, language_tag);
             }
             message_code::SSH_MSG_CHANNEL_WINDOW_ADJUST => {
                 let recipient_channel: u32 = payload.get();
                 let bytes_to_add: u32 = payload.get();
+                println!("server channel: {}", recipient_channel);
+                println!("window adjust: {}", bytes_to_add);
             }
             message_code::SSH_MSG_CHANNEL_DATA => {
                 let recipient_channel: u32 = payload.get();
                 let data: String = payload.get();
+                println!("server channel: {}", recipient_channel);
                 println!("{}", data);
             }
             message_code::SSH_MSG_CHANNEL_EXTENDED_DATA => {
                 let recipient_channel: u32 = payload.get();
                 let data_type_code: u32 = payload.get();
-                let data: ByteString = payload.get();
+                let data: String = payload.get();
+                println!("server channel: {}", recipient_channel);
+                println!("data type: {}", data_type_code);
+                println!("{}", data);
             }
             message_code::SSH_MSG_CHANNEL_EOF => {
                 let recipient_channel: u32 = payload.get();
+                println!("server channel: {}", recipient_channel);
             }
             message_code::SSH_MSG_CHANNEL_CLOSE => {
                 let recipient_channel: u32 = payload.get();
+                println!("server channel: {}", recipient_channel);
             }
             message_code::SSH_MSG_CHANNEL_REQUEST => {
                 let recipient_channel: u32 = payload.get();
                 let request_type: String = payload.get();
                 let want_reply: bool = payload.get();
+                println!("server channel: {}", recipient_channel);
                 match request_type.as_str() {
                     "pty-req" => {
                         let env: String = payload.get();
@@ -234,23 +230,42 @@ impl<'a> Channel<'a> {
                         let terminal_width_pixels: u32 = payload.get();
                         let terminal_height_pixels: u32 = payload.get();
                         let encoded_terminal_modes: String = payload.get();
+                        println!("env: {}", env);
+                        println!(
+                            "terminal: ({}, {}, {}, {})",
+                            terminal_width_characters,
+                            terminal_height_rows,
+                            terminal_width_pixels,
+                            terminal_height_pixels
+                        );
+                        println!("terminal mode: {}", encoded_terminal_modes);
                     }
                     "x11-req" => {
                         let single_connection: bool = payload.get();
                         let x11_authentication_protocol: String = payload.get();
                         let x11_authentication_cookie: String = payload.get();
                         let x11_screen_number: u32 = payload.get();
+                        println!(
+                            "{} {} {} {}",
+                            single_connection,
+                            x11_authentication_protocol,
+                            x11_authentication_cookie,
+                            x11_screen_number
+                        );
                     }
                     "env" => {
                         let variable_name: String = payload.get();
                         let variable_value: String = payload.get();
+                        println!("env: {} = {}", variable_name, variable_value);
                     }
                     "shell" => {}
                     "command" => {
                         let command: String = payload.get();
+                        println!("command: {}", command);
                     }
                     "subsystem" => {
                         let subsystem_name: String = payload.get();
+                        println!("subsystem: {}", subsystem_name);
                     }
                     "window-change" => {
                         assert!(want_reply == false);
@@ -258,18 +273,28 @@ impl<'a> Channel<'a> {
                         let terminal_height_rows: u32 = payload.get();
                         let terminal_width_pixels: u32 = payload.get();
                         let terminal_height_pixels: u32 = payload.get();
+                        println!(
+                            "terminal: ({}, {}, {}, {})",
+                            terminal_width_columns,
+                            terminal_height_rows,
+                            terminal_width_pixels,
+                            terminal_height_pixels
+                        );
                     }
                     "xon-xoff" => {
                         assert!(want_reply == false);
                         let client_can_do: bool = payload.get();
+                        println!("{}", client_can_do);
                     }
                     "signal" => {
                         assert!(want_reply == false);
                         let signal_name: String = payload.get();
+                        println!("signal: {}", signal_name);
                     }
                     "exit-status" => {
                         // assert!(want_reply == false);
                         let exit_status: u32 = payload.get();
+                        println!("exit: {}", exit_status);
                     }
                     "exit-signal" => {
                         assert!(want_reply == false);
@@ -277,15 +302,21 @@ impl<'a> Channel<'a> {
                         let core_dumped: bool = payload.get();
                         let error_message: String = payload.get();
                         let language_tag: String = payload.get();
+                        println!("{} {} {}", signal_name, error_message, language_tag);
+                        if core_dumped {
+                            println!("core dumped");
+                        }
                     }
                     _ => {}
                 }
             }
             message_code::SSH_MSG_CHANNEL_SUCCESS => {
                 let recipient_channel: u32 = payload.get();
+                println!("server channel: {}", recipient_channel);
             }
             message_code::SSH_MSG_CHANNEL_FAILURE => {
                 let recipient_channel: u32 = payload.get();
+                println!("server channel: {}", recipient_channel);
             }
             _ => {
                 panic!("unexpected message code")
@@ -298,6 +329,7 @@ impl<'a> Channel<'a> {
         let want_reply: bool = payload.get();
         let debug: String = payload.get();
         println!("debug: {}", debug);
+        println!("reply: {}", want_reply);
     }
 
     fn recv_global_request(&mut self, payload: &mut Data) {
@@ -307,11 +339,13 @@ impl<'a> Channel<'a> {
         match request_name.as_str() {
             "tcpip-forward" => {
                 let address: String = payload.get();
-                let port_number: u32 = payload.get();
+                let port: u32 = payload.get();
+                println!("{}:{}", address, port);
             }
             "cancel-tcpip-forward" => {
                 let address: String = payload.get();
-                let port_number: u32 = payload.get();
+                let port: u32 = payload.get();
+                println!("{}:{}", address, port);
             }
             "hostkeys-00@openssh.com" => {
                 // let blob: ByteString = payload.get();
