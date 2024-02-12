@@ -5,10 +5,10 @@ use super::data::{ByteString, Data, Mpint};
 use super::error::SshResult;
 use super::session::NewKeys;
 use super::ssh2::message_code;
-use crate::crypto::compression::NoneCompress;
+use crate::crypto::compression::none::NoneCompress;
 use crate::crypto::encryption::chachapoly::ChaCha20Poly1305;
 use crate::crypto::key_exchange::KexMethod;
-use crate::crypto::mac::NoneMac;
+use crate::crypto::mac::none::NoneMac;
 
 #[derive(Debug, Clone)]
 pub struct Kex {

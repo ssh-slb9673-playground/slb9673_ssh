@@ -27,6 +27,7 @@ impl Data {
         self.0.drain(..data.size());
         data
     }
+
     pub fn get_bytes(&mut self, len: usize) -> Vec<u8> {
         let bytes = self.0.drain(..len).into_iter().collect::<Vec<u8>>();
         bytes

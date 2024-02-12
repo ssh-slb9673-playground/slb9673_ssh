@@ -37,6 +37,7 @@ impl SshClient {
     fn userauth_request(&mut self) -> SshResult<()> {
         let mut payload = Data::new();
         let rsa = RsaSha256::read_from_file()?;
+
         let mut data = Data::new();
         data.put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)

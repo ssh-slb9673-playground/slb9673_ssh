@@ -1,5 +1,11 @@
 # slb9673 ssh client
 
+## Command
+
+```shell
+ssh
+```
+
 ## Refs.
 - [RFC4250: The Secure Shell (SSH) Protocol Assigned Numbers](https://datatracker.ietf.org/doc/html/rfc4250)
 - [RFC4251: The Secure Shell (SSH) Protocol Architecture](https://datatracker.ietf.org/doc/html/rfc4251)

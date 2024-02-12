@@ -1,9 +1,9 @@
 use super::key_exchange::Kex;
 use super::key_exchange_init::KexAlgorithms;
 use super::version_exchange::Version;
-use crate::crypto::compression::NoneCompress;
-use crate::crypto::encryption::NoneEncryption;
-use crate::crypto::mac::NoneMac;
+use crate::crypto::compression::none::NoneCompress;
+use crate::crypto::encryption::none::NoneEncryption;
+use crate::crypto::mac::none::NoneMac;
 use crate::crypto::{compression::Compress, encryption::Encryption, mac::MAC};
 
 pub struct NewKeys {

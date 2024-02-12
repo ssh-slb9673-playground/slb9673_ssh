@@ -10,7 +10,7 @@ pub struct Config {
 
 impl Config {
     fn new(args: cli::Args) -> Config {
-        let port = 2222;
+        let port = 22;
         let remote_address = format!("{}:{}", args.addr, port).parse().unwrap();
         let privatekey_filepath = env::home_dir().unwrap().join(".ssh/id_rsa");
         Config {
