@@ -1,11 +1,11 @@
+use crate::protocol::data::{ByteString, Data, Mpint};
+use crate::protocol::error::SshError;
+use anyhow::Result;
 use rsa::pkcs1v15::SigningKey;
 use rsa::signature::Signer;
 use rsa::traits::PublicKeyParts;
 use rsa::BigUint;
 use sha2::Sha256;
-
-use crate::protocol::data::{ByteString, Data, Mpint};
-use crate::protocol::error::{SshError, SshResult};
 use std::fs::File;
 use std::io::Read;
 
@@ -15,11 +15,10 @@ pub struct RsaSha256 {
 }
 
 impl RsaSha256 {
-    pub fn read_from_file() -> SshResult<RsaSha256> {
-        let mut file = match File::open("/home/anko/.ssh/id_rsa_ssh") {
-            Ok(file) => file,
-            Err(e) => return Err(SshError::from(e.to_string())),
-        };
+    pub fn read_from_file() -> Result<RsaSha256> {
+        let mut file =
+            File::open("/home/anko/.ssh/id_rsa_ssh").map_err(|e| SshError::from(e.to_string()))?;
+
         let mut prks = String::new();
         file.read_to_string(&mut prks)
             .map_err(|_| SshError::RecvError("file".to_string()))?;

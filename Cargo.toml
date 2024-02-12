@@ -32,3 +32,4 @@ ssh-key = { version = "0.5.1", features = ["rsa", "ed25519"]}
 strum = "0.25"
 strum_macros = "0.25"
 anyhow = "1.0.79"
+thiserror = "1.0.57"

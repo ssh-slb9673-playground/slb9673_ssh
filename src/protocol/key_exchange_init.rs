@@ -1,7 +1,7 @@
 use super::client::SshClient;
 use super::data::{Data, NameList};
-use super::error::SshResult;
 use super::ssh2::message_code;
+use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct KexAlgorithms {
@@ -21,7 +21,7 @@ pub struct KexAlgorithms {
 }
 
 impl SshClient {
-    pub fn key_exchange_init(&mut self) -> SshResult<()> {
+    pub fn key_exchange_init(&mut self) -> Result<()> {
         // recv key algorithms
         let mut payload = self.recv()?;
         let server_kex_algorithms = KexAlgorithms::unpack(&mut payload);

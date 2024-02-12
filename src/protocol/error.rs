@@ -1,7 +1,9 @@
-use std::{error::Error, fmt, io};
+use std::{fmt, io};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum SshError {
+    // #[error("data store disconnected")]
     ParseError,
     IoError(io::Error),
     SshError(String),
@@ -28,7 +30,3 @@ impl fmt::Display for SshError {
         }
     }
 }
-
-impl Error for SshError {}
-
-pub type SshResult<T> = Result<T, SshError>;

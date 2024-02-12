@@ -1,13 +1,12 @@
-use nom::AsBytes;
-use rand::Rng;
-use std::net::SocketAddr;
-
 use super::{
-    data::Data, error::SshResult, key_exchange_init::KexAlgorithms, session::Session,
-    version_exchange::Version,
+    data::Data, key_exchange_init::KexAlgorithms, session::Session, version_exchange::Version,
 };
 use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
+use anyhow::Result;
+use nom::AsBytes;
+use rand::Rng;
+use std::net::SocketAddr;
 
 pub struct SshClient {
     pub client: TcpClient,
@@ -23,7 +22,7 @@ pub struct Config {
     pub kex: KexAlgorithms,
 }
 impl SshClient {
-    pub fn new(address: SocketAddr, username: String) -> SshResult<Self> {
+    pub fn new(address: SocketAddr, username: String) -> Result<Self> {
         let client = TcpClient::new(address)?;
         let session = Session::init_state();
         let service_name = "ssh-connection".to_string();
@@ -63,7 +62,7 @@ impl SshClient {
         })
     }
 
-    pub fn connection_setup(&mut self) -> SshResult<()> {
+    pub fn connection_setup(&mut self) -> Result<()> {
         self.version_exchange()?;
         self.key_exchange_init()?;
         self.key_exchange::<Curve25519Sha256>()?;
@@ -77,7 +76,7 @@ impl SshClient {
     //   byte[n2]  random padding; n2 = padding_length
     //   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
     // mac = MAC(key, sequence_number || unencrypted_packet)
-    pub fn send(&mut self, payload: &Data) -> SshResult<()> {
+    pub fn send(&mut self, payload: &Data) -> Result<()> {
         let payload = payload.clone().into_inner();
         let payload_length = (payload.len() + 1) as u32;
         let packet_length = self.session.client_method.enc.packet_length(payload_length);
@@ -106,7 +105,7 @@ impl SshClient {
         self.client.send(&data.into_inner())
     }
 
-    pub fn recv(&mut self) -> SshResult<Data> {
+    pub fn recv(&mut self) -> Result<Data> {
         let packet = if self.buffer.len() == 0 {
             let mut packet = self.client.recv()?;
             let (next, packet, _length) = self
@@ -141,7 +140,7 @@ impl SshClient {
         let mac: Vec<u8> = packet.get_bytes(mac_length);
 
         if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
-            return Err(SshError::RecvError("".to_string()));
+            return Err(SshError::RecvError("".to_string()).into());
         }
         self.session.server_sequence_number += 1;
 

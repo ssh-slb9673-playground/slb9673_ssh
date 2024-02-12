@@ -1,14 +1,13 @@
-use nom::AsBytes;
-
 use super::client::SshClient;
 use super::data::{ByteString, Data, Mpint};
-use super::error::SshResult;
 use super::session::NewKeys;
 use super::ssh2::message_code;
 use crate::crypto::compression::none::NoneCompress;
 use crate::crypto::encryption::chachapoly::ChaCha20Poly1305;
 use crate::crypto::key_exchange::KexMethod;
 use crate::crypto::mac::none::NoneMac;
+use anyhow::Result;
+use nom::AsBytes;
 
 #[derive(Debug, Clone)]
 pub struct Kex {
@@ -24,7 +23,7 @@ pub struct Kex {
 }
 
 impl SshClient {
-    pub fn key_exchange<Method: KexMethod>(&mut self) -> SshResult<()> {
+    pub fn key_exchange<Method: KexMethod>(&mut self) -> Result<()> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
@@ -100,7 +99,7 @@ impl SshClient {
         Ok(())
     }
 
-    fn send_pubkey(&mut self, pubkey: &ByteString) -> SshResult<()> {
+    fn send_pubkey(&mut self, pubkey: &ByteString) -> Result<()> {
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
@@ -108,7 +107,7 @@ impl SshClient {
         self.send(&payload)
     }
 
-    fn verify_signature_and_new_keys(&mut self) -> SshResult<(ByteString, ByteString)> {
+    fn verify_signature_and_new_keys(&mut self) -> Result<(ByteString, ByteString)> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
@@ -117,13 +116,13 @@ impl SshClient {
         Ok((server_public_host_key, server_public_key))
     }
 
-    fn new_keys(&mut self) -> SshResult<()> {
+    fn new_keys(&mut self) -> Result<()> {
         let mut payload = Data::new();
         payload.put(&message_code::SSH_MSG_NEWKEYS);
         self.send(&payload)
     }
 
-    fn recv_new_keys(&mut self) -> SshResult<()> {
+    fn recv_new_keys(&mut self) -> Result<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH_MSG_NEWKEYS);

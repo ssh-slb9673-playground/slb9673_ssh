@@ -1,5 +1,6 @@
 use super::Encryption;
-use crate::protocol::{data::Data, error::SshResult};
+use crate::protocol::data::Data;
+use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct NoneEncryption {}
@@ -23,7 +24,7 @@ impl Encryption for NoneEncryption {
         &mut self,
         buffer: &'a mut [u8],
         _sequence_number: u32,
-    ) -> SshResult<(&'a mut [u8], Vec<u8>, usize)> {
+    ) -> Result<(&'a mut [u8], Vec<u8>, usize)> {
         let mut packet_len_slice: [u8; 4] = [0; 4];
         packet_len_slice.copy_from_slice(&buffer[..4]);
         let packet_len = u32::from_be_bytes(packet_len_slice);

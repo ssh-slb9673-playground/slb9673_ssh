@@ -1,4 +1,5 @@
-use std::io::{BufReader, Error, ErrorKind, Result, Write};
+use anyhow::Result;
+use std::io::{BufReader, Error, ErrorKind, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 
 pub struct TcpServer {
@@ -16,7 +17,8 @@ impl TcpServer {
 
     pub fn send(&self, response: &[u8]) -> Result<()> {
         let mut socket = self.client.try_clone()?;
-        return socket.write_all(&response);
+        socket.write_all(&response)?;
+        Ok(())
     }
 
     pub fn recv(&self) -> Result<Vec<u8>> {
@@ -24,7 +26,7 @@ impl TcpServer {
         let reader = BufReader::new(socket);
         let recv_data = reader.buffer();
         if recv_data.is_empty() {
-            Err(Error::new(ErrorKind::UnexpectedEof, "oh no"))
+            Err(Error::new(ErrorKind::UnexpectedEof, "unexpected EOF").into())
         } else {
             Ok(recv_data.to_vec())
         }
@@ -37,4 +39,3 @@ fn connect_localhost() {
     let listener = TcpListener::bind(address).unwrap();
     println!("{:?}", listener);
 }
-

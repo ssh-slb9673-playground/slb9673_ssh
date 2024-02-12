@@ -1,4 +1,4 @@
-use super::{client::SshClient, error::SshResult};
+use super::client::SshClient;
 use crate::{
     crypto::public_key::rsa::RsaSha256,
     protocol::{
@@ -6,9 +6,10 @@ use crate::{
         ssh2::message_code,
     },
 };
+use anyhow::Result;
 
 impl SshClient {
-    pub fn user_auth(&mut self) -> SshResult<()> {
+    pub fn user_auth(&mut self) -> Result<()> {
         self.service_request()?;
         let service_name: String = self.service_accept()?;
         println!("{:?}", service_name);
@@ -18,7 +19,7 @@ impl SshClient {
         Ok(())
     }
 
-    fn service_request(&mut self) -> SshResult<()> {
+    fn service_request(&mut self) -> Result<()> {
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
@@ -26,7 +27,7 @@ impl SshClient {
         self.send(&payload)
     }
 
-    fn service_accept(&mut self) -> SshResult<String> {
+    fn service_accept(&mut self) -> Result<String> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH_MSG_SERVICE_ACCEPT);
@@ -34,7 +35,7 @@ impl SshClient {
         Ok(service_name)
     }
 
-    fn userauth_request(&mut self) -> SshResult<()> {
+    fn userauth_request(&mut self) -> Result<()> {
         let mut payload = Data::new();
         let rsa = RsaSha256::read_from_file()?;
 
@@ -61,7 +62,7 @@ impl SshClient {
         self.send(&payload)
     }
 
-    pub fn userauth_accept(&mut self) -> SshResult<()> {
+    pub fn userauth_accept(&mut self) -> Result<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {
@@ -94,7 +95,7 @@ impl SshClient {
         Ok(())
     }
 
-    // fn user_request_recv(&mut self) -> SshResult<()> {
+    // fn user_request_recv(&mut self) -> Result<()> {
     //     let mut payload = self.recv()?;
     //     let message_code: u8 = payload.get();
     //     match message_code {

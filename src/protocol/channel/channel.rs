@@ -1,9 +1,9 @@
 use crate::protocol::{
     client::SshClient,
     data::{ByteString, Data},
-    error::SshResult,
     ssh2::message_code,
 };
+use anyhow::Result;
 
 pub struct Channel<'a> {
     client: &'a mut SshClient,
@@ -15,15 +15,15 @@ pub struct Channel<'a> {
 }
 
 impl<'a> Channel<'a> {
-    pub fn recv(&mut self) -> SshResult<Data> {
+    pub fn recv(&mut self) -> Result<Data> {
         self.client.recv()
     }
 
-    pub fn send(&mut self, packet: &Data) -> SshResult<()> {
+    pub fn send(&mut self, packet: &Data) -> Result<()> {
         self.client.send(packet)
     }
 
-    pub fn client_setup(&mut self) -> SshResult<()> {
+    pub fn client_setup(&mut self) -> Result<()> {
         self.channel()?;
         self.channel()?;
         self.send_channel_open()?;
@@ -31,7 +31,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn send_channel_open(&mut self) -> SshResult<()> {
+    pub fn send_channel_open(&mut self) -> Result<()> {
         let mut data = Data::new();
         data.put(&message_code::SSH_MSG_CHANNEL_OPEN)
             .put(&self.channel_type)
@@ -41,7 +41,7 @@ impl<'a> Channel<'a> {
         self.send(&data)
     }
 
-    pub fn channel_open_confirmation(&mut self) -> SshResult<()> {
+    pub fn channel_open_confirmation(&mut self) -> Result<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         assert!(message_code == message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
@@ -81,7 +81,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn shell(&mut self) -> SshResult<()> {
+    pub fn shell(&mut self) -> Result<()> {
         let mut data = Data::new();
         let env: String = "".to_string();
         let terminal_width_characters: u32 = 0;
@@ -120,7 +120,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn exec(&mut self, command: String) -> SshResult<()> {
+    pub fn exec(&mut self, command: String) -> Result<()> {
         println!("exec: {}", command);
         let mut data = Data::new();
         data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
@@ -138,7 +138,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn channel(&mut self) -> SshResult<()> {
+    pub fn channel(&mut self) -> Result<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {

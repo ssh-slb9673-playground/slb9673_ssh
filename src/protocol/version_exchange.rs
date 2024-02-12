@@ -1,10 +1,10 @@
+use super::client::SshClient;
+use super::data::Data;
+use super::error::SshError;
+use anyhow::Result;
 use nom::bytes::complete::{tag, take_until};
 use nom::error::Error;
 use nom::AsBytes;
-
-use super::client::SshClient;
-use super::data::Data;
-use super::error::{SshError, SshResult};
 
 // SSH_protoversion_softwareversion SP comments CR LF
 #[derive(Debug, Clone, PartialEq)]
@@ -14,7 +14,7 @@ pub struct Version {
 }
 
 impl SshClient {
-    pub fn version_exchange(&mut self) -> SshResult<()> {
+    pub fn version_exchange(&mut self) -> Result<()> {
         let client_version = self.config.version.clone();
         self.send_version(&client_version)?;
         let server_version = self.recv_version()?;
@@ -22,13 +22,13 @@ impl SshClient {
         Ok(())
     }
 
-    pub fn send_version(&mut self, client_version: &Version) -> SshResult<()> {
+    pub fn send_version(&mut self, client_version: &Version) -> Result<()> {
         let mut packet = Data::new();
         packet.put(&client_version.pack().as_bytes());
         self.client.send(&packet.into_inner())
     }
 
-    pub fn recv_version(&mut self) -> SshResult<Version> {
+    pub fn recv_version(&mut self) -> Result<Version> {
         let packet = &self.client.recv()?;
         Ok(Version::unpack(packet)?)
     }
@@ -40,7 +40,7 @@ impl Version {
         self
     }
 
-    pub fn unpack(input: &[u8]) -> SshResult<Self> {
+    pub fn unpack(input: &[u8]) -> Result<Self> {
         let (input, version) = take_until("\r\n")(input)
             .map_err(|_: nom::Err<Error<&[u8]>>| SshError::RecvError("version".to_string()))?;
         let (_input, _) = tag("\r\n")(input)

@@ -1,9 +1,10 @@
-use crate::protocol::{data::Data, error::SshResult};
-
 pub mod aes_ctr;
 pub mod aes_gcm;
 pub mod chachapoly;
 pub mod none;
+
+use crate::protocol::data::Data;
+use anyhow::Result;
 
 // 3des-cbc         REQUIRED          three-key 3DES in CBC mode
 // aes256-cbc       OPTIONAL          AES in CBC mode, with a 256-bit key
@@ -22,5 +23,5 @@ pub trait Encryption {
         &mut self,
         buffer: &'a mut [u8],
         sequence_number: u32,
-    ) -> SshResult<(&'a mut [u8], Vec<u8>, usize)>;
+    ) -> Result<(&'a mut [u8], Vec<u8>, usize)>;
 }

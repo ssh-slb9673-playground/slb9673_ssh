@@ -1,8 +1,6 @@
 use super::Encryption;
-use crate::protocol::{
-    data::Data,
-    error::{SshError, SshResult},
-};
+use crate::protocol::{data::Data, error::SshError};
+use anyhow::Result;
 use ring::aead::chacha20_poly1305_openssh::{OpeningKey, SealingKey};
 
 const BSIZE: usize = 64;
@@ -46,7 +44,7 @@ impl Encryption for ChaCha20Poly1305 {
         &mut self,
         buf: &'a mut [u8],
         sequence_number: u32,
-    ) -> SshResult<(&'a mut [u8], Vec<u8>, usize)> {
+    ) -> Result<(&'a mut [u8], Vec<u8>, usize)> {
         let mut packet_len_slice: [u8; 4] = [0; 4];
         packet_len_slice.copy_from_slice(&buf[..4]);
         let packet_len_slice = self
@@ -63,7 +61,7 @@ impl Encryption for ChaCha20Poly1305 {
                 [&packet_len_slice[..], result].concat(),
                 (packet_len + 0x14) as usize,
             )),
-            Err(_) => Err(SshError::RecvError("decrypt".to_string())),
+            Err(_) => Err(SshError::RecvError("decrypt".to_string()).into()),
         }
     }
 }
