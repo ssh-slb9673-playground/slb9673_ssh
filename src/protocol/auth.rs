@@ -43,7 +43,7 @@ impl SshClient {
         data.put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&self.config.username)
-            .put(&self.config.service_name)
+            .put(&self.service_name)
             .put(&"publickey".to_string())
             .put(&true)
             .put(&"rsa-sha2-256".to_string())
@@ -52,7 +52,7 @@ impl SshClient {
         payload
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&self.config.username)
-            .put(&self.config.service_name)
+            .put(&self.service_name)
             .put(&"publickey".to_string())
             .put(&true)
             .put(&"rsa-sha2-256".to_string())

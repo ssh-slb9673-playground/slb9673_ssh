@@ -27,7 +27,7 @@ impl SshClient {
         let server_kex_algorithms = KexAlgorithms::unpack(&mut payload);
 
         // send key algorithms
-        let client_kex_algorithms = self.config.kex.clone();
+        let client_kex_algorithms = self.kex.clone();
         self.send(&client_kex_algorithms.pack())?;
 
         self.session

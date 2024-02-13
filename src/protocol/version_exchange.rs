@@ -15,7 +15,7 @@ pub struct Version {
 
 impl SshClient {
     pub fn version_exchange(&mut self) -> Result<()> {
-        let client_version = self.config.version.clone();
+        let client_version = self.version.clone();
         self.send_version(&client_version)?;
         let server_version = self.recv_version()?;
         self.session.set_version(&client_version, &server_version);

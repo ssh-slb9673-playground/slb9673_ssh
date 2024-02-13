@@ -1,9 +1,11 @@
-# slb9673 ssh client
+# ssh
+
+
 
 ## Command
 
 ```shell
-ssh
+ssh --name <username> --addr <address>
 ```
 
 ## Refs.

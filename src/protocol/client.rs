@@ -8,30 +8,49 @@ use nom::AsBytes;
 use rand::Rng;
 use std::net::SocketAddr;
 
-pub struct SshClient {
-    pub client: TcpClient,
-    pub session: Session,
-    pub config: Config,
-    pub buffer: Vec<u8>,
-}
+const SSH_CLIENT_VERSION: &str = "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1";
+const SSH_CLIENT_SERVICE: &str = "ssh-connection";
+
+#[derive(Default)]
 pub struct Config {
-    pub address: SocketAddr,
     pub username: String,
-    pub service_name: String,
-    pub version: Version,
-    pub kex: KexAlgorithms,
+    pub password: String,
+    pub private_key_path: String,
 }
-impl SshClient {
-    pub fn new(address: SocketAddr, username: String) -> Result<Self> {
-        let client = TcpClient::new(address)?;
-        let session = Session::init_state();
-        let service_name = "ssh-connection".to_string();
-        let config = Config {
-            address,
-            username,
-            service_name,
+
+#[derive(Default)]
+pub struct SessionBuilder {
+    config: Config,
+}
+
+impl SessionBuilder {
+    pub fn create_session() -> Self {
+        Self::default()
+    }
+
+    pub fn username(mut self, username: &str) -> Self {
+        self.config.username = username.to_string();
+        self
+    }
+
+    pub fn password(mut self, password: &str) -> Self {
+        self.config.password = password.to_string();
+        self
+    }
+
+    pub fn private_key_path(mut self, path: &str) -> Self {
+        self.config.private_key_path = path.to_string();
+        self
+    }
+
+    pub fn connect(&self, address: SocketAddr) -> Result<SshClient> {
+        Ok(SshClient {
+            service_name: SSH_CLIENT_SERVICE.to_string(),
+            client: TcpClient::new(address)?,
+            session: Session::init_state(),
+            config: Config::default(),
             version: Version {
-                version: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1".to_string(),
+                version: SSH_CLIENT_VERSION.to_string(),
                 crnl: true,
             },
             kex: KexAlgorithms {
@@ -53,15 +72,32 @@ impl SshClient {
                 first_kex_packet_follows: false,
                 reserved: 0,
             },
-        };
-        Ok(SshClient {
-            client,
-            session,
-            config,
             buffer: Vec::new(),
         })
     }
+}
 
+pub struct SshClient {
+    pub client: TcpClient,
+    pub session: Session,
+    pub config: Config,
+    pub buffer: Vec<u8>,
+    pub service_name: String,
+    pub version: Version,
+    pub kex: KexAlgorithms,
+}
+
+// enum SessionState<S>
+// where
+//     S: Read + Write,
+// {
+//     Init(Config, S),
+//     Version(Config, S),
+//     Auth(Client, S),
+//     Connected(Client, S),
+// }
+
+impl SshClient {
     pub fn connection_setup(&mut self) -> Result<()> {
         self.version_exchange()?;
         self.key_exchange_init()?;
@@ -140,7 +176,7 @@ impl SshClient {
         let mac: Vec<u8> = packet.get_bytes(mac_length);
 
         if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
-            return Err(SshError::RecvError("".to_string()).into());
+            return Err(SshError::RecvError("Don't match mac".to_string()).into());
         }
         self.session.server_sequence_number += 1;
 

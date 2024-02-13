@@ -5,9 +5,10 @@ mod protocol;
 pub mod utils;
 
 use crate::config::{cli, domain};
-use crate::protocol::client::SshClient;
+use crate::protocol::client::SessionBuilder;
+use anyhow::Result;
 
-fn main() {
+fn main() -> Result<()> {
     let args = cli::cli_options();
     let config = domain::get_config(args);
     println!("{:?}", config);
@@ -18,14 +19,15 @@ fn main() {
     //     .private_key_path("~/.ssh/id_rsa")
     //     .connect("127.0.0.1:2222")
     //     .unwrap();
-    let mut client = SshClient::new(config.remote_address, config.username).unwrap();
-    match client.connection_setup() {
-        Ok(_) => {}
-        Err(e) => println!("error: {}", e),
-    };
+    let mut client = SessionBuilder::create_session()
+        .username(&config.username)
+        .private_key_path("~/.ssh/id_rsa")
+        .connect(config.remote_address)?;
+    client.connection_setup()?;
 
     let mut client = client.pack_channel();
     let _ = client.client_setup();
-    // client.shell();
     let _ = client.exec("ls -lah".to_string());
+
+    Ok(())
 }
