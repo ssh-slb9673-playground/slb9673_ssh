@@ -23,8 +23,7 @@ impl SshClient {
     }
 
     pub fn send_version(&mut self, client_version: &Version) -> Result<()> {
-        let mut packet = Data::new();
-        packet.put(&client_version.pack().as_bytes());
+        let packet = Data::new().put(&client_version.pack().as_bytes());
         self.client.send(&packet.into_inner())
     }
 

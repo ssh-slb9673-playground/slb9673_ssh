@@ -32,13 +32,14 @@ impl<'a> Channel<'a> {
     }
 
     pub fn send_channel_open(&mut self) -> Result<()> {
-        let mut data = Data::new();
-        data.put(&message_code::SSH_MSG_CHANNEL_OPEN)
-            .put(&self.channel_type)
-            .put(&self.client_channel)
-            .put(&self.initial_window_size)
-            .put(&self.maximum_packet_size);
-        self.send(&data)
+        self.send(
+            &Data::new()
+                .put(&message_code::SSH_MSG_CHANNEL_OPEN)
+                .put(&self.channel_type)
+                .put(&self.client_channel)
+                .put(&self.initial_window_size)
+                .put(&self.maximum_packet_size),
+        )
     }
 
     pub fn channel_open_confirmation(&mut self) -> Result<()> {
@@ -82,7 +83,6 @@ impl<'a> Channel<'a> {
     }
 
     pub fn shell(&mut self) -> Result<()> {
-        let mut data = Data::new();
         let env: String = "".to_string();
         let terminal_width_characters: u32 = 0;
         let terminal_height_rows: u32 = 0;
@@ -95,7 +95,8 @@ impl<'a> Channel<'a> {
             0, 1, 0xc2, 0,    // 115200 again
             0_u8, // TTY_OP_END
         ]);
-        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+        let data = Data::new()
+            .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
             .put(&self.server_channel)
             .put(&"pty-req".to_string())
             .put(&false)
@@ -107,8 +108,8 @@ impl<'a> Channel<'a> {
             .put(&encoded_terminal_modes);
         self.send(&data)?;
 
-        let mut data = Data::new();
-        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+        let data = Data::new()
+            .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
             .put(&self.server_channel)
             .put(&"shell".to_string())
             .put(&true);
@@ -122,8 +123,8 @@ impl<'a> Channel<'a> {
 
     pub fn exec(&mut self, command: String) -> Result<()> {
         println!("exec: {}", command);
-        let mut data = Data::new();
-        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+        let data = Data::new()
+            .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
             .put(&self.server_channel)
             .put(&"exec".to_string())
             .put(&true)

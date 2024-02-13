@@ -59,8 +59,8 @@ impl KexAlgorithms {
     }
 
     pub fn pack(&self) -> Data {
-        let mut data = Data::new();
-        data.put(&message_code::SSH_MSG_KEXINIT)
+        Data::new()
+            .put(&message_code::SSH_MSG_KEXINIT)
             .put(&self.cookie)
             .put(&self.kex_algorithms)
             .put(&self.server_host_key_algorithms)
@@ -73,8 +73,7 @@ impl KexAlgorithms {
             .put(&self.languages_client_to_server)
             .put(&self.languages_server_to_client)
             .put(&self.languages_server_to_client)
-            .put(&self.first_kex_packet_follows);
-        data
+            .put(&self.first_kex_packet_follows)
     }
 }
 

@@ -100,8 +100,7 @@ impl SshClient {
     }
 
     fn send_pubkey(&mut self, pubkey: &ByteString) -> Result<()> {
-        let mut payload = Data::new();
-        payload
+        let payload = Data::new()
             .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
             .put(pubkey);
         self.send(&payload)
@@ -117,8 +116,7 @@ impl SshClient {
     }
 
     fn new_keys(&mut self) -> Result<()> {
-        let mut payload = Data::new();
-        payload.put(&message_code::SSH_MSG_NEWKEYS);
+        let payload = Data::new().put(&message_code::SSH_MSG_NEWKEYS);
         self.send(&payload)
     }
 
@@ -146,20 +144,20 @@ impl Kex {
     pub fn new<T: KexMethod>(method: T, exchange_hash: Vec<u8>, shared_secret_key: &Mpint) -> Self {
         let mut keys = Vec::new();
         for alphabet in ['A', 'B', 'C', 'D', 'E', 'F'] {
-            let mut key = Data::new();
-
-            let mut seed = Data::new();
-            seed.put(shared_secret_key)
+            let seed = Data::new()
+                .put(shared_secret_key)
                 .put(&exchange_hash.as_bytes())
                 .put(&(alphabet as u8))
                 .put(&exchange_hash.as_bytes());
-            key.put(&method.hash(&seed.into_inner()).as_bytes());
 
-            let mut seed = Data::new();
-            seed.put(shared_secret_key)
+            let key = Data::new().put(&method.hash(&seed.into_inner()).as_bytes());
+
+            let seed = Data::new()
+                .put(shared_secret_key)
                 .put(&exchange_hash.as_bytes())
                 .put(&key);
-            key.put(&method.hash(&seed.into_inner()).as_bytes());
+
+            let key = key.put(&method.hash(&seed.into_inner()).as_bytes());
 
             keys.push(key.into_inner());
         }
@@ -196,8 +194,8 @@ impl Kex {
         server_public_key: &ByteString,
         shared_secret_key: &Mpint,
     ) -> Vec<u8> {
-        let mut data = Data::new();
-        data.put(client_version)
+        let data = Data::new()
+            .put(client_version)
             .put(server_version)
             .put(client_kex)
             .put(server_kex)

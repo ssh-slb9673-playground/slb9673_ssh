@@ -17,7 +17,7 @@ pub struct RsaSha256 {
 impl RsaSha256 {
     pub fn read_from_file() -> Result<RsaSha256> {
         let mut file =
-            File::open("/home/anko/.ssh/id_rsa_ssh").map_err(|e| SshError::from(e.to_string()))?;
+            File::open("~/.ssh/id_rsa_ssh").map_err(|e| SshError::from(e.to_string()))?;
 
         let mut prks = String::new();
         file.read_to_string(&mut prks)
@@ -54,18 +54,17 @@ impl RsaSha256 {
     }
 
     pub fn public_key_blob(&self) -> ByteString {
-        let mut pubkey_blob = Data::new();
         let e = Mpint(self.public_key.e().to_bytes_be().to_vec());
         let n = Mpint(self.public_key.n().to_bytes_be().to_vec());
-        pubkey_blob.put(&"ssh-rsa".to_string()).put(&e).put(&n);
+        let pubkey_blob = Data::new().put(&"ssh-rsa".to_string()).put(&e).put(&n);
         ByteString(pubkey_blob.into_inner())
     }
 
     pub fn signature_blob(&self, msg: Data) -> ByteString {
-        let mut signature_blob = Data::new();
-        signature_blob.put(&"rsa-sha2-256".to_string());
         let signature = self.sign(&msg.into_inner());
-        signature_blob.put(&ByteString(signature));
+        let signature_blob = Data::new()
+            .put(&"rsa-sha2-256".to_string())
+            .put(&ByteString(signature));
         ByteString(signature_blob.into_inner())
     }
 }

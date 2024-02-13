@@ -20,8 +20,7 @@ impl SshClient {
     }
 
     fn service_request(&mut self) -> Result<()> {
-        let mut payload = Data::new();
-        payload
+        let payload = Data::new()
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
             .put(&ByteString::from_str("ssh-userauth"));
         self.send(&payload)
@@ -36,11 +35,10 @@ impl SshClient {
     }
 
     fn userauth_request(&mut self) -> Result<()> {
-        let mut payload = Data::new();
         let rsa = RsaSha256::read_from_file()?;
 
-        let mut data = Data::new();
-        data.put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
+        let data = Data::new()
+            .put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&self.config.username)
             .put(&self.service_name)
@@ -49,7 +47,7 @@ impl SshClient {
             .put(&"rsa-sha2-256".to_string())
             .put(&rsa.public_key_blob());
 
-        payload
+        let payload = Data::new()
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&self.config.username)
             .put(&self.service_name)

@@ -1,10 +1,11 @@
+use super::data::DataType;
 use super::{
     data::Data, key_exchange_init::KexAlgorithms, session::Session, version_exchange::Version,
 };
 use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
 use anyhow::Result;
-use nom::AsBytes;
+use nom::{AsBytes, IResult};
 use rand::Rng;
 use std::net::SocketAddr;
 
@@ -105,24 +106,95 @@ impl SshClient {
         self.user_auth()?;
         Ok(())
     }
+}
 
-    //   uint32    packet_length
-    //   byte      padding_length
-    //   byte[n1]  payload; n1 = packet_length - padding_length - 1 Initially, compression MUST be "none".
-    //   byte[n2]  random padding; n2 = padding_length
-    //   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
-    // mac = MAC(key, sequence_number || unencrypted_packet)
-    pub fn send(&mut self, payload: &Data) -> Result<()> {
+//   uint32    packet_length
+//   byte      padding_length
+//   byte[n1]  payload; n1 = packet_length - padding_length - 1 Initially, compression MUST be "none".
+//   byte[n2]  random padding; n2 = padding_length
+//   byte[m]   mac (Message Authentication Code - MAC); m = mac_length Initially, the MAC algorithm MUST be "none".
+struct BinaryPacketProtocol {
+    packet_length: u32,
+    padding_length: u8,
+    payload: Vec<u8>,
+    padding: Vec<u8>,
+}
+
+impl DataType for BinaryPacketProtocol {
+    fn size(&self) -> usize {
+        self.packet_length as usize
+    }
+
+    fn encode(&self, buf: &mut Vec<u8>) {
+        self.packet_length.encode(buf);
+        self.padding_length.encode(buf);
+        self.payload.as_bytes().encode(buf);
+        vec![0; self.padding_length as usize].as_bytes().encode(buf);
+    }
+
+    fn decode(input: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        todo!()
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        todo!()
+    }
+}
+
+impl SshClient {
+    fn create_binary_packet(&mut self, payload: &Data) -> BinaryPacketProtocol {
         let payload = payload.clone().into_inner();
         let payload_length = (payload.len() + 1) as u32;
         let packet_length = self.session.client_method.enc.packet_length(payload_length);
         let padding_length = (packet_length - payload_length) as u8;
 
-        let mut data = Data::new();
-        data.put(&packet_length)
-            .put(&padding_length)
-            .put(&payload.as_bytes())
-            .put(&vec![0; padding_length as usize].as_bytes());
+        BinaryPacketProtocol {
+            packet_length,
+            padding_length,
+            payload: payload,
+            padding: vec![0; padding_length as usize],
+        }
+    }
+
+    fn read_binary_packet_protocol(&mut self, data: &mut Data) -> Result<Data> {
+        let packet_length: u32 = data.get();
+        let padding_length: u8 = data.get();
+        let payload_length = packet_length - padding_length as u32 - 1;
+
+        let packet = BinaryPacketProtocol {
+            packet_length,
+            padding_length,
+            payload: data.get_bytes(payload_length as usize),
+            padding: data.get_bytes(padding_length as usize),
+        };
+
+        let mac_length = self.session.server_method.mac.size();
+        let mac: Vec<u8> = data.get_bytes(mac_length);
+
+        if mac != self.calc_mac(&packet) {
+            return Err(SshError::RecvError("Don't match mac".to_string()).into());
+        }
+
+        Ok(Data(packet.payload))
+    }
+
+    // mac = MAC(key, sequence_number || unencrypted_packet)
+    fn calc_mac(&self, packet: &BinaryPacketProtocol) -> Vec<u8> {
+        let mut data = Vec::new();
+        self.session.client_sequence_number.encode(&mut data);
+        packet.encode(&mut data);
+        self.session.server_method.mac.sign(&data)
+    }
+}
+
+impl SshClient {
+    pub fn send(&mut self, payload: &Data) -> Result<()> {
+        let packet = self.create_binary_packet(payload);
+
+        let mut data = Data::new().put(&packet);
 
         println!("client -> server");
         data.hexdump();
@@ -131,11 +203,8 @@ impl SshClient {
             .client_method
             .enc
             .encrypt(&mut data, self.session.client_sequence_number);
-        data.put(
-            &self
-                .calc_mac(packet_length, padding_length, payload.as_bytes())
-                .as_bytes(),
-        );
+
+        let data = data.put(&self.calc_mac(&packet).as_bytes());
 
         self.session.client_sequence_number += 1;
         self.client.send(&data.into_inner())
@@ -167,29 +236,8 @@ impl SshClient {
         println!("server -> client");
         packet.hexdump();
 
-        let packet_length: u32 = packet.get();
-        let padding_length: u8 = packet.get();
-        let payload_length = packet_length - padding_length as u32 - 1;
-        let mac_length = self.session.server_method.mac.size();
-        let payload: Vec<u8> = packet.get_bytes(payload_length as usize);
-        let _padding: Vec<u8> = packet.get_bytes(padding_length as usize);
-        let mac: Vec<u8> = packet.get_bytes(mac_length);
-
-        if mac != self.calc_mac(packet_length, padding_length, payload.as_bytes()) {
-            return Err(SshError::RecvError("Don't match mac".to_string()).into());
-        }
+        let payload = self.read_binary_packet_protocol(&mut packet)?;
         self.session.server_sequence_number += 1;
-
-        Ok(Data(payload))
-    }
-
-    fn calc_mac(&self, packet_length: u32, padding_length: u8, payload: &[u8]) -> Vec<u8> {
-        let mut data = Data::new();
-        data.put(&self.session.client_sequence_number)
-            .put(&packet_length)
-            .put(&padding_length)
-            .put(&payload)
-            .put(&vec![0; padding_length as usize].as_bytes());
-        self.session.server_method.mac.sign(&data.into_inner())
+        Ok(payload)
     }
 }

@@ -11,7 +11,7 @@ impl Data {
         Data(Vec::new())
     }
 
-    pub fn put<T>(&mut self, v: &T) -> &mut Self
+    pub fn put<T>(mut self, v: &T) -> Self
     where
         T: DataType,
     {
