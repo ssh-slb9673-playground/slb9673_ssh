@@ -12,7 +12,7 @@ use std::net::SocketAddr;
 const SSH_CLIENT_VERSION: &str = "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1";
 const SSH_CLIENT_SERVICE: &str = "ssh-connection";
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct Config {
     pub username: String,
     pub password: String,
@@ -49,7 +49,7 @@ impl SessionBuilder {
             service_name: SSH_CLIENT_SERVICE.to_string(),
             client: TcpClient::new(address)?,
             session: Session::init_state(),
-            config: Config::default(),
+            config: self.config.clone(),
             version: Version {
                 version: SSH_CLIENT_VERSION.to_string(),
                 crnl: true,

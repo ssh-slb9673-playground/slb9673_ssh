@@ -23,6 +23,7 @@ fn main() -> Result<()> {
         .username(&config.username)
         .private_key_path("~/.ssh/id_rsa")
         .connect(config.remote_address)?;
+    println!("{:?}", client.config);
     client.connection_setup()?;
 
     let mut client = client.pack_channel();
