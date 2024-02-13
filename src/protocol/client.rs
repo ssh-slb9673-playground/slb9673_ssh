@@ -211,26 +211,24 @@ impl SshClient {
     }
 
     pub fn recv(&mut self) -> Result<Data> {
-        let packet = if self.buffer.len() == 0 {
-            let mut packet = self.client.recv()?;
-            let (next, packet, _length) = self
-                .session
-                .client_method
-                .enc
-                .decrypt(&mut packet, self.session.server_sequence_number)?;
-            self.buffer.extend_from_slice(&next);
-            packet
+        let is_buffer_left = self.buffer.len() == 0;
+        let mut packet = if is_buffer_left {
+            self.client.recv()?
         } else {
-            let mut packet = self.buffer.clone();
-            let (next, packet, length) = self
-                .session
-                .client_method
-                .enc
-                .decrypt(&mut packet, self.session.server_sequence_number)?;
-            self.buffer.drain(..length);
-            self.buffer.extend_from_slice(&next);
-            packet
+            self.buffer.clone()
         };
+
+        let (next, packet, length) = self
+            .session
+            .client_method
+            .enc
+            .decrypt(&mut packet, self.session.server_sequence_number)?;
+
+        if is_buffer_left {
+            self.buffer.drain(..length);
+        }
+
+        self.buffer.extend_from_slice(&next);
 
         let mut packet = Data(packet);
         println!("server -> client");
