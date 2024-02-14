@@ -1,5 +1,4 @@
 use super::client::SshClient;
-use super::data::Data;
 use super::error::SshError;
 use anyhow::Result;
 use nom::bytes::complete::{tag, take_until};
@@ -23,13 +22,11 @@ impl SshClient {
     }
 
     pub fn send_version(&mut self, client_version: &Version) -> Result<()> {
-        let packet = Data::new().put(&client_version.pack().as_bytes());
-        self.client.send(&packet.into_inner())
+        self.client.send(&client_version.pack().as_bytes())
     }
 
     pub fn recv_version(&mut self) -> Result<Version> {
-        let packet = &self.client.recv()?;
-        Ok(Version::unpack(packet)?)
+        Ok(Version::unpack(&self.client.recv()?)?)
     }
 }
 
