@@ -4,13 +4,15 @@ mod network;
 mod protocol;
 pub mod utils;
 
-use crate::config::{cli, domain};
-use crate::protocol::client::SessionBuilder;
+use crate::{
+    config::{cli_options, get_config},
+    protocol::client::SessionBuilder,
+};
 use anyhow::Result;
 
 fn main() -> Result<()> {
-    let args = cli::cli_options();
-    let config = domain::get_config(args);
+    let args = cli_options();
+    let config = get_config(args);
     println!("{:?}", config);
 
     // use ssh_rs::ssh;
