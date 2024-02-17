@@ -45,7 +45,7 @@ impl SessionBuilder {
     }
 
     pub fn connect(&self, address: SocketAddr) -> Result<SshClient> {
-        Ok(SshClient {
+        let mut client = SshClient {
             service_name: SSH_CLIENT_SERVICE.to_string(),
             client: TcpClient::new(address)?,
             session: Session::init_state(),
@@ -74,7 +74,11 @@ impl SessionBuilder {
                 reserved: 0,
             },
             buffer: Vec::new(),
-        })
+        };
+
+        client.connection_setup()?;
+
+        Ok(client)
     }
 }
 

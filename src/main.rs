@@ -13,7 +13,6 @@ use anyhow::Result;
 fn main() -> Result<()> {
     let args = cli_options();
     let config = get_config(args);
-    println!("{:?}", config);
 
     // use ssh_rs::ssh;
     // let mut session = ssh::create_session()
@@ -25,10 +24,8 @@ fn main() -> Result<()> {
         .username(&config.username)
         .private_key_path("~/.ssh/id_rsa")
         .connect(config.remote_address)?;
-    println!("{:?}", client.config);
-    client.connection_setup()?;
-
     let mut client = client.pack_channel();
+
     let _ = client.client_setup();
     let _ = client.exec("ls -lah".to_string());
 
