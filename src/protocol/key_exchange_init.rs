@@ -25,10 +25,12 @@ impl SshClient {
         // recv key algorithms
         let mut payload = self.recv()?;
         let server_kex_algorithms = KexAlgorithms::unpack(&mut payload);
+        println!("server algorithms: {:?}", server_kex_algorithms);
 
         // send key algorithms
         let client_kex_algorithms = self.kex.clone();
         self.send(&client_kex_algorithms.pack())?;
+        println!("client algorithms: {:?}", client_kex_algorithms);
 
         self.session
             .set_kex_algorithms(&client_kex_algorithms, &server_kex_algorithms);

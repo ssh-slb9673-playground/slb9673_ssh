@@ -12,9 +12,10 @@ impl SshClient {
     pub fn user_auth(&mut self) -> Result<()> {
         self.service_request()?;
         let service_name: String = self.service_accept()?;
-        println!("{:?}", service_name);
+        println!("service accepted: {}", service_name);
         self.userauth_request()?;
         self.userauth_accept()?;
+        println!("userauth accepted");
 
         Ok(())
     }

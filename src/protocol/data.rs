@@ -190,6 +190,7 @@ impl<const N: usize> DataType for [u8; N] {
 }
 
 // string
+#[derive(Debug)]
 pub struct ByteString(pub Vec<u8>);
 impl ByteString {
     pub fn from_str(value: &str) -> Self {
@@ -220,7 +221,7 @@ impl DataType for ByteString {
 // string
 impl DataType for String {
     fn size(&self) -> usize {
-        self.len()
+        self.len() + 4
     }
     fn encode(&self, buf: &mut Vec<u8>) {
         self.len().encode(buf);

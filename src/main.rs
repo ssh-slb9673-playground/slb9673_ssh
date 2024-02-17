@@ -13,6 +13,7 @@ use anyhow::Result;
 fn main() -> Result<()> {
     let args = cli_options();
     let config = get_config(args);
+    println!("{:?}", config);
 
     // use ssh_rs::ssh;
     // let mut session = ssh::create_session()

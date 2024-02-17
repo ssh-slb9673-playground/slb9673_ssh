@@ -27,7 +27,10 @@ impl<'a> Channel<'a> {
                 println!("{}:{}", address, port);
             }
             "hostkeys-00@openssh.com" => {
-                // let blob: ByteString = payload.get();
+                // inform all keys
+                let hostkey: ByteString = payload.get();
+                let hostkey: ByteString = payload.get();
+                let hostkey: ByteString = payload.get();
             }
             _ => {}
         }
