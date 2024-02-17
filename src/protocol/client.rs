@@ -117,7 +117,7 @@ struct BinaryPacketProtocol {
     packet_length: u32,
     padding_length: u8,
     payload: Vec<u8>,
-    padding: Vec<u8>,
+    _padding: Vec<u8>,
 }
 
 impl DataType for BinaryPacketProtocol {
@@ -132,7 +132,7 @@ impl DataType for BinaryPacketProtocol {
         vec![0; self.padding_length as usize].as_bytes().encode(buf);
     }
 
-    fn decode(input: &[u8]) -> IResult<&[u8], Self>
+    fn decode(_input: &[u8]) -> IResult<&[u8], Self>
     where
         Self: Sized,
     {
@@ -155,7 +155,7 @@ impl SshClient {
             packet_length,
             padding_length,
             payload: payload,
-            padding: vec![0; padding_length as usize],
+            _padding: vec![0; padding_length as usize],
         }
     }
 
@@ -168,7 +168,7 @@ impl SshClient {
             packet_length,
             padding_length,
             payload: data.get_bytes(payload_length as usize),
-            padding: data.get_bytes(padding_length as usize),
+            _padding: data.get_bytes(padding_length as usize),
         };
 
         let mac_length = self.session.server_method.mac.size();
@@ -211,11 +211,12 @@ impl SshClient {
     }
 
     pub fn recv(&mut self) -> Result<Data> {
-        let is_buffer_left = self.buffer.len() == 0;
+        let is_buffer_left = self.buffer.len() != 0;
+
         let mut packet = if is_buffer_left {
-            self.client.recv()?
-        } else {
             self.buffer.clone()
+        } else {
+            self.client.recv()?
         };
 
         let (next, packet, length) = self
