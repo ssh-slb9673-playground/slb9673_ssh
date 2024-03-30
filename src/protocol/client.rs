@@ -150,7 +150,7 @@ impl SshClient {
         BinaryPacketProtocol {
             packet_length,
             padding_length,
-            payload: payload,
+            payload,
             _padding: vec![0; padding_length as usize],
         }
     }

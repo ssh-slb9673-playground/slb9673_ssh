@@ -37,7 +37,7 @@ impl Data {
     }
 
     pub fn get_bytes(&mut self, len: usize) -> Vec<u8> {
-        let bytes = self.0.drain(..len).into_iter().collect::<Vec<u8>>();
+        let bytes = self.0.drain(..len).collect::<Vec<u8>>();
         bytes
     }
 
@@ -50,8 +50,8 @@ impl Data {
     }
 }
 
-impl<'a> From<&'a [u8]> for Data {
-    fn from(data: &'a [u8]) -> Self {
+impl From<&[u8]> for Data {
+    fn from(data: &[u8]) -> Self {
         Self(data.to_vec())
     }
 }
@@ -79,7 +79,7 @@ impl DataType for u8 {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.to_be_bytes())
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, num) = be_u8(input)?;
         Ok((input, num))
     }
@@ -88,9 +88,9 @@ impl DataType for u8 {
 // uint32
 impl DataType for u32 {
     fn encode(&self, buf: &mut Vec<u8>) {
-        buf.extend(&(*self as u32).to_be_bytes())
+        buf.extend(&self.to_be_bytes())
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, num) = be_u32(input)?;
         Ok((input, num))
     }
@@ -101,7 +101,7 @@ impl DataType for usize {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(&(*self as u32).to_be_bytes())
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, num) = be_u32(input)?;
         Ok((input, num as usize))
     }
@@ -112,7 +112,7 @@ impl DataType for u64 {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(&self.to_be_bytes())
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, num) = be_u64(input)?;
         Ok((input, num))
     }
@@ -123,7 +123,7 @@ impl DataType for &[u8] {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(*self)
     }
-    fn decode<'a>(_input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(_input: &[u8]) -> IResult<&[u8], Self> {
         todo!();
     }
 }
@@ -133,7 +133,7 @@ impl<const N: usize> DataType for [u8; N] {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self)
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, result) = take(N as u8)(input)?;
         Ok((input, result.try_into().unwrap()))
     }
@@ -153,7 +153,7 @@ impl DataType for ByteString {
         self.0.len().encode(buf);
         self.0.as_bytes().encode(buf)
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, length) = be_u32(input)?;
         let (input, payload) = take(length)(input)?;
         Ok((input, ByteString(payload.to_vec())))
@@ -166,7 +166,7 @@ impl DataType for String {
         self.len().encode(buf);
         (*self).as_bytes().encode(buf);
     }
-    fn decode<'a>(input: &'a [u8]) -> IResult<&'a [u8], Self> {
+    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, length) = be_u32(input)?;
         let (input, payload) = take(length)(input)?;
         Ok((input, String::from_utf8(payload.to_vec()).unwrap()))
@@ -217,7 +217,7 @@ impl DataType for Data {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.clone().into_inner());
     }
-    fn decode<'a>(_input: &'a [u8]) -> IResult<&[u8], Self> {
+    fn decode(_input: &[u8]) -> IResult<&[u8], Self> {
         todo!();
     }
 }
