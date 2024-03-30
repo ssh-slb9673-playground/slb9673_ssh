@@ -11,8 +11,11 @@ pub struct Channel<'a> {
 }
 
 impl<'a> Channel<'a> {
-    pub fn recv(&mut self) -> Result<Data> {
-        self.client.recv()
+    pub fn recv(&mut self) -> Result<(u8, Data)> {
+        let mut payload = self.client.recv()?;
+        let message_code: u8 = payload.get();
+        println!("message code: {}", message_code);
+        Ok((message_code, payload))
     }
 
     pub fn send(&mut self, packet: &Data) -> Result<()> {
@@ -20,40 +23,42 @@ impl<'a> Channel<'a> {
     }
 
     pub fn client_setup(&mut self) -> Result<()> {
-        if self.channel()? == message_code::SSH_MSG_GLOBAL_REQUEST {
-            println!("");
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_GLOBAL_REQUEST => self.global_request(&mut payload),
+            _ => unimplemented!(),
         }
 
-        if self.channel()? == message_code::SSH_MSG_DEBUG {
-            println!("");
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_DEBUG => self.debug(&mut payload),
+            _ => unimplemented!(),
         }
 
         self.send_channel_open()?;
 
-        if self.channel()? != message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION {
-            panic!("test")
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION => self.furiwake(code, &mut payload)?,
+            _ => unimplemented!(),
         }
 
         Ok(())
     }
 
-    pub fn channel(&mut self) -> Result<u8> {
-        let mut payload = self.recv()?;
-        let message_code: u8 = payload.get();
+    pub fn furiwake(&mut self, message_code: u8, payload: &mut Data) -> Result<()> {
         match message_code {
-            message_code::SSH_MSG_DEBUG => self.debug(&mut payload),
-            message_code::SSH_MSG_GLOBAL_REQUEST => self.global_request(&mut payload),
+            message_code::SSH_MSG_DEBUG => self.debug(payload),
+            message_code::SSH_MSG_GLOBAL_REQUEST => self.global_request(payload),
             message_code::SSH_MSG_REQUEST_SUCCESS => {
                 // self.recv_message_request_success(&mut payload)
             }
             message_code::SSH_MSG_CHANNEL_OPEN_CONFIRMATION => {
-                self.channel_open_confirmation(&mut payload)?
+                self.channel_open_confirmation(payload)?
             }
             message_code::SSH_MSG_REQUEST_FAILURE => {}
-            message_code::SSH_MSG_CHANNEL_OPEN => self.message_channel_open(&mut payload),
-            message_code::SSH_MSG_CHANNEL_OPEN_FAILURE => {
-                self.message_channel_failure(&mut payload)
-            }
+            message_code::SSH_MSG_CHANNEL_OPEN => self.message_channel_open(payload),
+            message_code::SSH_MSG_CHANNEL_OPEN_FAILURE => self.message_channel_failure(payload),
             message_code::SSH_MSG_CHANNEL_WINDOW_ADJUST => {
                 let recipient_channel: u32 = payload.get();
                 let bytes_to_add: u32 = payload.get();
@@ -65,6 +70,7 @@ impl<'a> Channel<'a> {
                 let data: String = payload.get();
                 println!("server channel: {}", recipient_channel);
                 println!("{}", data);
+                println!("{}", data.chars().last().unwrap())
             }
             message_code::SSH_MSG_CHANNEL_EXTENDED_DATA => {
                 let recipient_channel: u32 = payload.get();
@@ -82,7 +88,7 @@ impl<'a> Channel<'a> {
                 let recipient_channel: u32 = payload.get();
                 println!("server channel: {}", recipient_channel);
             }
-            message_code::SSH_MSG_CHANNEL_REQUEST => self.message_channel_request(&mut payload),
+            message_code::SSH_MSG_CHANNEL_REQUEST => self.message_channel_request(payload),
             message_code::SSH_MSG_CHANNEL_SUCCESS => {
                 let recipient_channel: u32 = payload.get();
                 println!("server channel: {}", recipient_channel);
@@ -95,7 +101,7 @@ impl<'a> Channel<'a> {
                 panic!("unexpected message code")
             }
         }
-        Ok(message_code)
+        Ok(())
     }
 }
 

@@ -1,9 +1,9 @@
 use sha1::{Digest, Sha1};
 
-use super::KexMethod;
+use super::KexMethodAdapter;
 
-struct DiffieHellmanGroup1Sha1 {}
-impl KexMethod for DiffieHellmanGroup1Sha1 {
+pub struct DiffieHellmanGroup1Sha1 {}
+impl KexMethodAdapter for DiffieHellmanGroup1Sha1 {
     fn new() -> Self {
         DiffieHellmanGroup1Sha1 {}
     }
@@ -21,7 +21,7 @@ impl KexMethod for DiffieHellmanGroup1Sha1 {
 }
 
 pub struct DiffieHellmanGroup14Sha1 {}
-impl KexMethod for DiffieHellmanGroup14Sha1 {
+impl KexMethodAdapter for DiffieHellmanGroup14Sha1 {
     fn new() -> Self {
         DiffieHellmanGroup14Sha1 {}
     }

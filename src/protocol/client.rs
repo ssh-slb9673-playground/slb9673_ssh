@@ -125,10 +125,6 @@ struct BinaryPacketProtocol {
 }
 
 impl DataType for BinaryPacketProtocol {
-    fn size(&self) -> usize {
-        self.packet_length as usize
-    }
-
     fn encode(&self, buf: &mut Vec<u8>) {
         self.packet_length.encode(buf);
         self.padding_length.encode(buf);
@@ -140,10 +136,6 @@ impl DataType for BinaryPacketProtocol {
     where
         Self: Sized,
     {
-        todo!()
-    }
-
-    fn to_bytes(&self) -> Vec<u8> {
         todo!()
     }
 }
@@ -222,6 +214,8 @@ impl SshClient {
         } else {
             self.client.recv()?
         };
+
+        Data(packet.clone()).hexdump();
 
         let (next, packet, length) = self
             .session

@@ -1,15 +1,14 @@
+use super::KexMethodAdapter;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256, Sha512};
 use x25519_dalek::{EphemeralSecret, PublicKey};
-
-use super::KexMethod;
 
 pub struct Curve25519Sha256 {
     private_key: Option<EphemeralSecret>,
     public_key: PublicKey,
 }
 
-impl KexMethod for Curve25519Sha256 {
+impl KexMethodAdapter for Curve25519Sha256 {
     fn new() -> Self {
         let private_key = EphemeralSecret::random_from_rng(OsRng);
         let public_key = PublicKey::from(&private_key);
@@ -35,8 +34,8 @@ impl KexMethod for Curve25519Sha256 {
     }
 }
 
-struct Curve448Sha512 {}
-impl KexMethod for Curve448Sha512 {
+pub struct Curve448Sha512 {}
+impl KexMethodAdapter for Curve448Sha512 {
     fn new() -> Self {
         Curve448Sha512 {}
     }

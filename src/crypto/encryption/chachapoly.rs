@@ -1,4 +1,4 @@
-use super::Encryption;
+use super::EncryptionAdapter;
 use crate::protocol::{data::Data, error::SshError};
 use anyhow::Result;
 use ring::aead::chacha20_poly1305_openssh::{OpeningKey, SealingKey};
@@ -24,7 +24,7 @@ impl ChaCha20Poly1305 {
     }
 }
 
-impl Encryption for ChaCha20Poly1305 {
+impl EncryptionAdapter for ChaCha20Poly1305 {
     fn group_size(&self) -> u32 {
         64
     }

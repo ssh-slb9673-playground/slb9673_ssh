@@ -1,4 +1,4 @@
-use super::Compress;
+use super::CompressAdapter;
 use anyhow::Result;
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
@@ -6,7 +6,7 @@ use flate2::Compression;
 use std::io::prelude::*;
 
 pub struct Zlib {}
-impl Compress for Zlib {
+impl CompressAdapter for Zlib {
     fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
         let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(msg.as_slice())?;

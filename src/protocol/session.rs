@@ -4,12 +4,12 @@ use super::version_exchange::Version;
 use crate::crypto::compression::none::NoneCompress;
 use crate::crypto::encryption::none::NoneEncryption;
 use crate::crypto::mac::none::NoneMac;
-use crate::crypto::{compression::Compress, encryption::Encryption, mac::MAC};
+use crate::crypto::{compression::CompressAdapter, encryption::EncryptionAdapter, mac::MACAdapter};
 
 pub struct NewKeys {
-    pub enc: Box<dyn Encryption>,
-    pub mac: Box<dyn MAC>,
-    pub comp: Box<dyn Compress>,
+    pub enc: Box<dyn EncryptionAdapter>,
+    pub mac: Box<dyn MACAdapter>,
+    pub comp: Box<dyn CompressAdapter>,
 }
 
 impl NewKeys {
@@ -22,9 +22,9 @@ impl NewKeys {
     }
 
     pub fn new(
-        enc_method: Box<dyn Encryption>,
-        mac_method: Box<dyn MAC>,
-        comp_method: Box<dyn Compress>,
+        enc_method: Box<dyn EncryptionAdapter>,
+        mac_method: Box<dyn MACAdapter>,
+        comp_method: Box<dyn CompressAdapter>,
     ) -> Self {
         NewKeys {
             enc: enc_method,

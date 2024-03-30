@@ -20,16 +20,17 @@ aes-gcm = "0.10.2"
 typenum = "1.16.0"
 chacha20poly1305 = "0.10.1"
 ctr = "0.9.2"
-aes = { version = "0.7", feature = ["ctr"] }
+aes = { version = "0.8", feature = ["ctr"] }
 rsa = "0.9.2"
 cipher = "0.4"
 chacha20 = { version = "0.9", default-features = false }
 poly1305 = { version = "0.8", default-features = false }
 subtle = { version = "2", default-features = false }
-ring = "0.16.20"
-ssh-rs = "0.3.2"
-ssh-key = { version = "0.5.1", features = ["rsa", "ed25519"]}
-strum = "0.25"
-strum_macros = "0.25"
+ring = "0.17"
+ssh-rs = "0.5"
+ssh-key = { version = "0.6", features = ["rsa", "ed25519"] }
+strum = "0.26"
+strum_macros = "0.26"
 anyhow = "1.0.79"
 thiserror = "1.0.57"
+termion = "3.0.0"

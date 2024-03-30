@@ -1,7 +1,7 @@
-use super::MAC;
+use super::MACAdapter;
 
 pub struct NoneMac {}
-impl MAC for NoneMac {
+impl MACAdapter for NoneMac {
     fn size(&self) -> usize {
         0
     }

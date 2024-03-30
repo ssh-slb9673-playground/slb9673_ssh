@@ -4,7 +4,7 @@ use super::session::NewKeys;
 use super::ssh2::message_code;
 use crate::crypto::compression::none::NoneCompress;
 use crate::crypto::encryption::chachapoly::ChaCha20Poly1305;
-use crate::crypto::key_exchange::KexMethod;
+use crate::crypto::key_exchange::KexMethodAdapter;
 use crate::crypto::mac::none::NoneMac;
 use anyhow::Result;
 use nom::AsBytes;
@@ -23,7 +23,7 @@ pub struct Kex {
 }
 
 impl SshClient {
-    pub fn key_exchange<Method: KexMethod>(&mut self) -> Result<()> {
+    pub fn key_exchange<Method: KexMethodAdapter>(&mut self) -> Result<()> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
@@ -108,8 +108,7 @@ impl SshClient {
 
     fn verify_signature_and_new_keys(&mut self) -> Result<(ByteString, ByteString)> {
         let mut payload = self.recv()?;
-        let message_code: u8 = payload.get();
-        assert!(message_code == message_code::SSH2_MSG_KEX_ECDH_REPLY);
+        payload.expect(message_code::SSH2_MSG_KEX_ECDH_REPLY);
         let server_public_host_key: ByteString = payload.get();
         let server_public_key: ByteString = payload.get();
         Ok((server_public_host_key, server_public_key))
@@ -120,10 +119,13 @@ impl SshClient {
         self.send(&payload)
     }
 
+    fn new_keys_() -> Data {
+        Data::new().put(&message_code::SSH_MSG_NEWKEYS)
+    }
+
     fn recv_new_keys(&mut self) -> Result<()> {
         let mut payload = self.recv()?;
-        let message_code: u8 = payload.get();
-        assert!(message_code == message_code::SSH_MSG_NEWKEYS);
+        payload.expect(message_code::SSH_MSG_NEWKEYS);
         Ok(())
     }
 }
@@ -141,7 +143,11 @@ impl Kex {
     // K3 = HASH(K || H || K1 || K2)
     // ...
     // key = K1 || K2 || K3 || ...
-    pub fn new<T: KexMethod>(method: T, exchange_hash: Vec<u8>, shared_secret_key: &Mpint) -> Self {
+    pub fn new<T: KexMethodAdapter>(
+        method: T,
+        exchange_hash: Vec<u8>,
+        shared_secret_key: &Mpint,
+    ) -> Self {
         let mut keys = Vec::new();
         for alphabet in ['A', 'B', 'C', 'D', 'E', 'F'] {
             let seed = Data::new()
@@ -183,7 +189,7 @@ impl Kex {
     // string   Q_C, client's ephemeral public key octet string
     // string   Q_S, server's ephemeral public key octet string
     // mpint    K,   shared secret
-    fn exchange_hash<T: KexMethod>(
+    fn exchange_hash<T: KexMethodAdapter>(
         method: &T,
         client_version: &ByteString,
         server_version: &ByteString,

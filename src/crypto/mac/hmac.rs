@@ -1,4 +1,4 @@
-use super::MAC;
+use super::MACAdapter;
 use hmac::{Hmac, Mac};
 use sha1::Sha1;
 use sha2::{Sha256, Sha512};
@@ -6,7 +6,7 @@ use sha2::{Sha256, Sha512};
 pub struct HmacSha1 {
     pub key: Vec<u8>,
 }
-impl MAC for HmacSha1 {
+impl MACAdapter for HmacSha1 {
     fn size(&self) -> usize {
         20
     }
@@ -23,7 +23,7 @@ impl MAC for HmacSha1 {
 pub struct HmacSha1_96 {
     pub key: Vec<u8>,
 }
-impl MAC for HmacSha1_96 {
+impl MACAdapter for HmacSha1_96 {
     fn size(&self) -> usize {
         12
     }
@@ -40,7 +40,7 @@ impl MAC for HmacSha1_96 {
 pub struct HmacSha2_256 {
     pub key: Vec<u8>,
 }
-impl MAC for HmacSha2_256 {
+impl MACAdapter for HmacSha2_256 {
     fn size(&self) -> usize {
         32
     }
@@ -57,7 +57,7 @@ impl MAC for HmacSha2_256 {
 pub struct HmacSha2_512 {
     key: Vec<u8>,
 }
-impl MAC for HmacSha2_512 {
+impl MACAdapter for HmacSha2_512 {
     fn size(&self) -> usize {
         64
     }

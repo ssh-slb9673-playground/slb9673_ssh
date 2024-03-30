@@ -84,6 +84,14 @@ impl<'a> Channel<'a> {
         )
     }
 
+    pub fn send_channel_success(&mut self) -> Result<()> {
+        self.send(
+            &Data::new()
+                .put(&message_code::SSH_MSG_CHANNEL_SUCCESS)
+                .put(&self.client_channel),
+        )
+    }
+
     pub fn message_channel_open(&mut self, payload: &mut Data) {
         let channel_type: String = payload.get();
         let sender_channel: u32 = payload.get();
@@ -133,6 +141,8 @@ impl<'a> Channel<'a> {
         let request_type: String = payload.get();
         let want_reply: bool = payload.get();
         println!("server channel: {}", recipient_channel);
+        println!("request type: {}", request_type);
+        println!("want_reply: {}", want_reply);
         match request_type.as_str() {
             "pty-req" => {
                 let env: String = payload.get();
@@ -224,10 +234,12 @@ impl<'a> Channel<'a> {
 
     pub fn shell(&mut self) -> Result<()> {
         let env: String = "".to_string();
-        let terminal_width_characters: u32 = 0;
-        let terminal_height_rows: u32 = 0;
-        let terminal_width_pixels: u32 = 0;
-        let terminal_height_pixels: u32 = 0;
+        let (columns, rows) = termion::terminal_size()?;
+        let (width, height) = termion::terminal_size_pixels()?;
+        let terminal_width_characters: u32 = columns as u32;
+        let terminal_height_rows: u32 = rows as u32;
+        let terminal_width_pixels: u32 = width as u32;
+        let terminal_height_pixels: u32 = height as u32;
         let encoded_terminal_modes: ByteString = ByteString(vec![
             128, // TTY_OP_ISPEED
             0, 1, 0xc2, 0,   // 115200
@@ -254,10 +266,26 @@ impl<'a> Channel<'a> {
             .put(&"shell".to_string())
             .put(&true);
         self.send(&data)?;
-        self.channel()?;
-        self.channel()?;
-        self.channel()?;
-        self.channel()?;
+
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+
         Ok(())
     }
 
@@ -270,26 +298,63 @@ impl<'a> Channel<'a> {
             .put(&true)
             .put(&command);
         self.send(&data)?;
-        self.channel()?;
-        self.channel()?;
-        self.channel()?;
-        self.channel()?;
-        self.channel()?;
-        self.channel()?;
+
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_CHANNEL_WINDOW_ADJUST => self.furiwake(code, &mut payload)?,
+            _ => unimplemented!(),
+        }
+
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_CHANNEL_SUCCESS => self.furiwake(code, &mut payload)?,
+            _ => unimplemented!(),
+        }
+
+        loop {
+            let (code, mut payload) = self.recv()?;
+            match code {
+                message_code::SSH_MSG_CHANNEL_DATA => self.furiwake(code, &mut payload)?,
+                message_code::SSH_MSG_CHANNEL_EOF => break,
+                _ => unimplemented!(),
+            }
+        }
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_CHANNEL_REQUEST => self.furiwake(code, &mut payload)?,
+            _ => unimplemented!(),
+        }
+        let (code, mut payload) = self.recv()?;
+        match code {
+            message_code::SSH_MSG_CHANNEL_REQUEST => self.furiwake(code, &mut payload)?,
+            _ => unimplemented!(),
+        }
+        self.client_channel += 1;
+        self.send_channel_open()?;
+
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+        let (code, mut payload) = self.recv()?;
+        self.furiwake(code, &mut payload)?;
+
         Ok(())
     }
+
     // fn message_request_success(&mut self, payload: &mut Data) {
     //     pub const FILE_CHUNK: usize = 30000;
     //     let port: u32 = payload.get();
-    //     data.put_u8(ssh_msg_code::SSH_MSG_CHANNEL_REQUEST)
-    //         .put_u32(self.server_channel_no)
-    //         .put_str(ssh_str::PTY_REQ)
-    //         .put_u8(false as u8)
-    //         .put_str(ssh_str::XTERM_VAR)
-    //         .put_u32(tvs.0)
-    //         .put_u32(tvs.1)
-    //         .put_u32(tvs.2)
-    //         .put_u32(tvs.3);
+    //     let data = Data::new()
+    //         .put(message_code::SSH_MSG_CHANNEL_REQUEST)
+    //         .put(self.server_channel_no)
+    //         .put(ssh_str::PTY_REQ)
+    //         .put(false as u8)
+    //         .put(ssh_str::XTERM_VAR)
+    //         .put(tvs.0)
+    //         .put(tvs.1)
+    //         .put(tvs.2)
+    //         .put(tvs.3);
     //     let model = [
     //         128, // TTY_OP_ISPEED
     //         0, 1, 0xc2, 0,   // 115200

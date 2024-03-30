@@ -1,8 +1,8 @@
-use super::Compress;
+use super::CompressAdapter;
 use anyhow::Result;
 
 pub struct NoneCompress {}
-impl Compress for NoneCompress {
+impl CompressAdapter for NoneCompress {
     fn compress(&self, msg: Vec<u8>) -> Result<Vec<u8>> {
         Ok(msg)
     }

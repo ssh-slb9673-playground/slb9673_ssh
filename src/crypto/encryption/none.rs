@@ -1,10 +1,10 @@
-use super::Encryption;
+use super::EncryptionAdapter;
 use crate::protocol::data::Data;
 use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct NoneEncryption {}
-impl Encryption for NoneEncryption {
+impl EncryptionAdapter for NoneEncryption {
     // fn iv_size(&self) -> u32 {
     //     8
     // }
