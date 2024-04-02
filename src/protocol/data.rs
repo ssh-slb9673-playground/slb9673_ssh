@@ -32,8 +32,7 @@ impl Data {
     where
         T: DataType + std::cmp::PartialEq + std::fmt::Debug,
     {
-        let result: T = self.get();
-        assert_eq!(result, value);
+        assert_eq!(self.get::<T>(), value);
     }
 
     pub fn get_bytes(&mut self, len: usize) -> Vec<u8> {

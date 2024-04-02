@@ -207,7 +207,7 @@ impl SshClient {
     }
 
     pub fn recv(&mut self) -> Result<Data> {
-        let is_buffer_left = self.buffer.len() != 0;
+        let is_buffer_left = !self.buffer.is_empty();
 
         let mut packet = if is_buffer_left {
             self.buffer.clone()
