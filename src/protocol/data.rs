@@ -22,7 +22,10 @@ impl Data {
     where
         T: DataType,
     {
-        let (input, data) = T::decode(&self.0).unwrap();
+        let (input, data) = match T::decode(&self.0) {
+            Ok(t) => t,
+            Err(e) => panic!("Error decoding {}", e),
+        };
         let size = (self.0.as_ptr() as usize) - (input.as_ptr() as usize);
         self.0.drain(..size);
         data

@@ -1,5 +1,5 @@
 use super::client::SshClient;
-use super::data::{ByteString, Data, Mpint};
+use super::data::{ByteString, Data, DataType, Mpint};
 use super::session::NewKeys;
 use super::ssh2::message_code;
 use crate::crypto::compression::none::NoneCompress;

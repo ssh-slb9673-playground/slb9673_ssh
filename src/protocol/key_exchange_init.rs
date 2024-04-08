@@ -24,7 +24,7 @@ impl SshClient {
     pub fn key_exchange_init(&mut self) -> Result<()> {
         // recv key algorithms
         let mut payload = self.recv()?;
-        let server_kex_algorithms = KexAlgorithms::unpack(&mut payload);
+        let server_kex_algorithms = KexAlgorithms::unpack(&mut payload)?;
         println!("server algorithms: {:?}", server_kex_algorithms);
 
         // send key algorithms
@@ -39,11 +39,10 @@ impl SshClient {
 }
 
 impl KexAlgorithms {
-    pub fn unpack(payload: &mut Data) -> Self {
-        let message_code: u8 = payload.get();
-        assert!(message_code == message_code::SSH_MSG_KEXINIT);
+    pub fn unpack(payload: &mut Data) -> anyhow::Result<Self> {
+        payload.expect(message_code::SSH_MSG_KEXINIT);
 
-        KexAlgorithms {
+        Ok(KexAlgorithms {
             cookie: payload.get(),
             kex_algorithms: payload.get(),
             server_host_key_algorithms: payload.get(),
@@ -57,7 +56,7 @@ impl KexAlgorithms {
             languages_server_to_client: payload.get(),
             first_kex_packet_follows: payload.get(),
             reserved: payload.get(),
-        }
+        })
     }
 
     pub fn pack(&self) -> Data {
@@ -104,7 +103,11 @@ none,zlib@openssh.com,zlib\
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
     //\x00\x00\x00\x00";
     let mut payload = Data(packet.to_vec());
-    let algo = KexAlgorithms::unpack(&mut payload);
+    let algo = match KexAlgorithms::unpack(&mut payload) {
+        Ok(v) => v,
+        Err(e) => panic!("{}", e),
+    };
+
     let gen_packet = algo.pack();
     assert!(packet[..] == gen_packet.into_inner()[..]);
 }

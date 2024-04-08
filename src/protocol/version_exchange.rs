@@ -1,10 +1,7 @@
 use super::client::SshClient;
 use super::data::{Data, DataType};
-use super::error::SshError;
 use anyhow::Result;
 use nom::bytes::complete::{tag, take_until};
-use nom::error::Error;
-use nom::AsBytes;
 
 // SSH_protoversion_softwareversion SP comments CR LF
 #[derive(Debug, Clone, PartialEq)]
@@ -15,24 +12,15 @@ pub struct Version {
 
 impl SshClient {
     pub fn version_exchange(&mut self) -> Result<()> {
-        let client_version = self.version.clone();
-        self.send_version(&client_version)?;
-        println!("client_version: {:?}", client_version);
+        let client_vesrion: Data = Data::new().put(&self.version);
+        self.send(&client_vesrion)?;
+        let server_version: Version = self.recv()?.get();
 
-        let server_version = self.recv_version()?;
-        self.session.set_version(&client_version, &server_version);
+        self.session.set_version(&self.version, &server_version);
+        println!("client_version: {:?}", self.version);
         println!("server_version: {:?}", server_version);
 
         Ok(())
-    }
-
-    pub fn send_version(&mut self, client_version: &Version) -> Result<()> {
-        let payload = Data::new().put(client_version);
-        self.send(&payload)
-    }
-
-    pub fn recv_version(&mut self) -> Result<Version> {
-        Version::unpack(&self.client.recv()?)
     }
 }
 
@@ -66,23 +54,10 @@ impl Version {
         self
     }
 
-    pub fn unpack(input: &[u8]) -> Result<Self> {
-        let (input, version) = take_until("\r\n")(input)
-            .map_err(|_: nom::Err<Error<&[u8]>>| SshError::RecvError("version".to_string()))?;
-        let (_input, _) = tag("\r\n")(input)
-            .map_err(|_: nom::Err<Error<&[u8]>>| SshError::RecvError("version".to_string()))?;
-        Ok(Version {
-            version: String::from_utf8(version.to_vec()).unwrap(),
-            crnl: true,
-        })
-    }
-
     pub fn pack(&self) -> Vec<u8> {
-        let mut payload = self.version.clone();
-        if self.crnl {
-            payload += "\r\n";
-        }
-        payload.into_bytes()
+        let mut buf = Vec::new();
+        self.encode(&mut buf);
+        buf
     }
 }
 
