@@ -8,10 +8,20 @@ use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
 use nom::{AsBytes, IResult};
 use rand::Rng;
-use std::net::SocketAddr;
+use std::{io::Read, io::Write, net::SocketAddr};
 
 const SSH_CLIENT_VERSION: &str = "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1";
 const SSH_CLIENT_SERVICE: &str = "ssh-connection";
+
+// enum SessionState<S>
+// where
+//     S: Read + Write,
+// {
+//     Init(Config, S),
+//     Version(Config, S),
+//     Auth(SshClient, S),
+//     Connected(SshClient, S),
+// }
 
 #[derive(Default, Debug, Clone)]
 pub struct Config {
@@ -92,16 +102,6 @@ pub struct SshClient {
     pub version: Version,
     pub kex: KexAlgorithms,
 }
-
-// enum SessionState<S>
-// where
-//     S: Read + Write,
-// {
-//     Init(Config, S),
-//     Version(Config, S),
-//     Auth(Client, S),
-//     Connected(Client, S),
-// }
 
 impl SshClient {
     pub fn connection_setup(&mut self) -> anyhow::Result<()> {
@@ -191,7 +191,8 @@ impl SshClient {
     pub fn send(&mut self, payload: &Data) -> anyhow::Result<()> {
         let packet = self.create_binary_packet(payload);
 
-        let mut data = Data::new().put(&packet);
+        let mut data = Data::new();
+        data.put(&packet);
 
         println!("client -> server");
         data.hexdump();
@@ -201,7 +202,7 @@ impl SshClient {
             .enc
             .encrypt(&mut data, self.session.client_sequence_number);
 
-        let data = data.put(&self.calc_mac(&packet).as_bytes());
+        data.put(&self.calc_mac(&packet).as_bytes());
 
         self.session.client_sequence_number += 1;
         self.client.send(&data.into_inner())

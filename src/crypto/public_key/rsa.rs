@@ -55,13 +55,15 @@ impl RsaSha256 {
     pub fn public_key_blob(&self) -> ByteString {
         let e = Mpint(self.public_key.e().to_bytes_be().to_vec());
         let n = Mpint(self.public_key.n().to_bytes_be().to_vec());
-        let pubkey_blob = Data::new().put(&"ssh-rsa".to_string()).put(&e).put(&n);
+        let mut pubkey_blob = Data::new();
+        pubkey_blob.put(&"ssh-rsa".to_string()).put(&e).put(&n);
         ByteString(pubkey_blob.into_inner())
     }
 
     pub fn signature_blob(&self, msg: Data) -> ByteString {
         let signature = self.sign(&msg.into_inner());
-        let signature_blob = Data::new()
+        let mut signature_blob = Data::new();
+        signature_blob
             .put(&"rsa-sha2-256".to_string())
             .put(&ByteString(signature));
         ByteString(signature_blob.into_inner())

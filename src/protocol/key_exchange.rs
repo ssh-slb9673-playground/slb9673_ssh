@@ -33,40 +33,40 @@ impl SshClient {
         let shared_secret = Mpint(method.shared_secret(&server_public_key.0));
         let exchange_hash = Kex::exchange_hash::<Method>(
             &method,
-            &ByteString(
-                Data::new()
-                    .put(
-                        self.session
-                            .client_version
-                            .as_mut()
-                            .unwrap()
-                            .set_crnl(false),
-                    )
-                    .into_inner(),
-            ),
-            &ByteString(
-                Data::new()
-                    .put(
-                        self.session
-                            .server_version
-                            .as_mut()
-                            .unwrap()
-                            .set_crnl(false),
-                    )
-                    .into_inner(),
-            ),
-            &ByteString(
-                Data::new()
-                    .put(&message_code::SSH_MSG_KEXINIT)
-                    .put(self.session.client_kex.as_ref().unwrap())
-                    .into_inner(),
-            ),
-            &ByteString(
-                Data::new()
-                    .put(&message_code::SSH_MSG_KEXINIT)
-                    .put(self.session.server_kex.as_ref().unwrap())
-                    .into_inner(),
-            ),
+            &ByteString({
+                let mut data = Data::new();
+                data.put(
+                    self.session
+                        .client_version
+                        .as_mut()
+                        .unwrap()
+                        .set_crnl(false),
+                );
+                data.into_inner()
+            }),
+            &ByteString({
+                let mut data = Data::new();
+                data.put(
+                    self.session
+                        .server_version
+                        .as_mut()
+                        .unwrap()
+                        .set_crnl(false),
+                );
+                data.into_inner()
+            }),
+            &ByteString({
+                let mut data = Data::new();
+                data.put(&message_code::SSH_MSG_KEXINIT)
+                    .put(self.session.client_kex.as_ref().unwrap());
+                data.into_inner()
+            }),
+            &ByteString({
+                let mut data = Data::new();
+                data.put(&message_code::SSH_MSG_KEXINIT)
+                    .put(self.session.server_kex.as_ref().unwrap());
+                data.into_inner()
+            }),
             &server_public_host_key,
             &client_public_key,
             &server_public_key,
@@ -101,10 +101,12 @@ impl SshClient {
     }
 
     fn send_pubkey(&mut self, pubkey: &ByteString) -> anyhow::Result<()> {
-        let payload = Data::new()
-            .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
-            .put(pubkey);
-        self.send(&payload)
+        let mut payload = Data::new();
+        self.send(
+            payload
+                .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
+                .put(pubkey),
+        )
     }
 
     fn verify_signature_and_new_keys(&mut self) -> anyhow::Result<(ByteString, ByteString)> {
@@ -116,12 +118,14 @@ impl SshClient {
     }
 
     fn new_keys(&mut self) -> anyhow::Result<()> {
-        let payload = Data::new().put(&message_code::SSH_MSG_NEWKEYS);
-        self.send(&payload)
+        let mut payload = Data::new();
+        self.send(payload.put(&message_code::SSH_MSG_NEWKEYS))
     }
 
     fn new_keys_() -> Data {
-        Data::new().put(&message_code::SSH_MSG_NEWKEYS)
+        let mut payload = Data::new();
+        payload.put(&message_code::SSH_MSG_NEWKEYS);
+        payload
     }
 
     fn recv_new_keys(&mut self) -> anyhow::Result<()> {
@@ -150,20 +154,21 @@ impl Kex {
     ) -> Self {
         let mut keys = Vec::new();
         for alphabet in ['A', 'B', 'C', 'D', 'E', 'F'] {
-            let seed = Data::new()
-                .put(shared_secret_key)
+            let mut seed = Data::new();
+            seed.put(shared_secret_key)
                 .put(&exchange_hash.as_bytes())
                 .put(&(alphabet as u8))
                 .put(&exchange_hash.as_bytes());
 
-            let key = Data::new().put(&method.hash(&seed.into_inner()).as_bytes());
+            let mut key = Data::new();
+            key.put(&method.hash(&seed.into_inner()).as_bytes());
 
-            let seed = Data::new()
-                .put(shared_secret_key)
+            let mut seed = Data::new();
+            seed.put(shared_secret_key)
                 .put(&exchange_hash.as_bytes())
                 .put(&key);
 
-            let key = key.put(&method.hash(&seed.into_inner()).as_bytes());
+            key.put(&method.hash(&seed.into_inner()).as_bytes());
 
             keys.push(key.into_inner());
         }
@@ -200,8 +205,8 @@ impl Kex {
         server_public_key: &ByteString,
         shared_secret_key: &Mpint,
     ) -> Vec<u8> {
-        let data = Data::new()
-            .put(client_version)
+        let mut data = Data::new();
+        data.put(client_version)
             .put(server_version)
             .put(client_kex)
             .put(server_kex)

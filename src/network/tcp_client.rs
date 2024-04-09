@@ -5,7 +5,6 @@ use std::net::{SocketAddr, TcpStream};
 use std::time::Duration;
 
 pub struct TcpClient {
-    pub address: SocketAddr,
     pub client: TcpStream,
 }
 
@@ -16,7 +15,7 @@ impl TcpClient {
         client
             .set_read_timeout(Some(Duration::new(3, 0)))
             .expect("set_read_timeout call failed");
-        Ok(TcpClient { address, client })
+        Ok(TcpClient { client })
     }
 
     pub fn send(&self, response: &[u8]) -> anyhow::Result<()> {

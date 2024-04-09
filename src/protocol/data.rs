@@ -5,12 +5,13 @@ use nom::{AsBytes, IResult};
 
 #[derive(Debug, Clone)]
 pub struct Data(pub Vec<u8>);
+
 impl Data {
     pub fn new() -> Data {
         Data(Vec::new())
     }
 
-    pub fn put<T>(mut self, v: &T) -> Self
+    pub fn put<T>(&mut self, v: &T) -> &mut Self
     where
         T: DataType,
     {

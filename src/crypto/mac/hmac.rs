@@ -15,7 +15,7 @@ impl MACAdapter for HmacSha1 {
     }
     fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
-        mac.update(&msg);
+        mac.update(msg);
         mac.finalize().into_bytes().to_vec()
     }
 }
@@ -32,7 +32,7 @@ impl MACAdapter for HmacSha1_96 {
     }
     fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha1>::new_from_slice(&self.key).unwrap();
-        mac.update(&msg);
+        mac.update(msg);
         mac.finalize().into_bytes().to_vec()
     }
 }
@@ -49,7 +49,7 @@ impl MACAdapter for HmacSha2_256 {
     }
     fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha256>::new_from_slice(&self.key).unwrap();
-        mac.update(&msg);
+        mac.update(msg);
         mac.finalize().into_bytes().to_vec()
     }
 }
@@ -66,7 +66,7 @@ impl MACAdapter for HmacSha2_512 {
     }
     fn sign(&self, msg: &[u8]) -> Vec<u8> {
         let mut mac = Hmac::<Sha512>::new_from_slice(&self.key).unwrap();
-        mac.update(&msg);
+        mac.update(msg);
         mac.finalize().into_bytes().to_vec()
     }
 }

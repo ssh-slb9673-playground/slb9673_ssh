@@ -124,7 +124,8 @@ none,zlib@openssh.com,zlib\
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec());
     payload.expect(message_code::SSH_MSG_KEXINIT);
     let kex_algorithms: KexAlgorithms = payload.get();
-    let gen_packet = Data::new()
+    let mut gen_packet = Data::new();
+    gen_packet
         .put(&message_code::SSH_MSG_KEXINIT)
         .put(&kex_algorithms);
     assert!(payload.into_inner() == gen_packet.into_inner());

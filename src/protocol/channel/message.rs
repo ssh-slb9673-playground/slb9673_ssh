@@ -188,7 +188,7 @@ impl<'a> Channel<'a> {
                 println!("subsystem: {}", subsystem_name);
             }
             "window-change" => {
-                assert!(want_reply == false);
+                assert!(!want_reply);
                 let terminal_width_columns: u32 = payload.get();
                 let terminal_height_rows: u32 = payload.get();
                 let terminal_width_pixels: u32 = payload.get();
@@ -202,12 +202,12 @@ impl<'a> Channel<'a> {
                 );
             }
             "xon-xoff" => {
-                assert!(want_reply == false);
+                assert!(!want_reply);
                 let client_can_do: bool = payload.get();
                 println!("{}", client_can_do);
             }
             "signal" => {
-                assert!(want_reply == false);
+                assert!(!want_reply);
                 let signal_name: String = payload.get();
                 println!("signal: {}", signal_name);
             }
@@ -217,7 +217,7 @@ impl<'a> Channel<'a> {
                 println!("exit: {}", exit_status);
             }
             "exit-signal" => {
-                assert!(want_reply == false);
+                assert!(!want_reply);
                 let signal_name: String = payload.get();
                 let core_dumped: bool = payload.get();
                 let error_message: String = payload.get();
@@ -246,8 +246,8 @@ impl<'a> Channel<'a> {
             0, 1, 0xc2, 0,    // 115200 again
             0_u8, // TTY_OP_END
         ]);
-        let data = Data::new()
-            .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+        let mut data = Data::new();
+        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
             .put(&self.server_channel)
             .put(&"pty-req".to_string())
             .put(&false)
@@ -259,8 +259,8 @@ impl<'a> Channel<'a> {
             .put(&encoded_terminal_modes);
         self.send(&data)?;
 
-        let data = Data::new()
-            .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+        let mut data = Data::new();
+        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
             .put(&self.server_channel)
             .put(&"shell".to_string())
             .put(&true);
@@ -290,8 +290,8 @@ impl<'a> Channel<'a> {
 
     pub fn exec(&mut self, command: String) -> anyhow::Result<()> {
         println!("exec: {}", command);
-        let data = Data::new()
-            .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+        let mut data = Data::new();
+        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
             .put(&self.server_channel)
             .put(&"exec".to_string())
             .put(&true)

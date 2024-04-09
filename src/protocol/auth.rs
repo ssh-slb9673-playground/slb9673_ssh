@@ -64,7 +64,8 @@ impl SshClient {
     }
 
     fn service_request(&mut self) -> anyhow::Result<()> {
-        let payload = Data::new()
+        let mut payload = Data::new();
+        payload
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
             .put(&ByteString::from_str("ssh-userauth"));
         self.send(&payload)
@@ -89,12 +90,13 @@ impl SshClient {
             publickey_blob: rsa.public_key_blob(),
         };
 
-        let data = Data::new()
-            .put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
+        let mut data = Data::new();
+        data.put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&publickey_method);
 
-        let payload = Data::new()
+        let mut payload = Data::new();
+        payload
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
             .put(&publickey_method)
             .put(&rsa.signature_blob(data));

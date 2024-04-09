@@ -13,8 +13,8 @@ impl ChaCha20Poly1305 {
     pub fn new(ck: &[u8], sk: &[u8]) -> Self {
         let mut sealing_key = [0_u8; BSIZE];
         let mut opening_key = [0_u8; BSIZE];
-        sealing_key.copy_from_slice(&ck);
-        opening_key.copy_from_slice(&sk);
+        sealing_key.copy_from_slice(ck);
+        opening_key.copy_from_slice(sk);
 
         ChaCha20Poly1305 {
             client_key: SealingKey::new(&sealing_key),
@@ -52,7 +52,7 @@ impl EncryptionAdapter for ChaCha20Poly1305 {
         let packet_len = u32::from_be_bytes(packet_len_slice);
 
         let (packet, buf) = buf.split_at_mut((packet_len + 4) as usize);
-        let (tag, buf) = buf.split_at_mut(16 as usize);
+        let (tag, buf) = buf.split_at_mut(16_usize);
         let tag: [u8; 16] = tag.try_into().unwrap();
         match self.server_key.open_in_place(sequence_number, packet, &tag) {
             Ok(result) => Ok((

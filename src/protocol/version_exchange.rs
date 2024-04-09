@@ -18,8 +18,8 @@ impl Version {
 
 impl SshClient {
     pub fn version_exchange(&mut self) -> anyhow::Result<()> {
-        let client_vesrion: Data = Data::new().put(&self.version);
-        self.send(&client_vesrion)?;
+        let mut client_version: Data = Data::new();
+        self.send(client_version.put(&self.version))?;
         let server_version: Version = self.recv()?.get();
 
         self.session.set_version(&self.version, &server_version);
