@@ -4,7 +4,6 @@ pub mod chachapoly;
 pub mod none;
 
 use crate::protocol::data::Data;
-use anyhow::Result;
 use strum_macros::{AsRefStr, EnumString};
 
 // 3des-cbc         REQUIRED          three-key 3DES in CBC mode
@@ -24,7 +23,7 @@ pub trait EncryptionAdapter {
         &mut self,
         buffer: &'a mut [u8],
         sequence_number: u32,
-    ) -> Result<(&'a mut [u8], Vec<u8>, usize)>;
+    ) -> anyhow::Result<(&'a mut [u8], Vec<u8>, usize)>;
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, AsRefStr, EnumString)]

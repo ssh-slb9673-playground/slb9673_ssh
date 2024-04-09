@@ -1,7 +1,6 @@
 use super::client::SshClient;
-use super::data::{Data, NameList};
+use super::data::{Data, DataType, NameList};
 use super::ssh2::message_code;
-use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct KexAlgorithms {
@@ -21,60 +20,82 @@ pub struct KexAlgorithms {
 }
 
 impl SshClient {
-    pub fn key_exchange_init(&mut self) -> Result<()> {
+    pub fn key_exchange_init(&mut self) -> anyhow::Result<()> {
         // recv key algorithms
         let mut payload = self.recv()?;
-        let server_kex_algorithms = KexAlgorithms::unpack(&mut payload)?;
-        println!("server algorithms: {:?}", server_kex_algorithms);
+        payload.expect(message_code::SSH_MSG_KEXINIT);
+        let server_kex_algorithms = payload.get();
 
         // send key algorithms
-        let client_kex_algorithms = self.kex.clone();
-        self.send(&client_kex_algorithms.pack())?;
-        println!("client algorithms: {:?}", client_kex_algorithms);
+        self.send(
+            &Data::new()
+                .put(&message_code::SSH_MSG_KEXINIT)
+                .put(&self.kex),
+        )?;
 
         self.session
-            .set_kex_algorithms(&client_kex_algorithms, &server_kex_algorithms);
+            .set_kex_algorithms(&self.kex, &server_kex_algorithms);
+
+        println!("server algorithms: {:?}", server_kex_algorithms);
+        println!("client algorithms: {:?}", self.kex);
+
         Ok(())
     }
 }
 
-impl KexAlgorithms {
-    pub fn unpack(payload: &mut Data) -> anyhow::Result<Self> {
-        payload.expect(message_code::SSH_MSG_KEXINIT);
+impl DataType for KexAlgorithms {
+    fn decode(input: &[u8]) -> nom::IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        let (input, cookie) = <[u8; 16]>::decode(input)?;
+        let (input, kex_algorithms) = <NameList>::decode(input)?;
+        let (input, server_host_key_algorithms) = <NameList>::decode(input)?;
+        let (input, encryption_algorithms_client_to_server) = <NameList>::decode(input)?;
+        let (input, encryption_algorithms_server_to_client) = <NameList>::decode(input)?;
+        let (input, mac_algorithms_client_to_server) = <NameList>::decode(input)?;
+        let (input, mac_algorithms_server_to_client) = <NameList>::decode(input)?;
+        let (input, compression_algorithms_client_to_server) = <NameList>::decode(input)?;
+        let (input, compression_algorithms_server_to_client) = <NameList>::decode(input)?;
+        let (input, languages_client_to_server) = <NameList>::decode(input)?;
+        let (input, languages_server_to_client) = <NameList>::decode(input)?;
+        let (input, first_kex_packet_follows) = <bool>::decode(input)?;
+        let (input, reserved) = <u32>::decode(input)?;
 
-        Ok(KexAlgorithms {
-            cookie: payload.get(),
-            kex_algorithms: payload.get(),
-            server_host_key_algorithms: payload.get(),
-            encryption_algorithms_client_to_server: payload.get(),
-            encryption_algorithms_server_to_client: payload.get(),
-            mac_algorithms_client_to_server: payload.get(),
-            mac_algorithms_server_to_client: payload.get(),
-            compression_algorithms_client_to_server: payload.get(),
-            compression_algorithms_server_to_client: payload.get(),
-            languages_client_to_server: payload.get(),
-            languages_server_to_client: payload.get(),
-            first_kex_packet_follows: payload.get(),
-            reserved: payload.get(),
-        })
+        Ok((
+            input,
+            KexAlgorithms {
+                cookie,
+                kex_algorithms,
+                server_host_key_algorithms,
+                encryption_algorithms_client_to_server,
+                encryption_algorithms_server_to_client,
+                mac_algorithms_client_to_server,
+                mac_algorithms_server_to_client,
+                compression_algorithms_client_to_server,
+                compression_algorithms_server_to_client,
+                languages_client_to_server,
+                languages_server_to_client,
+                first_kex_packet_follows,
+                reserved,
+            },
+        ))
     }
 
-    pub fn pack(&self) -> Data {
-        Data::new()
-            .put(&message_code::SSH_MSG_KEXINIT)
-            .put(&self.cookie)
-            .put(&self.kex_algorithms)
-            .put(&self.server_host_key_algorithms)
-            .put(&self.encryption_algorithms_client_to_server)
-            .put(&self.encryption_algorithms_server_to_client)
-            .put(&self.mac_algorithms_client_to_server)
-            .put(&self.mac_algorithms_server_to_client)
-            .put(&self.compression_algorithms_client_to_server)
-            .put(&self.compression_algorithms_server_to_client)
-            .put(&self.languages_client_to_server)
-            .put(&self.languages_server_to_client)
-            .put(&self.languages_server_to_client)
-            .put(&self.first_kex_packet_follows)
+    fn encode(&self, buf: &mut Vec<u8>) {
+        self.cookie.encode(buf);
+        self.kex_algorithms.encode(buf);
+        self.server_host_key_algorithms.encode(buf);
+        self.encryption_algorithms_client_to_server.encode(buf);
+        self.encryption_algorithms_server_to_client.encode(buf);
+        self.mac_algorithms_client_to_server.encode(buf);
+        self.mac_algorithms_server_to_client.encode(buf);
+        self.compression_algorithms_client_to_server.encode(buf);
+        self.compression_algorithms_server_to_client.encode(buf);
+        self.languages_client_to_server.encode(buf);
+        self.languages_server_to_client.encode(buf);
+        self.first_kex_packet_follows.encode(buf);
+        self.reserved.encode(buf);
     }
 }
 
@@ -83,7 +104,7 @@ impl KexAlgorithms {
 #[test]
 fn parse_test_key_exchange_init_packet() {
     // \x00\x00\x05\xdc\x04\x14
-    let packet = b"\x14\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75\x6b\xd9\x62\xe5\xdc\xb2\
+    let mut payload = Data(b"\x14\x11\x58\xa5\x0f\xa6\x66\x70\x27\x00\x75\x6b\xd9\x62\xe5\xdc\xb2\
 \x00\x00\x01\x14\
 curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,sntrup761x25519-sha512@openssh.com,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,ext-info-c\
 \x00\x00\x01\xcf\
@@ -100,14 +121,11 @@ umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,h
 none,zlib@openssh.com,zlib\
 \x00\x00\x00\x1a\
 none,zlib@openssh.com,zlib\
-\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
-    //\x00\x00\x00\x00";
-    let mut payload = Data(packet.to_vec());
-    let algo = match KexAlgorithms::unpack(&mut payload) {
-        Ok(v) => v,
-        Err(e) => panic!("{}", e),
-    };
-
-    let gen_packet = algo.pack();
-    assert!(packet[..] == gen_packet.into_inner()[..]);
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".to_vec());
+    payload.expect(message_code::SSH_MSG_KEXINIT);
+    let kex_algorithms: KexAlgorithms = payload.get();
+    let gen_packet = Data::new()
+        .put(&message_code::SSH_MSG_KEXINIT)
+        .put(&kex_algorithms);
+    assert!(payload.into_inner() == gen_packet.into_inner());
 }

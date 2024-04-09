@@ -1,4 +1,4 @@
-use super::client::SshClient;
+use super::{client::SshClient, data::DataType};
 use crate::{
     crypto::public_key::rsa::RsaSha256,
     protocol::{
@@ -6,10 +6,53 @@ use crate::{
         ssh2::message_code,
     },
 };
-use anyhow::Result;
+
+struct PublicKeyAuthenticationMethod {
+    username: String,
+    service_name: String,
+    method_name: String,
+    with_authentication: bool,
+    publickey_algorithm_name: String,
+    publickey_blob: ByteString,
+}
+
+impl DataType for PublicKeyAuthenticationMethod {
+    fn decode(input: &[u8]) -> nom::IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        let (input, username) = <String>::decode(input)?;
+        let (input, service_name) = <String>::decode(input)?;
+        let (input, method_name) = <String>::decode(input)?;
+        let (input, with_authentication) = <bool>::decode(input)?;
+        let (input, publickey_algorithm_name) = <String>::decode(input)?;
+        let (input, publickey_blob) = <ByteString>::decode(input)?;
+
+        Ok((
+            input,
+            PublicKeyAuthenticationMethod {
+                username,
+                service_name,
+                method_name,
+                with_authentication,
+                publickey_algorithm_name,
+                publickey_blob,
+            },
+        ))
+    }
+
+    fn encode(&self, buf: &mut Vec<u8>) {
+        self.username.encode(buf);
+        self.service_name.encode(buf);
+        self.method_name.encode(buf);
+        self.with_authentication.encode(buf);
+        self.publickey_algorithm_name.encode(buf);
+        self.publickey_blob.encode(buf);
+    }
+}
 
 impl SshClient {
-    pub fn user_auth(&mut self) -> Result<()> {
+    pub fn user_auth(&mut self) -> anyhow::Result<()> {
         self.service_request()?;
         let service_name: String = self.service_accept()?;
         println!("service accepted: {}", service_name);
@@ -20,48 +63,46 @@ impl SshClient {
         Ok(())
     }
 
-    fn service_request(&mut self) -> Result<()> {
+    fn service_request(&mut self) -> anyhow::Result<()> {
         let payload = Data::new()
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
             .put(&ByteString::from_str("ssh-userauth"));
         self.send(&payload)
     }
 
-    fn service_accept(&mut self) -> Result<String> {
+    fn service_accept(&mut self) -> anyhow::Result<String> {
         let mut payload = self.recv()?;
-        let message_code: u8 = payload.get();
-        assert!(message_code == message_code::SSH_MSG_SERVICE_ACCEPT);
+        payload.expect(message_code::SSH_MSG_SERVICE_ACCEPT);
         let service_name: String = payload.get();
         Ok(service_name)
     }
 
-    fn userauth_request(&mut self) -> Result<()> {
+    fn userauth_request(&mut self) -> anyhow::Result<()> {
         let rsa = RsaSha256::read_from_file()?;
+
+        let publickey_method = PublicKeyAuthenticationMethod {
+            username: self.config.username.clone(),
+            service_name: self.service_name.clone(),
+            method_name: "publickey".to_string(),
+            with_authentication: true,
+            publickey_algorithm_name: "rsa-sha2-256".to_string(),
+            publickey_blob: rsa.public_key_blob(),
+        };
 
         let data = Data::new()
             .put(&ByteString(self.session.get_keys().exchange_hash)) // session identifier
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
-            .put(&self.config.username)
-            .put(&self.service_name)
-            .put(&"publickey".to_string())
-            .put(&true)
-            .put(&"rsa-sha2-256".to_string())
-            .put(&rsa.public_key_blob());
+            .put(&publickey_method);
 
         let payload = Data::new()
             .put(&message_code::SSH_MSG_USERAUTH_REQUEST)
-            .put(&self.config.username)
-            .put(&self.service_name)
-            .put(&"publickey".to_string())
-            .put(&true)
-            .put(&"rsa-sha2-256".to_string())
-            .put(&rsa.public_key_blob())
+            .put(&publickey_method)
             .put(&rsa.signature_blob(data));
 
         self.send(&payload)
     }
 
-    pub fn userauth_accept(&mut self) -> Result<()> {
+    pub fn userauth_accept(&mut self) -> anyhow::Result<()> {
         let mut payload = self.recv()?;
         let message_code: u8 = payload.get();
         match message_code {
@@ -94,7 +135,7 @@ impl SshClient {
         Ok(())
     }
 
-    // fn user_request_recv(&mut self) -> Result<()> {
+    // fn user_request_recv(&mut self) -> anyhow::Result<()> {
     //     let mut payload = self.recv()?;
     //     let message_code: u8 = payload.get();
     //     match message_code {

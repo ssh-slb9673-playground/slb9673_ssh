@@ -1,4 +1,3 @@
-use anyhow::Result;
 use std::io::{BufReader, Error, ErrorKind, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 
@@ -8,20 +7,20 @@ pub struct TcpServer {
 }
 
 impl TcpServer {
-    pub fn new(address: SocketAddr) -> Result<Self> {
+    pub fn new(address: SocketAddr) -> anyhow::Result<Self> {
         let listener = TcpListener::bind(address)?;
         listener.set_nonblocking(false).expect("out of service");
         let (client, address) = listener.accept()?;
         Ok(TcpServer { address, client })
     }
 
-    pub fn send(&self, response: &[u8]) -> Result<()> {
+    pub fn send(&self, response: &[u8]) -> anyhow::Result<()> {
         let mut socket = self.client.try_clone()?;
-        socket.write_all(&response)?;
+        socket.write_all(response)?;
         Ok(())
     }
 
-    pub fn recv(&self) -> Result<Vec<u8>> {
+    pub fn recv(&self) -> anyhow::Result<Vec<u8>> {
         let socket = self.client.try_clone()?;
         let reader = BufReader::new(socket);
         let recv_data = reader.buffer();

@@ -1,12 +1,11 @@
 use super::client::SshClient;
-use super::data::{ByteString, Data, DataType, Mpint};
+use super::data::{ByteString, Data, Mpint};
 use super::session::NewKeys;
 use super::ssh2::message_code;
 use crate::crypto::compression::none::NoneCompress;
 use crate::crypto::encryption::chachapoly::ChaCha20Poly1305;
 use crate::crypto::key_exchange::KexMethodAdapter;
 use crate::crypto::mac::none::NoneMac;
-use anyhow::Result;
 use nom::AsBytes;
 
 #[derive(Debug, Clone)]
@@ -23,7 +22,7 @@ pub struct Kex {
 }
 
 impl SshClient {
-    pub fn key_exchange<Method: KexMethodAdapter>(&mut self) -> Result<()> {
+    pub fn key_exchange<Method: KexMethodAdapter>(&mut self) -> anyhow::Result<()> {
         let mut method = Method::new();
 
         let client_public_key = ByteString(method.public_key());
@@ -35,35 +34,37 @@ impl SshClient {
         let exchange_hash = Kex::exchange_hash::<Method>(
             &method,
             &ByteString(
-                self.session
-                    .client_version
-                    .as_mut()
-                    .unwrap()
-                    .set_crnl(false)
-                    .pack(),
-            ),
-            &ByteString(
-                self.session
-                    .server_version
-                    .as_mut()
-                    .unwrap()
-                    .set_crnl(false)
-                    .pack(),
-            ),
-            &ByteString(
-                self.session
-                    .client_kex
-                    .as_ref()
-                    .unwrap()
-                    .pack()
+                Data::new()
+                    .put(
+                        self.session
+                            .client_version
+                            .as_mut()
+                            .unwrap()
+                            .set_crnl(false),
+                    )
                     .into_inner(),
             ),
             &ByteString(
-                self.session
-                    .server_kex
-                    .as_ref()
-                    .unwrap()
-                    .pack()
+                Data::new()
+                    .put(
+                        self.session
+                            .server_version
+                            .as_mut()
+                            .unwrap()
+                            .set_crnl(false),
+                    )
+                    .into_inner(),
+            ),
+            &ByteString(
+                Data::new()
+                    .put(&message_code::SSH_MSG_KEXINIT)
+                    .put(self.session.client_kex.as_ref().unwrap())
+                    .into_inner(),
+            ),
+            &ByteString(
+                Data::new()
+                    .put(&message_code::SSH_MSG_KEXINIT)
+                    .put(self.session.server_kex.as_ref().unwrap())
                     .into_inner(),
             ),
             &server_public_host_key,
@@ -99,14 +100,14 @@ impl SshClient {
         Ok(())
     }
 
-    fn send_pubkey(&mut self, pubkey: &ByteString) -> Result<()> {
+    fn send_pubkey(&mut self, pubkey: &ByteString) -> anyhow::Result<()> {
         let payload = Data::new()
             .put(&message_code::SSH2_MSG_KEX_ECDH_INIT)
             .put(pubkey);
         self.send(&payload)
     }
 
-    fn verify_signature_and_new_keys(&mut self) -> Result<(ByteString, ByteString)> {
+    fn verify_signature_and_new_keys(&mut self) -> anyhow::Result<(ByteString, ByteString)> {
         let mut payload = self.recv()?;
         payload.expect(message_code::SSH2_MSG_KEX_ECDH_REPLY);
         let server_public_host_key: ByteString = payload.get();
@@ -114,7 +115,7 @@ impl SshClient {
         Ok((server_public_host_key, server_public_key))
     }
 
-    fn new_keys(&mut self) -> Result<()> {
+    fn new_keys(&mut self) -> anyhow::Result<()> {
         let payload = Data::new().put(&message_code::SSH_MSG_NEWKEYS);
         self.send(&payload)
     }
@@ -123,9 +124,8 @@ impl SshClient {
         Data::new().put(&message_code::SSH_MSG_NEWKEYS)
     }
 
-    fn recv_new_keys(&mut self) -> Result<()> {
-        let mut payload = self.recv()?;
-        payload.expect(message_code::SSH_MSG_NEWKEYS);
+    fn recv_new_keys(&mut self) -> anyhow::Result<()> {
+        self.recv()?.expect(message_code::SSH_MSG_NEWKEYS);
         Ok(())
     }
 }

@@ -1,10 +1,11 @@
-use super::data::DataType;
 use super::{
-    data::Data, key_exchange_init::KexAlgorithms, session::Session, version_exchange::Version,
+    data::{Data, DataType},
+    key_exchange_init::KexAlgorithms,
+    session::Session,
+    version_exchange::Version,
 };
 use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
-use anyhow::Result;
 use nom::{AsBytes, IResult};
 use rand::Rng;
 use std::net::SocketAddr;
@@ -44,7 +45,7 @@ impl SessionBuilder {
         self
     }
 
-    pub fn connect(&self, address: SocketAddr) -> Result<SshClient> {
+    pub fn connect(&self, address: SocketAddr) -> anyhow::Result<SshClient> {
         let mut client = SshClient {
             service_name: SSH_CLIENT_SERVICE.to_string(),
             client: TcpClient::new(address)?,
@@ -103,7 +104,7 @@ pub struct SshClient {
 // }
 
 impl SshClient {
-    pub fn connection_setup(&mut self) -> Result<()> {
+    pub fn connection_setup(&mut self) -> anyhow::Result<()> {
         self.version_exchange()?;
         self.key_exchange_init()?;
         self.key_exchange::<Curve25519Sha256>()?;
@@ -155,7 +156,7 @@ impl SshClient {
         }
     }
 
-    fn read_binary_packet_protocol(&mut self, data: &mut Data) -> Result<Data> {
+    fn read_binary_packet_protocol(&mut self, data: &mut Data) -> anyhow::Result<Data> {
         let packet_length: u32 = data.get();
         let padding_length: u8 = data.get();
         let payload_length = packet_length - padding_length as u32 - 1;
@@ -187,7 +188,7 @@ impl SshClient {
 }
 
 impl SshClient {
-    pub fn send(&mut self, payload: &Data) -> Result<()> {
+    pub fn send(&mut self, payload: &Data) -> anyhow::Result<()> {
         let packet = self.create_binary_packet(payload);
 
         let mut data = Data::new().put(&packet);
@@ -206,7 +207,7 @@ impl SshClient {
         self.client.send(&data.into_inner())
     }
 
-    pub fn recv(&mut self) -> Result<Data> {
+    pub fn recv(&mut self) -> anyhow::Result<Data> {
         let is_buffer_left = !self.buffer.is_empty();
 
         let mut packet = if is_buffer_left {

@@ -1,6 +1,5 @@
 use crate::protocol::data::{ByteString, Data, Mpint};
 use crate::protocol::error::SshError;
-use anyhow::Result;
 use rsa::pkcs1v15::SigningKey;
 use rsa::signature::Signer;
 use rsa::traits::PublicKeyParts;
@@ -15,7 +14,7 @@ pub struct RsaSha256 {
 }
 
 impl RsaSha256 {
-    pub fn read_from_file() -> Result<RsaSha256> {
+    pub fn read_from_file() -> anyhow::Result<RsaSha256> {
         let mut file =
             File::open("/home/anko/.ssh/id_rsa_ssh").map_err(|e| SshError::from(e.to_string()))?;
 

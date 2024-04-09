@@ -1,6 +1,5 @@
 use super::client::SshClient;
 use super::data::{Data, DataType};
-use anyhow::Result;
 use nom::bytes::complete::{tag, take_until};
 
 // SSH_protoversion_softwareversion SP comments CR LF
@@ -10,8 +9,15 @@ pub struct Version {
     pub crnl: bool,
 }
 
+impl Version {
+    pub fn set_crnl(&mut self, crnl: bool) -> &Self {
+        self.crnl = crnl;
+        self
+    }
+}
+
 impl SshClient {
-    pub fn version_exchange(&mut self) -> Result<()> {
+    pub fn version_exchange(&mut self) -> anyhow::Result<()> {
         let client_vesrion: Data = Data::new().put(&self.version);
         self.send(&client_vesrion)?;
         let server_version: Version = self.recv()?.get();
@@ -45,19 +51,6 @@ impl DataType for Version {
         if self.crnl {
             buf.extend("\r\n".as_bytes());
         }
-    }
-}
-
-impl Version {
-    pub fn set_crnl(&mut self, crnl: bool) -> &Self {
-        self.crnl = crnl;
-        self
-    }
-
-    pub fn pack(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        self.encode(&mut buf);
-        buf
     }
 }
 

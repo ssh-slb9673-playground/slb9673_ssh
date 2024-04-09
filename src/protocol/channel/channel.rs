@@ -1,5 +1,4 @@
 use crate::protocol::{client::SshClient, data::Data, ssh2::message_code};
-use anyhow::Result;
 
 pub struct Channel<'a> {
     client: &'a mut SshClient,
@@ -11,18 +10,18 @@ pub struct Channel<'a> {
 }
 
 impl<'a> Channel<'a> {
-    pub fn recv(&mut self) -> Result<(u8, Data)> {
+    pub fn recv(&mut self) -> anyhow::Result<(u8, Data)> {
         let mut payload = self.client.recv()?;
         let message_code: u8 = payload.get();
         println!("message code: {}", message_code);
         Ok((message_code, payload))
     }
 
-    pub fn send(&mut self, packet: &Data) -> Result<()> {
+    pub fn send(&mut self, packet: &Data) -> anyhow::Result<()> {
         self.client.send(packet)
     }
 
-    pub fn client_setup(&mut self) -> Result<()> {
+    pub fn client_setup(&mut self) -> anyhow::Result<()> {
         let (code, mut payload) = self.recv()?;
         match code {
             message_code::SSH_MSG_GLOBAL_REQUEST => self.global_request(&mut payload),
@@ -46,7 +45,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn furiwake(&mut self, message_code: u8, payload: &mut Data) -> Result<()> {
+    pub fn furiwake(&mut self, message_code: u8, payload: &mut Data) -> anyhow::Result<()> {
         match message_code {
             message_code::SSH_MSG_DEBUG => self.debug(payload),
             message_code::SSH_MSG_GLOBAL_REQUEST => self.global_request(payload),
@@ -106,7 +105,7 @@ impl<'a> Channel<'a> {
 }
 
 impl SshClient {
-    pub fn pack_channel<'a>(&'a mut self) -> Channel<'a> {
+    pub fn pack_channel(&mut self) -> Channel {
         const BUF_SIZE: u32 = 0x8000;
         const LOCAL_WINDOW_SIZE: u32 = 0x200000;
         Channel {

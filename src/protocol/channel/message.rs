@@ -1,7 +1,6 @@
 use crate::protocol::channel::channel::Channel;
 use crate::protocol::data::{ByteString, Data};
 use crate::protocol::ssh2::message_code;
-use anyhow::Result;
 
 impl<'a> Channel<'a> {
     pub fn debug(&mut self, payload: &mut Data) {
@@ -36,7 +35,7 @@ impl<'a> Channel<'a> {
         }
     }
 
-    pub fn channel_open_confirmation(&mut self, payload: &mut Data) -> Result<()> {
+    pub fn channel_open_confirmation(&mut self, payload: &mut Data) -> anyhow::Result<()> {
         let recipient_channel: u32 = payload.get();
         let sender_channel: u32 = payload.get();
         let initial_window_size: u32 = payload.get();
@@ -73,7 +72,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn send_channel_open(&mut self) -> Result<()> {
+    pub fn send_channel_open(&mut self) -> anyhow::Result<()> {
         self.send(
             &Data::new()
                 .put(&message_code::SSH_MSG_CHANNEL_OPEN)
@@ -84,7 +83,7 @@ impl<'a> Channel<'a> {
         )
     }
 
-    pub fn send_channel_success(&mut self) -> Result<()> {
+    pub fn send_channel_success(&mut self) -> anyhow::Result<()> {
         self.send(
             &Data::new()
                 .put(&message_code::SSH_MSG_CHANNEL_SUCCESS)
@@ -232,7 +231,7 @@ impl<'a> Channel<'a> {
         }
     }
 
-    pub fn shell(&mut self) -> Result<()> {
+    pub fn shell(&mut self) -> anyhow::Result<()> {
         let env: String = "".to_string();
         let (columns, rows) = termion::terminal_size()?;
         let (width, height) = termion::terminal_size_pixels()?;
@@ -289,7 +288,7 @@ impl<'a> Channel<'a> {
         Ok(())
     }
 
-    pub fn exec(&mut self, command: String) -> Result<()> {
+    pub fn exec(&mut self, command: String) -> anyhow::Result<()> {
         println!("exec: {}", command);
         let data = Data::new()
             .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
