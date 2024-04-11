@@ -16,7 +16,7 @@ impl CompressAdapter for Zlib {
     fn decompress(&self, msg: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         let mut decoder = ZlibDecoder::new(msg.as_slice());
         let mut result = vec![];
-        decoder.read(&mut result)?;
+        decoder.read_exact(&mut result)?;
         Ok(result)
     }
 }

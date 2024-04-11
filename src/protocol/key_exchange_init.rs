@@ -28,7 +28,7 @@ impl SshClient {
 
         // send key algorithms
         self.send(
-            &Data::new()
+            Data::new()
                 .put(&message_code::SSH_MSG_KEXINIT)
                 .put(&self.kex),
         )?;

@@ -74,7 +74,7 @@ impl<'a> Channel<'a> {
 
     pub fn send_channel_open(&mut self) -> anyhow::Result<()> {
         self.send(
-            &Data::new()
+            Data::new()
                 .put(&message_code::SSH_MSG_CHANNEL_OPEN)
                 .put(&self.channel_type)
                 .put(&self.client_channel)
@@ -85,7 +85,7 @@ impl<'a> Channel<'a> {
 
     pub fn send_channel_success(&mut self) -> anyhow::Result<()> {
         self.send(
-            &Data::new()
+            Data::new()
                 .put(&message_code::SSH_MSG_CHANNEL_SUCCESS)
                 .put(&self.client_channel),
         )
@@ -246,25 +246,27 @@ impl<'a> Channel<'a> {
             0, 1, 0xc2, 0,    // 115200 again
             0_u8, // TTY_OP_END
         ]);
-        let mut data = Data::new();
-        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
-            .put(&self.server_channel)
-            .put(&"pty-req".to_string())
-            .put(&false)
-            .put(&env)
-            .put(&terminal_width_characters)
-            .put(&terminal_height_rows)
-            .put(&terminal_width_pixels)
-            .put(&terminal_height_pixels)
-            .put(&encoded_terminal_modes);
-        self.send(&data)?;
+        self.send(
+            Data::new()
+                .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+                .put(&self.server_channel)
+                .put(&"pty-req".to_string())
+                .put(&false)
+                .put(&env)
+                .put(&terminal_width_characters)
+                .put(&terminal_height_rows)
+                .put(&terminal_width_pixels)
+                .put(&terminal_height_pixels)
+                .put(&encoded_terminal_modes),
+        )?;
 
-        let mut data = Data::new();
-        data.put(&message_code::SSH_MSG_CHANNEL_REQUEST)
-            .put(&self.server_channel)
-            .put(&"shell".to_string())
-            .put(&true);
-        self.send(&data)?;
+        self.send(
+            Data::new()
+                .put(&message_code::SSH_MSG_CHANNEL_REQUEST)
+                .put(&self.server_channel)
+                .put(&"shell".to_string())
+                .put(&true),
+        )?;
 
         let (code, mut payload) = self.recv()?;
         self.furiwake(code, &mut payload)?;

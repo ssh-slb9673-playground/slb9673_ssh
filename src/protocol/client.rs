@@ -8,7 +8,7 @@ use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
 use nom::{AsBytes, IResult};
 use rand::Rng;
-use std::{io::Read, io::Write, net::SocketAddr};
+use std::net::SocketAddr;
 
 const SSH_CLIENT_VERSION: &str = "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1";
 const SSH_CLIENT_SERVICE: &str = "ssh-connection";
@@ -209,15 +209,11 @@ impl SshClient {
     }
 
     pub fn recv(&mut self) -> anyhow::Result<Data> {
-        let is_buffer_left = !self.buffer.is_empty();
-
-        let mut packet = if is_buffer_left {
+        let mut packet = if !self.buffer.is_empty() {
             self.buffer.clone()
         } else {
             self.client.recv()?
         };
-
-        Data(packet.clone()).hexdump();
 
         let (next, packet, length) = self
             .session
@@ -225,14 +221,14 @@ impl SshClient {
             .enc
             .decrypt(&mut packet, self.session.server_sequence_number)?;
 
-        if is_buffer_left {
+        if !self.buffer.is_empty() {
             self.buffer.drain(..length);
         }
 
-        self.buffer.extend_from_slice(&next);
+        self.buffer.extend_from_slice(next);
 
-        let mut packet = Data(packet);
         println!("server -> client");
+        let mut packet = Data(packet);
         packet.hexdump();
 
         let payload = self.read_binary_packet_protocol(&mut packet)?;
