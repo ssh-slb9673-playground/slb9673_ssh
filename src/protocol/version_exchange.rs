@@ -1,5 +1,7 @@
+use crate::protocol::data::Data;
+
 use super::client::SshClient;
-use super::data::{Data, DataType};
+use super::data::DataType;
 use nom::bytes::complete::{tag, take_until};
 
 // SSH_protoversion_softwareversion SP comments CR LF
@@ -18,13 +20,17 @@ impl Version {
 
 impl SshClient {
     pub fn version_exchange(&mut self) -> anyhow::Result<()> {
-        let mut client_version: Data = Data::new();
-        self.send(client_version.put(&self.version))?;
-        let server_version: Version = self.recv()?.get();
+        let mut payload = Vec::new();
+        self.config.version.encode(&mut payload);
+        self.client.send(&payload)?;
 
-        self.session.set_version(&self.version, &server_version);
-        println!("client_version: {:?}", self.version);
+        let payload = self.client.recv()?;
+        let server_version: Version = Data(payload).get();
+
+        println!("client_version: {:?}", self.config.version);
         println!("server_version: {:?}", server_version);
+        self.session.client_version = Some(self.config.version.clone());
+        self.session.server_version = Some(server_version);
 
         Ok(())
     }

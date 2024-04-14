@@ -1,12 +1,12 @@
 use super::{
     data::{Data, DataType},
-    key_exchange_init::KexAlgorithms,
+    key_exchange_init::{AlgList, KexAlgorithms},
     session::Session,
     version_exchange::Version,
 };
 use crate::crypto::key_exchange::curve::Curve25519Sha256;
 use crate::{network::tcp_client::TcpClient, protocol::error::SshError};
-use nom::{AsBytes, IResult};
+use nom::{bytes::complete::take, AsBytes, IResult};
 use rand::Rng;
 use std::net::SocketAddr;
 
@@ -22,22 +22,75 @@ const SSH_CLIENT_SERVICE: &str = "ssh-connection";
 //     Auth(SshClient, S),
 //     Connected(SshClient, S),
 // }
+// fn connect(self) -> SshResult<Self> {
+//     match self.inner {
+//         SessionState::Init(config, stream) => SessionState::Version(config, stream).connect(),
+//         SessionState::Version(mut config, mut stream) => {
+//             info!("start for version negotiation.");
+//             // Send Client version
+//             config.ver.send_our_version(&mut stream)?;
 
-#[derive(Default, Debug, Clone)]
+//             // Receive the server version
+//             config
+//                 .ver
+//                 .read_server_version(&mut stream, config.timeout)?;
+//             // Version validate
+//             config.ver.validate()?;
+
+//             // from now on
+//             // each step of the interaction is subject to the ssh constraints on the packet
+//             // so we create a client to hide the underlay details
+//             let client = Client::new(config);
+
+//             Self {
+//                 inner: SessionState::Auth(client, stream),
+//             }
+//             .connect()
+//         }
+//         SessionState::Auth(mut client, mut stream) => {
+//             // before auth,
+//             // we should have a key exchange at first
+//             let mut digest = Digest::new();
+//             let server_algs = SecPacket::from_stream(&mut stream, &mut client)?;
+//             digest.hash_ctx.set_i_s(server_algs.get_inner());
+//             let server_algs = AlgList::unpack(server_algs)?;
+//             client.key_agreement(&mut stream, server_algs, &mut digest)?;
+//             client.do_auth(&mut stream, &digest)?;
+//             Ok(Self {
+//                 inner: SessionState::Connected(client, stream),
+//             })
+//         }
+//         _ => unreachable!(),
+//     }
+// }
+
+#[derive(Debug, Clone)]
 pub struct Config {
     pub username: String,
     pub password: String,
     pub private_key_path: String,
+    pub service_name: String,
+    pub version: Version,
 }
 
-#[derive(Default)]
 pub struct SessionBuilder {
     config: Config,
 }
 
 impl SessionBuilder {
     pub fn create_session() -> Self {
-        Self::default()
+        SessionBuilder {
+            config: Config {
+                username: String::from(""),
+                password: String::from(""),
+                private_key_path: String::from(""),
+                service_name: SSH_CLIENT_SERVICE.to_string(),
+                version: Version {
+                    version: SSH_CLIENT_VERSION.to_string(),
+                    crnl: true,
+                },
+            },
+        }
     }
 
     pub fn username(mut self, username: &str) -> Self {
@@ -57,30 +110,21 @@ impl SessionBuilder {
 
     pub fn connect(&self, address: SocketAddr) -> anyhow::Result<SshClient> {
         let mut client = SshClient {
-            service_name: SSH_CLIENT_SERVICE.to_string(),
             client: TcpClient::new(address)?,
             session: Session::init_state(),
             config: self.config.clone(),
-            version: Version {
-                version: SSH_CLIENT_VERSION.to_string(),
-                crnl: true,
-            },
-            kex: KexAlgorithms {
+            key_exchange: KexAlgorithms {
                 cookie: rand::thread_rng().gen::<[u8; 16]>(),
-                kex_algorithms: vec!["curve25519-sha256".to_string()],
-                server_host_key_algorithms: vec!["rsa-sha2-256".to_string()],
-                encryption_algorithms_client_to_server: vec![
-                    "chacha20-poly1305@openssh.com".to_string()
-                ],
-                encryption_algorithms_server_to_client: vec![
-                    "chacha20-poly1305@openssh.com".to_string()
-                ],
-                mac_algorithms_client_to_server: vec!["hmac-sha2-256".to_string()],
-                mac_algorithms_server_to_client: vec!["hmac-sha2-256".to_string()],
-                compression_algorithms_client_to_server: vec!["none".to_string()],
-                compression_algorithms_server_to_client: vec!["none".to_string()],
-                languages_client_to_server: vec![],
-                languages_server_to_client: vec![],
+                key_exchange: vec!["curve25519-sha256".to_string()],
+                server_host_key: vec!["rsa-sha2-256".to_string()],
+                client_encryption: vec!["chacha20-poly1305@openssh.com".to_string()],
+                server_encryption: vec!["chacha20-poly1305@openssh.com".to_string()],
+                client_mac: vec!["hmac-sha2-256".to_string()],
+                server_mac: vec!["hmac-sha2-256".to_string()],
+                client_compression: vec!["none".to_string()],
+                server_compression: vec!["none".to_string()],
+                client_languages: vec![],
+                server_languages: vec![],
                 first_kex_packet_follows: false,
                 reserved: 0,
             },
@@ -98,9 +142,8 @@ pub struct SshClient {
     pub session: Session,
     pub config: Config,
     pub buffer: Vec<u8>,
-    pub service_name: String,
-    pub version: Version,
-    pub kex: KexAlgorithms,
+    pub key_exchange: KexAlgorithms,
+    // pub state: SessionState,
 }
 
 impl SshClient {
@@ -122,7 +165,6 @@ struct BinaryPacketProtocol {
     packet_length: u32,
     padding_length: u8,
     payload: Vec<u8>,
-    _padding: Vec<u8>,
 }
 
 impl DataType for BinaryPacketProtocol {
@@ -133,11 +175,24 @@ impl DataType for BinaryPacketProtocol {
         vec![0; self.padding_length as usize].as_bytes().encode(buf);
     }
 
-    fn decode(_input: &[u8]) -> IResult<&[u8], Self>
+    fn decode(input: &[u8]) -> IResult<&[u8], Self>
     where
         Self: Sized,
     {
-        todo!()
+        let (input, packet_length) = <u32>::decode(input)?;
+        let (input, padding_length) = <u8>::decode(input)?;
+        let payload_length = packet_length - padding_length as u32 - 1;
+        let (input, payload) = take(payload_length)(input)?;
+        let (input, _padding) = take(padding_length as usize)(input)?;
+
+        Ok((
+            input,
+            BinaryPacketProtocol {
+                packet_length,
+                padding_length,
+                payload: payload.to_vec(),
+            },
+        ))
     }
 }
 
@@ -152,24 +207,14 @@ impl SshClient {
             packet_length,
             padding_length,
             payload,
-            _padding: vec![0; padding_length as usize],
         }
     }
 
-    fn read_binary_packet_protocol(&mut self, data: &mut Data) -> anyhow::Result<Data> {
-        let packet_length: u32 = data.get();
-        let padding_length: u8 = data.get();
-        let payload_length = packet_length - padding_length as u32 - 1;
-
-        let packet = BinaryPacketProtocol {
-            packet_length,
-            padding_length,
-            payload: data.get_bytes(payload_length as usize),
-            _padding: data.get_bytes(padding_length as usize),
-        };
+    fn read_binary_packet_protocol(&mut self, payload: &mut Data) -> anyhow::Result<Data> {
+        let packet: BinaryPacketProtocol = payload.get();
 
         let mac_length = self.session.server_method.mac.size();
-        let mac: Vec<u8> = data.get_bytes(mac_length);
+        let mac: Vec<u8> = payload.get_bytes(mac_length);
 
         if mac != self.calc_mac(&packet) {
             return Err(SshError::RecvError("Don't match mac".to_string()).into());

@@ -1,22 +1,51 @@
 use super::client::SshClient;
 use super::data::{Data, DataType, NameList};
 use super::ssh2::message_code;
+use crate::crypto::{Compress, Enc, Kex, Mac, PubKey};
+use rand::Rng;
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub struct KexAlgorithms {
     pub cookie: [u8; 16],
-    pub kex_algorithms: NameList,
-    pub server_host_key_algorithms: NameList,
-    pub encryption_algorithms_client_to_server: NameList,
-    pub encryption_algorithms_server_to_client: NameList,
-    pub mac_algorithms_client_to_server: NameList,
-    pub mac_algorithms_server_to_client: NameList,
-    pub compression_algorithms_client_to_server: NameList,
-    pub compression_algorithms_server_to_client: NameList,
-    pub languages_client_to_server: NameList,
-    pub languages_server_to_client: NameList,
+    pub key_exchange: NameList,
+    pub server_host_key: NameList,
+    pub client_encryption: NameList,
+    pub server_encryption: NameList,
+    pub client_mac: NameList,
+    pub server_mac: NameList,
+    pub client_compression: NameList,
+    pub server_compression: NameList,
+    pub client_languages: NameList,
+    pub server_languages: NameList,
     pub first_kex_packet_follows: bool,
     pub reserved: u32,
+}
+
+pub(crate) struct AlgList {
+    pub key_exchange: Vec<Kex>,
+    pub public_key: Vec<PubKey>,
+    pub client_encryption: Vec<Enc>,
+    pub server_encryption: Vec<Enc>,
+    pub client_mac: Vec<Mac>,
+    pub server_mac: Vec<Mac>,
+    pub client_compress: Vec<Compress>,
+    pub server_compress: Vec<Compress>,
+}
+
+impl AlgList {
+    pub fn default() -> Self {
+        AlgList {
+            key_exchange: vec![Kex::Curve25519Sha256],
+            public_key: vec![PubKey::RsaSha2_256],
+            client_encryption: vec![Enc::Chacha20Poly1305Openssh],
+            server_encryption: vec![Enc::Chacha20Poly1305Openssh],
+            client_mac: vec![Mac::HmacSha2_256],
+            server_mac: vec![Mac::HmacSha2_256],
+            client_compress: vec![Compress::None],
+            server_compress: vec![Compress::None],
+        }
+    }
 }
 
 impl SshClient {
@@ -24,22 +53,76 @@ impl SshClient {
         // recv key algorithms
         let mut payload = self.recv()?;
         payload.expect(message_code::SSH_MSG_KEXINIT);
-        let server_kex_algorithms = payload.get();
+        let server_kex_algorithms: KexAlgorithms = payload.get();
 
         // send key algorithms
         self.send(
             Data::new()
                 .put(&message_code::SSH_MSG_KEXINIT)
-                .put(&self.kex),
+                .put(&rand::thread_rng().gen::<[u8; 16]>())
+                .put(&self.key_exchange),
         )?;
 
-        self.session
-            .set_kex_algorithms(&self.kex, &server_kex_algorithms);
+        self.session.client_kex = Some(self.key_exchange.clone());
+        self.session.server_kex = Some(server_kex_algorithms.clone());
 
         println!("server algorithms: {:?}", server_kex_algorithms);
-        println!("client algorithms: {:?}", self.kex);
+        println!("client algorithms: {:?}", self.key_exchange);
 
         Ok(())
+    }
+}
+
+impl DataType for AlgList {
+    fn decode(input: &[u8]) -> nom::IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
+        let (input, key_exchange) = <Vec<Kex>>::decode(input)?;
+        let (input, public_key) = <Vec<PubKey>>::decode(input)?;
+        let (input, client_encryption) = <Vec<Enc>>::decode(input)?;
+        let (input, server_encryption) = <Vec<Enc>>::decode(input)?;
+        let (input, client_mac) = <Vec<Mac>>::decode(input)?;
+        let (input, server_mac) = <Vec<Mac>>::decode(input)?;
+        let (input, client_compress) = <Vec<Compress>>::decode(input)?;
+        let (input, server_compress) = <Vec<Compress>>::decode(input)?;
+        let (input, _client_languages) = <NameList>::decode(input)?;
+        let (input, _server_languages) = <NameList>::decode(input)?;
+        let (input, _first_kex_packet_follows) = <bool>::decode(input)?;
+        let (input, _reserved) = <u32>::decode(input)?;
+
+        Ok((
+            input,
+            AlgList {
+                key_exchange,
+                public_key,
+                client_encryption,
+                server_encryption,
+                client_mac,
+                server_mac,
+                client_compress,
+                server_compress,
+            },
+        ))
+    }
+
+    fn encode(&self, buf: &mut Vec<u8>) {
+        self.key_exchange.encode(buf);
+        self.public_key.encode(buf);
+        self.client_encryption.encode(buf);
+        self.server_encryption.encode(buf);
+        self.client_mac.encode(buf);
+        self.server_mac.encode(buf);
+        self.client_compress.encode(buf);
+        self.server_compress.encode(buf);
+        let client_languages: NameList = vec![];
+        client_languages.encode(buf);
+        let server_languages: NameList = vec![];
+        server_languages.encode(buf);
+        let first_kex_packet_follows = false;
+        first_kex_packet_follows.encode(buf);
+        let reserved = 0u32;
+        reserved.encode(buf);
     }
 }
 
@@ -49,16 +132,16 @@ impl DataType for KexAlgorithms {
         Self: Sized,
     {
         let (input, cookie) = <[u8; 16]>::decode(input)?;
-        let (input, kex_algorithms) = <NameList>::decode(input)?;
-        let (input, server_host_key_algorithms) = <NameList>::decode(input)?;
-        let (input, encryption_algorithms_client_to_server) = <NameList>::decode(input)?;
-        let (input, encryption_algorithms_server_to_client) = <NameList>::decode(input)?;
-        let (input, mac_algorithms_client_to_server) = <NameList>::decode(input)?;
-        let (input, mac_algorithms_server_to_client) = <NameList>::decode(input)?;
-        let (input, compression_algorithms_client_to_server) = <NameList>::decode(input)?;
-        let (input, compression_algorithms_server_to_client) = <NameList>::decode(input)?;
-        let (input, languages_client_to_server) = <NameList>::decode(input)?;
-        let (input, languages_server_to_client) = <NameList>::decode(input)?;
+        let (input, key_exchange) = <NameList>::decode(input)?;
+        let (input, server_host_key) = <NameList>::decode(input)?;
+        let (input, client_encryption) = <NameList>::decode(input)?;
+        let (input, server_encryption) = <NameList>::decode(input)?;
+        let (input, client_mac) = <NameList>::decode(input)?;
+        let (input, server_mac) = <NameList>::decode(input)?;
+        let (input, client_compression) = <NameList>::decode(input)?;
+        let (input, server_compression) = <NameList>::decode(input)?;
+        let (input, client_languages) = <NameList>::decode(input)?;
+        let (input, server_languages) = <NameList>::decode(input)?;
         let (input, first_kex_packet_follows) = <bool>::decode(input)?;
         let (input, reserved) = <u32>::decode(input)?;
 
@@ -66,16 +149,16 @@ impl DataType for KexAlgorithms {
             input,
             KexAlgorithms {
                 cookie,
-                kex_algorithms,
-                server_host_key_algorithms,
-                encryption_algorithms_client_to_server,
-                encryption_algorithms_server_to_client,
-                mac_algorithms_client_to_server,
-                mac_algorithms_server_to_client,
-                compression_algorithms_client_to_server,
-                compression_algorithms_server_to_client,
-                languages_client_to_server,
-                languages_server_to_client,
+                key_exchange,
+                server_host_key,
+                client_encryption,
+                server_encryption,
+                client_mac,
+                server_mac,
+                client_compression,
+                server_compression,
+                client_languages,
+                server_languages,
                 first_kex_packet_follows,
                 reserved,
             },
@@ -84,16 +167,16 @@ impl DataType for KexAlgorithms {
 
     fn encode(&self, buf: &mut Vec<u8>) {
         self.cookie.encode(buf);
-        self.kex_algorithms.encode(buf);
-        self.server_host_key_algorithms.encode(buf);
-        self.encryption_algorithms_client_to_server.encode(buf);
-        self.encryption_algorithms_server_to_client.encode(buf);
-        self.mac_algorithms_client_to_server.encode(buf);
-        self.mac_algorithms_server_to_client.encode(buf);
-        self.compression_algorithms_client_to_server.encode(buf);
-        self.compression_algorithms_server_to_client.encode(buf);
-        self.languages_client_to_server.encode(buf);
-        self.languages_server_to_client.encode(buf);
+        self.key_exchange.encode(buf);
+        self.server_host_key.encode(buf);
+        self.client_encryption.encode(buf);
+        self.server_encryption.encode(buf);
+        self.client_mac.encode(buf);
+        self.server_mac.encode(buf);
+        self.client_compression.encode(buf);
+        self.server_compression.encode(buf);
+        self.client_languages.encode(buf);
+        self.server_languages.encode(buf);
         self.first_kex_packet_follows.encode(buf);
         self.reserved.encode(buf);
     }

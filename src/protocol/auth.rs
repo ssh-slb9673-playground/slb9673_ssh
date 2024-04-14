@@ -83,7 +83,7 @@ impl SshClient {
 
         let publickey_method = PublicKeyAuthenticationMethod {
             username: self.config.username.clone(),
-            service_name: self.service_name.clone(),
+            service_name: self.config.service_name.clone(),
             method_name: "publickey".to_string(),
             with_authentication: true,
             publickey_algorithm_name: "rsa-sha2-256".to_string(),

@@ -1,7 +1,8 @@
 use crate::utils::hexdump;
 use nom::bytes::complete::take;
+use nom::error::{Error, ErrorKind, ParseError};
 use nom::number::complete::{be_u32, be_u64, be_u8};
-use nom::{AsBytes, IResult};
+use nom::{AsBytes, Err, IResult};
 
 #[derive(Debug, Clone)]
 pub struct Data(pub Vec<u8>);
@@ -27,7 +28,7 @@ impl Data {
             Ok(t) => t,
             Err(e) => panic!("Error decoding {}", e),
         };
-        let size = (self.0.as_ptr() as usize) - (input.as_ptr() as usize);
+        let size = (input.as_ptr() as usize) - (self.0.as_ptr() as usize);
         self.0.drain(..size);
         data
     }
@@ -178,20 +179,31 @@ impl DataType for String {
 
 // name-list
 pub type NameList = Vec<String>;
-impl DataType for NameList {
+impl<T> DataType for Vec<T>
+where
+    T: std::fmt::Display + std::str::FromStr,
+{
     fn encode(&self, buf: &mut Vec<u8>) {
-        ByteString::from_str(&self.join(",")).encode(buf)
+        self.iter()
+            .map(|v| v.to_string())
+            .collect::<NameList>()
+            .join(",")
+            .encode(buf);
     }
-    fn decode(input: &[u8]) -> IResult<&[u8], Self> {
+
+    fn decode(input: &[u8]) -> IResult<&[u8], Self>
+    where
+        Self: Sized,
+    {
         let (input, payload) = <ByteString>::decode(input)?;
-        Ok((
-            input,
-            String::from_utf8(payload.0)
-                .unwrap()
-                .split(',')
-                .map(|s| s.into())
-                .collect(),
-        ))
+        let result = String::from_utf8(payload.0)
+            .unwrap()
+            .split(',')
+            .map(|s| s.to_string())
+            .map(|v| T::from_str(&v))
+            .collect::<Result<Vec<T>, _>>()
+            .map_err(|_| Err::Error(Error::from_error_kind(input, ErrorKind::Eof)))?;
+        Ok((input, result))
     }
 }
 

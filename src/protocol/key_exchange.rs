@@ -13,12 +13,12 @@ pub struct Kex {
     pub shared_secret_key: Mpint,
     pub exchange_hash: Vec<u8>,
     pub session_id: Vec<u8>,
-    pub initial_iv_client_to_server: Vec<u8>,
-    pub initial_iv_server_to_client: Vec<u8>,
-    pub encryption_key_client_to_server: Vec<u8>,
-    pub encryption_key_server_to_client: Vec<u8>,
-    pub integrity_key_client_to_server: Vec<u8>,
-    pub integrity_key_server_to_client: Vec<u8>,
+    pub client_initial_iv: Vec<u8>,
+    pub server_initial_iv: Vec<u8>,
+    pub client_encryption_key: Vec<u8>,
+    pub server_encryption_key: Vec<u8>,
+    pub client_integrity_key: Vec<u8>,
+    pub server_integrity_key: Vec<u8>,
 }
 
 impl SshClient {
@@ -74,29 +74,27 @@ impl SshClient {
         );
         let kex = Kex::new::<Method>(method, exchange_hash, &shared_secret);
 
-        self.recv_new_keys()?;
         // New Keys
-        self.new_keys()?;
+        self.recv()?.expect(message_code::SSH_MSG_NEWKEYS);
+        self.send(Data::new().put(&message_code::SSH_MSG_NEWKEYS))?;
 
-        self.session.set_method(
-            NewKeys::new(
-                Box::new(ChaCha20Poly1305::new(
-                    &kex.encryption_key_client_to_server,
-                    &kex.encryption_key_server_to_client,
-                )),
-                Box::new(NoneMac {}),
-                Box::new(NoneCompress {}),
-            ),
-            NewKeys::new(
-                Box::new(ChaCha20Poly1305::new(
-                    &kex.encryption_key_client_to_server,
-                    &kex.encryption_key_server_to_client,
-                )),
-                Box::new(NoneMac {}),
-                Box::new(NoneCompress {}),
-            ),
+        self.session.client_method = NewKeys::new(
+            Box::new(ChaCha20Poly1305::new(
+                &kex.client_encryption_key,
+                &kex.server_encryption_key,
+            )),
+            Box::new(NoneMac {}),
+            Box::new(NoneCompress {}),
         );
-        self.session.set_keys(kex);
+        self.session.server_method = NewKeys::new(
+            Box::new(ChaCha20Poly1305::new(
+                &kex.client_encryption_key,
+                &kex.server_encryption_key,
+            )),
+            Box::new(NoneMac {}),
+            Box::new(NoneCompress {}),
+        );
+        self.session.keys = Some(kex);
         Ok(())
     }
 
@@ -110,27 +108,13 @@ impl SshClient {
     }
 
     fn verify_signature_and_new_keys(&mut self) -> anyhow::Result<(ByteString, ByteString)> {
+        println!("verify signature");
         let mut payload = self.recv()?;
+        println!("{:?}", payload);
         payload.expect(message_code::SSH2_MSG_KEX_ECDH_REPLY);
         let server_public_host_key: ByteString = payload.get();
         let server_public_key: ByteString = payload.get();
         Ok((server_public_host_key, server_public_key))
-    }
-
-    fn new_keys(&mut self) -> anyhow::Result<()> {
-        let mut payload = Data::new();
-        self.send(payload.put(&message_code::SSH_MSG_NEWKEYS))
-    }
-
-    fn new_keys_() -> Data {
-        let mut payload = Data::new();
-        payload.put(&message_code::SSH_MSG_NEWKEYS);
-        payload
-    }
-
-    fn recv_new_keys(&mut self) -> anyhow::Result<()> {
-        self.recv()?.expect(message_code::SSH_MSG_NEWKEYS);
-        Ok(())
     }
 }
 
@@ -177,12 +161,12 @@ impl Kex {
             shared_secret_key: shared_secret_key.clone(),
             exchange_hash: exchange_hash.clone(),
             session_id: exchange_hash,
-            initial_iv_client_to_server: keys[0].clone(),
-            initial_iv_server_to_client: keys[1].clone(),
-            encryption_key_client_to_server: keys[2].clone(),
-            encryption_key_server_to_client: keys[3].clone(),
-            integrity_key_client_to_server: keys[4].clone(),
-            integrity_key_server_to_client: keys[5].clone(),
+            client_initial_iv: keys[0].clone(),
+            server_initial_iv: keys[1].clone(),
+            client_encryption_key: keys[2].clone(),
+            server_encryption_key: keys[3].clone(),
+            client_integrity_key: keys[4].clone(),
+            server_integrity_key: keys[5].clone(),
         }
     }
 
