@@ -66,7 +66,7 @@ impl SshClient {
         self.session.client_kex = Some(self.key_exchange.clone());
         self.session.server_kex = Some(server_kex_algorithms.clone());
 
-        println!("server algorithms: {:?}", server_kex_algorithms);
+        tracing::info!("server algorithms: {:?}", server_kex_algorithms);
         println!("client algorithms: {:?}", self.key_exchange);
 
         Ok(())

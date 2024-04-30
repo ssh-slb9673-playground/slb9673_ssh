@@ -10,6 +10,7 @@ pub struct TcpClient {
 
 impl TcpClient {
     pub fn new(address: SocketAddr) -> anyhow::Result<Self> {
+        tracing::info!("{:?}", address);
         let client = TcpStream::connect(address).expect("failed to connect server");
         client.set_nonblocking(false).expect("out of service");
         client

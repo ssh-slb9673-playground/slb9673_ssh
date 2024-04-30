@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::{client::SshClient, data::DataType};
 use crate::{
     crypto::public_key::rsa::RsaSha256,
@@ -67,7 +69,7 @@ impl SshClient {
         let mut payload = Data::new();
         payload
             .put(&message_code::SSH_MSG_SERVICE_REQUEST)
-            .put(&ByteString::from_str("ssh-userauth"));
+            .put(&<ByteString>::from_str("ssh-userauth")?);
         self.send(&payload)
     }
 

@@ -16,7 +16,7 @@ pub struct RsaSha256 {
 impl RsaSha256 {
     pub fn read_from_file() -> anyhow::Result<RsaSha256> {
         let mut file =
-            File::open("/home/anko/.ssh/id_rsa_ssh").map_err(|e| SshError::from(e.to_string()))?;
+            File::open("/home/anko/.ssh/id_rsa").map_err(|e| SshError::from(e.to_string()))?;
 
         let mut prks = String::new();
         file.read_to_string(&mut prks)
